@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String     @id @default(cuid())
+  nome      String
+  email     String     @unique
+  senhaHash String
+  role      String     @default("USUARIO_PADRAO")
+  ativo     Boolean    @default(true)
+  criadoEm  DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  logs      AuditLog[]
+  records   Record[]
+}
+
+model Client {
+  id        String    @id @default(cuid())
+  nome      String
+  documento String?
+  contatos  String?
+  criadoEm  DateTime  @default(now())
+  projects  Project[]
+}
+
+model Project {
+  id         String     @id @default(cuid())
+  nome       String
+  endereco   String?
+  status     String     @default("ATIVO")
+  criadoEm   DateTime   @default(now())
+  clientId   String
+  activities Activity[]
+  client     Client     @relation(fields: [clientId], references: [id])
+  records    Record[]
+}
+
+model Record {
+  id         String     @id @default(cuid())
+  authorId   String
+  projectId  String?
+  clientId   String?
+  texto      String?
+  type       String     @default("TEXTO")
+  status     String     @default("RASCUNHO")
+  prioridade String     @default("MEDIA")
+  criadoEm   DateTime   @default(now())
+  activities Activity[]
+  documents  Document[]
+  project    Project?   @relation(fields: [projectId], references: [id])
+  author     User       @relation(fields: [authorId], references: [id])
+  sketch     Sketch?
+}
+
+model Sketch {
+  id       String   @id @default(cuid())
+  recordId String   @unique
+  dataJson String
+  imageUrl String?
+  criadoEm DateTime @default(now())
+  record   Record   @relation(fields: [recordId], references: [id])
+}
+
+model Document {
+  id       String   @id @default(cuid())
+  recordId String
+  tipo     String   @default("ESBOCO_TIMBRADO")
+  pdfUrl   String?
+  status   String   @default("RASCUNHO")
+  versao   Int      @default(1)
+  hash     String?
+  criadoEm DateTime @default(now())
+  record   Record   @relation(fields: [recordId], references: [id])
+}
+
+model Activity {
+  id          String               @id @default(cuid())
+  recordId    String?
+  projectId   String
+  titulo      String
+  descricao   String?
+  status      String               @default("PLANEJADO")
+  prioridade  String               @default("MEDIA")
+  dataInicio  DateTime?
+  dataFim     DateTime?
+  criadoEm    DateTime             @default(now())
+  project     Project              @relation(fields: [projectId], references: [id])
+  record      Record?              @relation(fields: [recordId], references: [id])
+  assignments ActivityAssignment[]
+}
+
+model Professional {
+  id          String               @id @default(cuid())
+  nome        String
+  tipo        String               @default("INTERNO")
+  documento   String?
+  contatos    String?
+  criadoEm    DateTime             @default(now())
+  assignments ActivityAssignment[]
+}
+
+model ActivityAssignment {
+  id             String       @id @default(cuid())
+  activityId     String
+  professionalId String
+  valorPrevisto  Float
+  valorReal      Float?
+  criadoEm       DateTime     @default(now())
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  activity       Activity     @relation(fields: [activityId], references: [id])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  tipoEvento  String
+  entidade    String
+  entidadeId  String
+  payloadJson String?
+  criadoEm    DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}

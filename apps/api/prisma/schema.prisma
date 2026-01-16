@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Roles: ADMIN, CEO, GESTOR, USUARIO_PADRAO, EXTERNO
+// RecordStatus: RASCUNHO, EM_TRIAGEM, CONVERTIDO, ARQUIVADO
+// RecordType: TEXTO, FOTO, ESBOCO
+// ActivityStatus: PLANEJADO, EM_EXECUCAO, CONCLUIDO, BLOQUEADO, CANCELADO
+// Priority: BAIXA, MEDIA, ALTA, CRITICA
+// DocumentStatus: RASCUNHO, EMITIDO, ASSINATURA_PENDENTE, ASSINADO, REVOGADO
+
+model User {
+  id        String   @id @default(cuid())
+  nome      String
+  email     String   @unique
+  senhaHash String
+  role      String   @default("USUARIO_PADRAO")
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  records   Record[]
+  logs      AuditLog[]
+}
+
+model Client {
+  id        String    @id @default(cuid())
+  nome      String
+  documento String?
+  contatos  String?
+  criadoEm  DateTime  @default(now())
+  
+  projects  Project[]
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  nome      String
+  endereco  String?
+  status    String   @default("ATIVO")
+  criadoEm  DateTime @default(now())
+  
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id])
+  
+  records   Record[]
+  activities Activity[]
+}
+
+model Record {
+  id          String       @id @default(cuid())
+  authorId    String
+  author      User         @relation(fields: [authorId], references: [id])
+  
+  projectId   String?
+  project     Project?     @relation(fields: [projectId], references: [id])
+  
+  clientId    String?
+  
+  texto       String?
+  type        String       @default("TEXTO")
+  status      String       @default("RASCUNHO")
+  prioridade  String       @default("MEDIA")
+  criadoEm    DateTime     @default(now())
+  
+  sketch      Sketch?
+  documents   Document[]
+  activities  Activity[]
+}
+
+model Sketch {
+  id        String   @id @default(cuid())
+  recordId  String   @unique
+  record    Record   @relation(fields: [recordId], references: [id])
+  dataJson  String   
+  imageUrl  String?  
+  criadoEm  DateTime @default(now())
+}
+
+model Document {
+  id        String         @id @default(cuid())
+  recordId  String
+  record    Record         @relation(fields: [recordId], references: [id])
+  tipo      String         @default("ESBOCO_TIMBRADO")
+  pdfUrl    String?
+  status    String         @default("RASCUNHO")
+  versao    Int            @default(1)
+  hash      String?
+  criadoEm  DateTime       @default(now())
+}
+
+model Activity {
+  id          String         @id @default(cuid())
+  recordId    String?
+  record      Record?        @relation(fields: [recordId], references: [id])
+  
+  projectId   String
+  project     Project        @relation(fields: [projectId], references: [id])
+  
+  titulo      String
+  descricao   String?
+  status      String         @default("PLANEJADO")
+  prioridade  String         @default("MEDIA")
+  dataInicio  DateTime?
+  dataFim     DateTime?
+  criadoEm    DateTime       @default(now())
+
+  assignments ActivityAssignment[]
+}
+
+model Professional {
+  id        String   @id @default(cuid())
+  nome      String
+  tipo      String   @default("INTERNO") 
+  documento String?
+  contatos  String?
+  criadoEm  DateTime @default(now())
+
+  assignments ActivityAssignment[]
+}
+
+model ActivityAssignment {
+  id             String       @id @default(cuid())
+  activityId     String
+  activity       Activity     @relation(fields: [activityId], references: [id])
+  
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  
+  valorPrevisto  Float      
+  valorReal      Float?     
+  criadoEm       DateTime     @default(now())
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  tipoEvento   String
+  entidade     String
+  entidadeId   String
+  payloadJson  String?
+  criadoEm     DateTime @default(now())
+}

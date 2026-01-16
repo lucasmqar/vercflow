@@ -1,0 +1,16 @@
+{
+  "name": "vercflow",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w @vercflow/web\" \"npm run dev -w @vercflow/api\"",
+    "build": "npm run build -w @vercflow/web && npm run build -w @vercflow/api"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.4.5"
+  }
+}
