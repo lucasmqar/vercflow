@@ -1,35 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import {
     Briefcase,
     Calendar as CalendarIcon,
     DollarSign,
-    Search,
-    Filter,
     User as UserIcon,
     CheckCircle2,
-    Clock
+    Clock,
+    ExternalLink,
+    List,
+    LayoutGrid
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { DataView } from '@/components/shared/DataView';
+import { CalendarView } from '@/components/shared/CalendarView';
+import { getApiUrl } from '@/lib/api';
+import { Activity, ActivityStatus } from '@/types';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export function ActivitiesDashboard() {
-    const [view, setView] = useState<'board' | 'list' | 'calendar'>('list');
-    const [activities, setActivities] = useState<any[]>([]);
+    const [activities, setActivities] = useState<Activity[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [viewMode, setViewMode] = useState<'dataview' | 'calendar' | 'kanban'>('kanban');
 
     useEffect(() => {
         fetchActivities();
     }, []);
 
     const fetchActivities = async () => {
+        setIsLoading(true);
         try {
-            const res = await fetch('http://localhost:4000/api/activities');
-            if (res.ok) setActivities(await res.json());
+            const res = await fetch(getApiUrl('/api/activities'));
+            if (res.ok) {
+                const data = await res.json();
+                setActivities(data);
+            }
         } catch (e) {
             console.error(e);
         } finally {
@@ -37,136 +44,195 @@ export function ActivitiesDashboard() {
         }
     };
 
-    return (
-        <div className="p-4 lg:p-6 h-[calc(100vh-64px)] flex flex-col bg-secondary/10">
-
-            {/* Sub Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    const columns = [
+        {
+            key: 'titulo',
+            header: 'Atividade',
+            render: (act: Activity) => (
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tighter">Atividades de Obra</h1>
-                    <p className="text-muted-foreground text-sm font-medium">Gestão técnica e operacional de tarefas</p>
+                    <p className="font-bold text-sm tracking-tight">{act.titulo}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                        {act.project?.nome || 'Sem Obra'}
+                    </p>
                 </div>
+            )
+        },
+        {
+            key: 'assignments',
+            header: 'Responsável',
+            render: (act: Activity) => {
+                const prof = act.assignments?.[0]?.professional;
+                return (
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <UserIcon size={12} />
+                        </div>
+                        <span className="text-xs font-semibold">{prof?.nome || 'Não designado'}</span>
+                    </div>
+                );
+            }
+        },
+        {
+            key: 'dataFim',
+            header: 'Prazo',
+            render: (act: Activity) => (
+                <span className="text-xs font-medium">
+                    {act.dataFim ? format(new Date(act.dataFim), 'dd MMM yyyy', { locale: ptBR }) : '-'}
+                </span>
+            )
+        },
+        {
+            key: 'valor',
+            header: 'Investimento',
+            render: (act: Activity) => (
+                <span className="text-xs font-bold text-primary">
+                    R$ {(act.assignments?.[0]?.valorPrevisto || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+            )
+        },
+        {
+            key: 'status',
+            header: 'Status',
+            render: (act: Activity) => {
+                const colors: Record<string, string> = {
+                    PLANEJADO: 'bg-blue-500/10 text-blue-600',
+                    EM_EXECUCAO: 'bg-yellow-500/10 text-yellow-600',
+                    CONCLUIDO: 'bg-green-500/10 text-green-600',
+                    BLOQUEADO: 'bg-red-500/10 text-red-600',
+                };
+                return (
+                    <Badge className={cn("border-none shadow-none text-[9px] h-5 tracking-tight uppercase font-bold", colors[act.status] || 'bg-secondary')}>
+                        {act.status}
+                    </Badge>
+                );
+            }
+        }
+    ];
 
-                <div className="flex items-center gap-2">
-                    <Tabs value={view} onValueChange={(v: any) => setView(v)} className="bg-background border rounded-xl p-1">
-                        <TabsList className="bg-transparent border-none">
-                            <TabsTrigger value="board" className="rounded-lg px-4 h-8 data-[state=active]:bg-primary data-[state=active]:text-white">Board</TabsTrigger>
-                            <TabsTrigger value="list" className="rounded-lg px-4 h-8 data-[state=active]:bg-primary data-[state=active]:text-white">Lista</TabsTrigger>
-                            <TabsTrigger value="calendar" className="rounded-lg px-4 h-8 data-[state=active]:bg-primary data-[state=active]:text-white">Calendário</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-                </div>
-            </div>
+    const kanbanColumns = [
+        { value: 'PLANEJADO', label: 'Planejado', color: '#3B82F6' },
+        { value: 'EM_EXECUCAO', label: 'Em Execução', color: '#F59E0B' },
+        { value: 'CONCLUIDO', label: 'Concluído', color: '#10B981' },
+        { value: 'BLOQUEADO', label: 'Bloqueado', color: '#EF4444' },
+    ];
 
-            {/* Stats Quick Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <Card className="bg-background/80 backdrop-blur-md border-border/50 shadow-sm rounded-3xl">
-                    <CardContent className="pt-6">
+    // Stats
+    const totalPrevisto = activities.reduce((acc, a) => acc + (a.assignments?.[0]?.valorPrevisto || 0), 0);
+    const activeTasks = activities.filter(a => a.status === 'EM_EXECUCAO').length;
+
+    return (
+        <div className="flex flex-col h-full overflow-hidden bg-secondary/10">
+            {/* KPI Section */}
+            <div className="p-4 lg:p-6 grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+                <Card className="bg-background/80 backdrop-blur-md border-border/50 shadow-sm rounded-3xl overflow-hidden relative group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent group-hover:opacity-100 transition-opacity" />
+                    <CardContent className="pt-6 relative">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
                                 <Clock size={24} />
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Previsto (Próx. 7 dias)</p>
-                                <p className="text-2xl font-bold tracking-tighter">
-                                    R$ {activities.reduce((acc, a) => acc + (a.assignments?.[0]?.valorPrevisto || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Previsto (Investimento)</p>
+                                <p className="text-2xl font-bold tracking-tighter">R$ {totalPrevisto.toLocaleString('pt-BR')}</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-background/80 backdrop-blur-md border-border/50 shadow-sm rounded-3xl">
-                    <CardContent className="pt-6">
+
+                <Card className="bg-background/80 backdrop-blur-md border-border/50 shadow-sm rounded-3xl overflow-hidden relative group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent group-hover:opacity-100 transition-opacity" />
+                    <CardContent className="pt-6 relative">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500">
                                 <Briefcase size={24} />
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Atividades Ativas</p>
-                                <p className="text-2xl font-bold tracking-tighter">{activities.length} Tarefas</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Atividades em Curso</p>
+                                <p className="text-2xl font-bold tracking-tighter">{activeTasks} Tarefas</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-background/80 backdrop-blur-md border-border/50 shadow-sm rounded-3xl">
-                    <CardContent className="pt-6">
+
+                <Card className="bg-background/80 backdrop-blur-md border-border/50 shadow-sm rounded-3xl overflow-hidden relative group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent group-hover:opacity-100 transition-opacity" />
+                    <CardContent className="pt-6 relative">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-500">
                                 <CheckCircle2 size={24} />
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Concluído (SLA)</p>
-                                <p className="text-2xl font-bold tracking-tighter">100%</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">SLA de Entrega</p>
+                                <p className="text-2xl font-bold tracking-tighter">94% <span className="text-[10px] text-muted-foreground font-normal">Sazonal</span></p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Search & Filters */}
-            <div className="flex items-center gap-3 mb-6">
-                <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                    <Input placeholder="Buscar atividade, profissional ou obra..." className="pl-10 h-11 rounded-xl bg-background border-border/50 shadow-sm" />
-                </div>
-                <Button onClick={fetchActivities} variant="outline" className="h-11 px-4 gap-2 rounded-xl bg-background border-border/50 font-bold">
-                    <Filter size={18} /> Atualizar
-                </Button>
-            </div>
-
-            {/* Main Table/List */}
-            <div className="flex-1 bg-background rounded-3xl border border-border/50 shadow-xl overflow-hidden flex flex-col">
-                <div className="p-4 border-b bg-secondary/10 flex items-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    <div className="w-1/3">Atividade / Obra</div>
-                    <div className="w-1/4">Responsável</div>
-                    <div className="w-1/6">Prazo</div>
-                    <div className="w-1/6">Valor Previsto</div>
-                    <div className="w-1/12 text-right">Status</div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                    {activities.length === 0 && !isLoading && (
-                        <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-2">
-                            <Briefcase size={40} className="opacity-20" />
-                            <p className="font-bold text-sm">Nenhuma atividade formalizada ainda</p>
-                            <p className="text-xs">Formalize registros técnicos na aba de Triagem</p>
-                        </div>
-                    )}
-                    {activities.map((act, i) => (
-                        <motion.div
-                            key={act.id}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.05 }}
-                            className="flex items-center p-4 rounded-2xl hover:bg-secondary/20 transition-colors border border-transparent hover:border-border/60 group cursor-pointer"
+            {/* Main Data View */}
+            <div className="flex-1 min-h-0 bg-background rounded-t-[40px] border-t border-border/50 shadow-2xl overflow-hidden flex flex-col">
+                {/* View Mode Toggle */}
+                <div className="p-4 border-b flex items-center justify-between bg-secondary/10">
+                    <h3 className="font-bold">Visualização</h3>
+                    <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-lg">
+                        <Button
+                            variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => setViewMode('kanban')}
+                            className="gap-2"
                         >
-                            <div className="w-1/3">
-                                <p className="font-bold text-sm tracking-tight group-hover:text-primary transition-colors">{act.titulo}</p>
-                                <p className="text-xs text-muted-foreground font-medium">{act.project?.nome || 'Obra não definida'}</p>
-                            </div>
-                            <div className="w-1/4 flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center text-primary">
-                                    <UserIcon size={14} />
-                                </div>
-                                <p className="text-sm font-semibold">{act.assignments?.[0]?.professional?.nome || 'Não designado'}</p>
-                            </div>
-                            <div className="w-1/6">
-                                <p className="text-xs font-bold text-foreground/80">
-                                    {act.dataFim ? new Date(act.dataFim).toLocaleDateString() : 'Sem prazo'}
-                                </p>
-                            </div>
-                            <div className="w-1/6">
-                                <p className="text-sm font-bold text-primary tracking-tighter">
-                                    R$ {(act.assignments?.[0]?.valorPrevisto || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </p>
-                            </div>
-                            <div className="w-1/12 text-right">
-                                <Badge className="bg-blue-500/10 text-blue-600 border-none shadow-none text-[9px] h-5 tracking-tight uppercase font-bold">{act.status}</Badge>
-                            </div>
-                        </motion.div>
-                    ))}
+                            <LayoutGrid size={14} />
+                            Kanban
+                        </Button>
+                        <Button
+                            variant={viewMode === 'dataview' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => setViewMode('dataview')}
+                            className="gap-2"
+                        >
+                            <List size={14} />
+                            Lista
+                        </Button>
+                        <Button
+                            variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => setViewMode('calendar')}
+                            className="gap-2"
+                        >
+                            <CalendarIcon size={14} />
+                            Calendário
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Content Area */}
+                <div className="flex-1 min-h-0 overflow-hidden">
+                    {viewMode === 'calendar' ? (
+                        <CalendarView
+                            activities={activities}
+                            onActivityClick={(item) => console.log('Activity clicked', item)}
+                        />
+                    ) : (
+                        <DataView
+                            data={activities}
+                            columns={columns}
+                            kanbanProperty="status"
+                            kanbanColumns={kanbanColumns}
+                            isLoading={isLoading}
+                            searchPlaceholder="Buscar por atividade, profissional ou projeto..."
+                            onAddClick={() => console.log('Adicionar Atividade')}
+                            onItemClick={(item) => console.log('Click item', item)}
+                            defaultView={viewMode === 'kanban' ? 'kanban' : 'table'}
+                            viewModes={['table', 'grid', 'kanban']}
+                        />
+                    )}
                 </div>
             </div>
         </div>
     );
+}
+
+function cn(...classes: any[]) {
+    return classes.filter(Boolean).join(' ');
 }

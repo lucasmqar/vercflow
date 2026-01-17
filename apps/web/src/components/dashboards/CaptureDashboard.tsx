@@ -9,20 +9,23 @@ import {
     ChevronRight,
     TrendingUp,
     MessageSquare,
-    Plus
+    Plus,
+    Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { SketchModal } from '@/components/sketch/SketchModal';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { RegistroModal } from '@/components/shared/RegistroModal';
+import { Record } from '@/types';
 
 export function CaptureDashboard() {
     const { user } = useAuth();
     const { registros, fetchRegistros } = useRegistros();
-    const [isSketchModalOpen, setIsSketchModalOpen] = useState(false);
+    const [isRegistroModalOpen, setIsRegistroModalOpen] = useState(false);
+    const [selectedParent, setSelectedParent] = useState<Record | null>(null);
 
     useEffect(() => {
         fetchRegistros();
@@ -52,18 +55,14 @@ export function CaptureDashboard() {
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                             <Button
-                                onClick={() => setIsSketchModalOpen(true)}
+                                onClick={() => {
+                                    setSelectedParent(null);
+                                    setIsRegistroModalOpen(true);
+                                }}
                                 className="h-16 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-lg font-bold gap-3 shadow-xl shadow-primary/20 active:scale-95 transition-all w-full sm:w-auto"
                             >
-                                <Palette className="w-6 h-6" />
-                                Iniciar Novo Esboço
-                            </Button>
-                            <Button
-                                variant="outline"
-                                className="h-16 px-10 rounded-2xl border-2 text-lg font-bold gap-3 hover:bg-secondary transition-all w-full sm:w-auto"
-                            >
-                                <MessageSquare className="w-6 h-6" />
-                                Anotação Rápida
+                                <Plus className="w-6 h-6" />
+                                Novo Registro de Campo
                             </Button>
                         </div>
                     </div>
@@ -79,7 +78,7 @@ export function CaptureDashboard() {
                         </div>
                         <div>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Em Triagem</p>
-                            <p className="text-xl font-bold tracking-tighter">{registros.filter(r => r.status === 'EM_TRIAGEM').length}</p>
+                            <p className="text-xl font-bold tracking-tighter">{registros.filter(r => r.status === 'TRIAGEM').length}</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -146,6 +145,18 @@ export function CaptureDashboard() {
                             </div>
 
                             <div className="flex items-center gap-3">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-[10px] h-8 rounded-lg gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedParent(reg);
+                                        setIsRegistroModalOpen(true);
+                                    }}
+                                >
+                                    <Layers size={14} /> Revisão
+                                </Button>
                                 <Badge variant="outline" className="text-[10px] font-bold h-6 rounded-lg bg-secondary/50 border-none uppercase tracking-tighter">
                                     {reg.status}
                                 </Badge>
@@ -158,9 +169,11 @@ export function CaptureDashboard() {
                 </div>
             </div>
 
-            <SketchModal
-                isOpen={isSketchModalOpen}
-                onClose={() => setIsSketchModalOpen(false)}
+            <RegistroModal
+                isOpen={isRegistroModalOpen}
+                onClose={() => setIsRegistroModalOpen(false)}
+                onSuccess={fetchRegistros}
+                parentRecord={selectedParent}
             />
         </div>
     );

@@ -1,39 +1,35 @@
+version: '3.8'
+
 services:
-  db:
+  postgres:
     image: postgres:15-alpine
-    container_name: vercflow-db
-    restart: always
+    container_name: vercflow-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-vercflow}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: vercflow
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Local storage simulation
-  minio:
-    image: minio/minio
-    container_name: vercflow-storage
+  adminer:
+    image: adminer:latest
+    container_name: vercflow-adminer
+    restart: unless-stopped
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "8080:8080"
+    depends_on:
+      - postgres
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data --console-address ":9001"
-    volumes:
-      - minio_data:/data
-
-  # Fake SMTP for email testing
-  mailhog:
-    image: mailhog/mailhog
-    container_name: vercflow-mail
-    ports:
-      - "1025:1025"
-      - "8025:8025"
+      ADMINER_DEFAULT_SERVER: postgres
 
 volumes:
   postgres_data:
-  minio_data:
+    driver: local

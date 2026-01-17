@@ -1,137 +1,411 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import {
     TrendingUp,
-    Users,
-    Briefcase,
-    AlertTriangle,
-    Clock,
-    CheckCircle2,
+    TrendingDown,
     DollarSign,
-    ArrowUpRight
+    Users,
+    Building2,
+    Activity,
+    FileText,
+    AlertTriangle,
+    CheckCircle2,
+    Clock,
+    Target,
+    Zap,
+    BarChart3,
+    PieChart,
+    Calendar as CalendarIcon,
+    ArrowUpRight,
+    ArrowDownRight,
+    Briefcase
 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
+import { getApiUrl } from '@/lib/api';
+
+interface DashboardKPIs {
+    kpis: {
+        label: string;
+        value: string;
+        change: string;
+        trend: 'up' | 'down' | 'neutral';
+    }[];
+    topProjects: any[];
+}
 
 export function CEODashboard() {
-    const kpis = [
-        { label: 'Registros Criados', value: '42', icon: Clock, color: 'text-primary', trend: '+12%', bg: 'bg-primary/10' },
-        { label: 'Esboços em Análise', value: '08', icon: AlertTriangle, color: 'text-orange-500', trend: '-2', bg: 'bg-orange-500/10' },
-        { label: 'Atividades Ativas', value: '14', icon: Briefcase, color: 'text-blue-500', trend: 'normal', bg: 'bg-blue-500/10' },
-        { label: 'Previsto Total', value: 'R$ 84k', icon: DollarSign, color: 'text-green-500', trend: '+5%', bg: 'bg-green-500/10' },
-    ];
+    const [data, setData] = useState<DashboardKPIs | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
+    const fetchDashboardData = async () => {
+        try {
+            const res = await fetch(getApiUrl('/api/dashboard/ceo'));
+            if (res.ok) {
+                setData(await res.json());
+            }
+        } catch (e) {
+            console.error('Dashboard error:', e);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    // Mock additional data for comprehensive dashboard
+    const stats = {
+        totalInvestment: 458750.00,
+        activeProjects: 5,
+        teamMembers: 12,
+        tasksCompleted: 87,
+        tasksTotal: 120,
+        documentsGenerated: 34,
+        criticalIssues: 3,
+        pendingApprovals: 7,
+        efficiency: 94,
+        slaCompliance: 96,
+        budgetUtilization: 78,
+        clientSatisfaction: 4.8
+    };
 
     return (
-        <div className="p-4 lg:p-10 h-[calc(100vh-64px)] flex flex-col bg-secondary/10 overflow-y-auto">
-
+        <div className="h-full overflow-y-auto bg-gradient-to-br from-secondary/5 via-background to-primary/5">
             {/* Header */}
-            <div className="mb-10">
-                <h1 className="text-3xl font-bold tracking-tighter">Visão Geral CEO</h1>
-                <p className="text-muted-foreground font-medium">Pipeline operacional e indicadores de eficiência (SLA)</p>
+            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b p-4 lg:p-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                            Dashboard Executivo
+                        </h1>
+                        <p className="text-sm text-muted-foreground mt-1">Visão estratégica completa do sistema</p>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                        Atualizado agora
+                    </Badge>
+                </div>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                {kpis.map((kpi, idx) => (
-                    <motion.div
-                        key={kpi.label}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.1 }}
-                    >
-                        <Card className="rounded-3xl border-border/50 shadow-xl shadow-black/5 bg-background/80 backdrop-blur-md hover:border-primary/20 transition-all group overflow-hidden relative">
-                            <div className={cn("absolute top-0 right-0 w-24 h-24 blur-3xl opacity-10", kpi.bg)} />
+            <div className="p-4 lg:p-6 space-y-6">
+                {/* Primary KPIs - 4 Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                        <Card className="border-l-4 border-l-blue-500 hover:shadow-xl transition-all">
                             <CardContent className="pt-6">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110", kpi.bg, kpi.color)}>
-                                        <kpi.icon size={24} />
+                                <div className="flex items-start justify-between">
+                                    <div className="space-y-2">
+                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Investimento Total</p>
+                                        <p className="text-3xl font-bold tracking-tighter">
+                                            R$ {stats.totalInvestment.toLocaleString('pt-BR')}
+                                        </p>
+                                        <div className="flex items-center gap-1 text-xs text-green-600">
+                                            <TrendingUp size={12} />
+                                            <span>+12% vs mês anterior</span>
+                                        </div>
                                     </div>
-                                    <Badge className="bg-success/10 text-success border-none h-5 text-[10px] uppercase font-bold tracking-widest">
-                                        {kpi.trend}
-                                    </Badge>
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{kpi.label}</p>
-                                    <p className="text-3xl font-bold tracking-tighter mt-1">{kpi.value}</p>
+                                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                                        <DollarSign className="w-6 h-6 text-blue-600" />
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
                     </motion.div>
-                ))}
-            </div>
 
-            {/* Main Stats Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                        <Card className="border-l-4 border-l-green-500 hover:shadow-xl transition-all">
+                            <CardContent className="pt-6">
+                                <div className="flex items-start justify-between">
+                                    <div className="space-y-2">
+                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Obras Ativas</p>
+                                        <p className="text-3xl font-bold tracking-tighter">{stats.activeProjects}</p>
+                                        <div className="flex items-center gap-1 text-xs text-green-600">
+                                            <CheckCircle2 size={12} />
+                                            <span>100% operacionais</span>
+                                        </div>
+                                    </div>
+                                    <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
+                                        <Building2 className="w-6 h-6 text-green-600" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
 
-                {/* Pipeline SLA */}
-                <Card className="lg:col-span-2 rounded-3xl border-border/50 shadow-xl bg-background/80 backdrop-blur-md overflow-hidden">
-                    <CardHeader className="border-b bg-secondary/10 px-8 py-6">
-                        <CardTitle className="text-lg font-bold tracking-tight">Indicadores de SLA & Gargalos</CardTitle>
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                        <Card className="border-l-4 border-l-purple-500 hover:shadow-xl transition-all">
+                            <CardContent className="pt-6">
+                                <div className="flex items-start justify-between">
+                                    <div className="space-y-2">
+                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Equipe Total</p>
+                                        <p className="text-3xl font-bold tracking-tighter">{stats.teamMembers}</p>
+                                        <div className="flex items-center gap-1 text-xs text-blue-600">
+                                            <Users size={12} />
+                                            <span>8 internos + 4 externos</span>
+                                        </div>
+                                    </div>
+                                    <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                                        <Users className="w-6 h-6 text-purple-600" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+                        <Card className="border-l-4 border-l-orange-500 hover:shadow-xl transition-all">
+                            <CardContent className="pt-6">
+                                <div className="flex items-start justify-between">
+                                    <div className="space-y-2">
+                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Taxa de Conclusão</p>
+                                        <p className="text-3xl font-bold tracking-tighter">
+                                            {Math.round((stats.tasksCompleted / stats.tasksTotal) * 100)}%
+                                        </p>
+                                        <Progress value={(stats.tasksCompleted / stats.tasksTotal) * 100} className="h-1.5" />
+                                    </div>
+                                    <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center">
+                                        <Target className="w-6 h-6 text-orange-600" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                </div>
+
+                {/* Secondary Metrics - 6 Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <Card className="hover:shadow-lg transition-shadow">
+                        <CardContent className="pt-6 text-center">
+                            <FileText className="w-8 h-8 mx-auto mb-2 text-blue-500" />
+                            <p className="text-2xl font-bold">{stats.documentsGenerated}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Documentos</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="hover:shadow-lg transition-shadow">
+                        <CardContent className="pt-6 text-center">
+                            <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-red-500" />
+                            <p className="text-2xl font-bold">{stats.criticalIssues}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Críticos</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="hover:shadow-lg transition-shadow">
+                        <CardContent className="pt-6 text-center">
+                            <Clock className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
+                            <p className="text-2xl font-bold">{stats.pendingApprovals}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Pendentes</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="hover:shadow-lg transition-shadow">
+                        <CardContent className="pt-6 text-center">
+                            <Zap className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                            <p className="text-2xl font-bold">{stats.efficiency}%</p>
+                            <p className="text-xs text-muted-foreground mt-1">Eficiência</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="hover:shadow-lg transition-shadow">
+                        <CardContent className="pt-6 text-center">
+                            <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-purple-500" />
+                            <p className="text-2xl font-bold">{stats.slaCompliance}%</p>
+                            <p className="text-xs text-muted-foreground mt-1">SLA</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="hover:shadow-lg transition-shadow">
+                        <CardContent className="pt-6 text-center">
+                            <BarChart3 className="w-8 h-8 mx-auto mb-2 text-indigo-500" />
+                            <p className="text-2xl font-bold">{stats.budgetUtilization}%</p>
+                            <p className="text-xs text-muted-foreground mt-1">Budget</p>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Middle Section - 3 Cards */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    {/* Tasks Progress */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-sm flex items-center gap-2">
+                                <Briefcase size={16} />
+                                Progresso de Tarefas
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs text-muted-foreground">Concluídas</span>
+                                    <span className="text-sm font-bold">{stats.tasksCompleted}/{stats.tasksTotal}</span>
+                                </div>
+                                <Progress value={(stats.tasksCompleted / stats.tasksTotal) * 100} className="h-2" />
+                            </div>
+                            <Separator />
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs">🟢 Em dia</span>
+                                    <span className="text-xs font-bold">78</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs">🟡 Atrasadas</span>
+                                    <span className="text-xs font-bold">9</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs">🔴 Críticas</span>
+                                    <span className="text-xs font-bold">{stats.criticalIssues}</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Budget Status */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-sm flex items-center gap-2">
+                                <DollarSign size={16} />
+                                Status Orçamentário
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs text-muted-foreground">Utilizado</span>
+                                    <span className="text-sm font-bold">R$ {(stats.totalInvestment * 0.78).toLocaleString('pt-BR')}</span>
+                                </div>
+                                <Progress value={stats.budgetUtilization} className="h-2" />
+                            </div>
+                            <Separator />
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs">Previsto Total</span>
+                                    <span className="text-xs font-bold">R$ {stats.totalInvestment.toLocaleString('pt-BR')}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs">Disponível</span>
+                                    <span className="text-xs font-bold text-green-600">
+                                        R$ {(stats.totalInvestment * 0.22).toLocaleString('pt-BR')}
+                                    </span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Client Satisfaction */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-sm flex items-center gap-2">
+                                <Users size={16} />
+                                Satisfação Cliente
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="text-center">
+                                <p className="text-5xl font-bold text-primary">{stats.clientSatisfaction}</p>
+                                <div className="flex items-center justify-center gap-0.5 mt-2">
+                                    {[...Array(5)].map((_, i) => (
+                                        <span key={i} className={i < Math.floor(stats.clientSatisfaction) ? 'text-yellow-500' : 'text-gray-300'}>
+                                            ★
+                                        </span>
+                                    ))}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-2">Média geral</p>
+                            </div>
+                            <Separator />
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs">Reviews positivos</span>
+                                    <span className="text-xs font-bold text-green-600">96%</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs">NPS Score</span>
+                                    <span className="text-xs font-bold">+72</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Recent Activities */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-sm flex items-center justify-between">
+                            <span className="flex items-center gap-2">
+                                <Activity size={16} />
+                                Atividades Recentes
+                            </span>
+                            <Badge variant="secondary" className="text-xs">Últimas 24h</Badge>
+                        </CardTitle>
                     </CardHeader>
-                    <CardContent className="px-8 py-6 space-y-8">
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm font-bold tracking-tight">Tempo Médio Captura &rarr; Triagem</p>
-                                <span className="text-sm font-bold text-primary">4.2 horas</span>
-                            </div>
-                            <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                                <div className="h-full w-[40%] bg-primary rounded-full" />
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm font-bold tracking-tight">Tempo Médio Triagem &rarr; Execução</p>
-                                <span className="text-sm font-bold text-blue-500">1.8 dias</span>
-                            </div>
-                            <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                                <div className="h-full w-[65%] bg-blue-500 rounded-full" />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 mt-10 p-6 bg-secondary/20 rounded-2xl">
-                            <div>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Custo Total Previsto</p>
-                                <p className="text-2xl font-bold tracking-tighter">R$ 142.900</p>
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Taxa de Conclusão</p>
-                                <p className="text-2xl font-bold tracking-tighter text-success">89%</p>
-                            </div>
+                    <CardContent>
+                        <div className="space-y-3">
+                            {[
+                                { action: 'Documento gerado', item: 'Plano de Prioridades #1234', time: '2h atrás', icon: FileText, color: 'text-blue-500' },
+                                { action: 'Atividade concluída', item: 'Impermeabilização Laje 12º', time: '4h atrás', icon: CheckCircle2, color: 'text-green-500' },
+                                { action: 'Novo registro', item: 'Esboço fachada frontal', time: '6h atrás', icon: AlertTriangle, color: 'text-yellow-500' },
+                                { action: 'Profissional designado', item: 'João Silva → Atividade #567', time: '8h atrás', icon: Users, color: 'text-purple-500' },
+                            ].map((activity, i) => {
+                                const Icon = activity.icon;
+                                return (
+                                    <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors">
+                                        <div className={`w-8 h-8 rounded-lg bg-secondary/50 flex items-center justify-center shrink-0 ${activity.color}`}>
+                                            <Icon size={16} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-semibold truncate">{activity.action}</p>
+                                            <p className="text-xs text-muted-foreground truncate">{activity.item}</p>
+                                        </div>
+                                        <span className="text-xs text-muted-foreground shrink-0">{activity.time}</span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Clicaveis Section */}
-                <div className="space-y-4">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Atalhos Críticos</h4>
-                    <Button variant="outline" className="w-full h-16 justify-between px-6 rounded-2xl bg-background border-border hover:border-primary/40 group">
-                        <div className="flex items-center gap-3">
-                            <AlertTriangle className="text-orange-500 group-hover:scale-110 transition-transform" size={20} />
-                            <span className="font-bold tracking-tight">Ver registros em atraso</span>
-                        </div>
-                        <ArrowUpRight className="opacity-40" size={18} />
-                    </Button>
-                    <Button variant="outline" className="w-full h-16 justify-between px-6 rounded-2xl bg-background border-border hover:border-red-500/40 group">
-                        <div className="flex items-center gap-3">
-                            <Users className="text-red-500 group-hover:scale-110 transition-transform" size={20} />
-                            <span className="font-bold tracking-tight">Atividades sem Profissional</span>
-                        </div>
-                        <ArrowUpRight className="opacity-40" size={18} />
-                    </Button>
-                    <Button variant="outline" className="w-full h-16 justify-between px-6 rounded-2xl bg-background border-border hover:border-success/40 group">
-                        <div className="flex items-center gap-3">
-                            <CheckCircle2 className="text-success group-hover:scale-110 transition-transform" size={20} />
-                            <span className="font-bold tracking-tight">Relatório de Conclusão Mensal</span>
-                        </div>
-                        <ArrowUpRight className="opacity-40" size={18} />
-                    </Button>
-                </div>
-
+                {/* Top Projects */}
+                {data?.topProjects && data.topProjects.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-sm flex items-center gap-2">
+                                <Building2 size={16} />
+                                Top Projetos por Atividade
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {data.topProjects.map((project: any, i: number) => (
+                                    <div key={project.id} className="flex items-center gap-3">
+                                        <Badge className="w-6 h-6 flex items-center justify-center shrink-0">
+                                            {i + 1}
+                                        </Badge>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-semibold">{project.nome}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <Progress value={Math.random() * 100} className="h-1.5 flex-1" />
+                                                <span className="text-xs text-muted-foreground">
+                                                    {project._count?.activities || 0} atividades
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
     );
 }
-
-import { Badge } from '@/components/ui/badge';

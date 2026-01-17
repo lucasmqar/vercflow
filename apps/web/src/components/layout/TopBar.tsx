@@ -13,6 +13,7 @@ import {
   LogOut,
   Users
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -52,6 +53,26 @@ export function TopBar({
 }: TopBarProps) {
   const { user, logout } = useAuth();
 
+  const getVisibleItems = () => {
+    if (!user) return [];
+
+    // CEO & ADMIN: Total Control
+    if (user.role === 'ADMIN' || user.role === 'CEO') return navItems;
+
+    // GESTOR: Management & Operations
+    if (user.role === 'GESTOR') return navItems.filter(i => ['captura', 'triagem', 'atividades', 'obras', 'dashboard', 'clientes'].includes(i.id));
+
+    // TRIAGISTA: Specialized in Capture & Triagem
+    if (user.role === 'TRIAGISTA') return navItems.filter(i => ['captura', 'triagem'].includes(i.id));
+
+    // OPERACIONAL / INTERNO: Field work & Tasks
+    if (user.role === 'OPERACIONAL' || user.role === 'PROFISSIONAL_INTERNO') return navItems.filter(i => ['captura', 'atividades'].includes(i.id));
+
+    return navItems.filter(i => ['captura'].includes(i.id));
+  };
+
+  const visibleNavItems = getVisibleItems();
+
   return (
     <div className="bg-background/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
       <div className="max-w-[1800px] mx-auto h-16 px-4 lg:px-6 flex items-center justify-between gap-4">
@@ -71,7 +92,7 @@ export function TopBar({
 
         {/* Center: Navigation */}
         <nav className="hidden lg:flex items-center gap-1 bg-secondary/50 p-1 rounded-xl">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = activeTab === item.id;
             const Icon = item.icon;
             return (

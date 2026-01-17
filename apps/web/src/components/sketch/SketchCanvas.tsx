@@ -23,8 +23,9 @@ export const SketchCanvas = forwardRef((props: SketchCanvasProps, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fabricCanvas = useRef<fabric.Canvas | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const [activeTool, setActiveTool] = useState<'select' | 'pencil' | 'rect' | 'circle' | 'text'>('pencil');
+    const [activeTool, setActiveTool] = useState<'select' | 'pencil' | 'rect' | 'circle' | 'text' | 'image'>('pencil');
     const [color, setColor] = useState('#800000'); // Bordo Default
     const [brushSize, setBrushSize] = useState(3);
 
@@ -123,6 +124,25 @@ export const SketchCanvas = forwardRef((props: SketchCanvasProps, ref) => {
         setActiveTool('select');
     };
 
+    const addImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !fabricCanvas.current) return;
+
+        const reader = new FileReader();
+        reader.onload = (f) => {
+            const data = f.target?.result as string;
+            fabric.Image.fromURL(data, (img: any) => {
+                img.scaleToWidth(200);
+                fabricCanvas.current?.add(img);
+                fabricCanvas.current?.centerObject(img);
+                fabricCanvas.current?.setActiveObject(img);
+                fabricCanvas.current?.renderAll();
+            });
+        };
+        reader.readAsDataURL(file);
+        setActiveTool('select');
+    };
+
     const handleUndo = () => {
         const canvas = fabricCanvas.current;
         if (canvas && canvas._objects.length > 0) {
@@ -162,6 +182,16 @@ export const SketchCanvas = forwardRef((props: SketchCanvasProps, ref) => {
                 <Button variant="ghost" size="icon" onClick={addText} className="h-10 w-10 rounded-xl">
                     <Type size={20} />
                 </Button>
+                <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} className="h-10 w-10 rounded-xl">
+                    <ImageIcon size={20} />
+                </Button>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={addImage}
+                />
 
                 <Separator orientation="vertical" className="h-6 mx-2" />
 

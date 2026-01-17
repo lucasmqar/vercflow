@@ -16,6 +16,8 @@ import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Project, Client } from '@/types';
 import { toast } from 'sonner';
+import { getApiUrl } from '@/lib/api';
+import { ProjectDetailsModal } from '@/components/shared/ProjectDetailsModal';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +37,8 @@ export function ObrasDashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [formData, setFormData] = useState({ nome: '', endereco: '', clientId: '' });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -45,157 +49,239 @@ export function ObrasDashboard() {
   const fetchData = async () => {
     try {
       const [pRes, cRes] = await Promise.all([
-        fetch('http://localhost:4000/api/projects'),
-        fetch('http://localhost:4000/api/clients')
+        fetch(getApiUrl('/api/projects')),
+        fetch(getApiUrl('/api/clients'))
       ]);
+
       if (pRes.ok) setProjects(await pRes.json());
       if (cRes.ok) setClients(await cRes.json());
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      toast.error('Erro ao carregar dados');
     }
   };
 
-  const handleCreate = async () => {
-    if (!formData.nome || !formData.clientId) return toast.error('Nome e Cliente são obrigatórios');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsSaving(true);
+
     try {
-      const res = await fetch('http://localhost:4000/api/projects', {
+      const res = await fetch(getApiUrl('/api/projects'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({ ...formData, status: 'ATIVA' }),
       });
-      if (res.ok) {
-        toast.success('Obra cadastrada com sucesso!');
-        setIsModalOpen(false);
-        setFormData({ nome: '', endereco: '', clientId: '' });
-        fetchData();
-      }
-    } catch (e) {
-      toast.error('Erro ao cadastrar obra');
+
+      if (!res.ok) throw new Error('Erro ao criar obra');
+
+      toast.success('Obra criada com sucesso!');
+      setIsModalOpen(false);
+      setFormData({ nome: '', endereco: '', clientId: '' });
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message);
     } finally {
       setIsSaving(false);
     }
   };
 
+  const openDetails = (project: Project) => {
+    setSelectedProject(project);
+    setIsDetailsOpen(true);
+  };
+
   return (
-    <div className="p-4 lg:p-10 h-[calc(100vh-64px)] flex flex-col bg-secondary/10 overflow-y-auto custom-scrollbar">
-
+    <div className="flex flex-col h-full bg-gradient-to-br from-secondary/5 to-background">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tighter">Obras & Projetos</h1>
-          <p className="text-muted-foreground font-medium">Gestão centralizada de ativos e cronogramas</p>
+      <div className="p-4 lg:p-6 border-b bg-background/95 backdrop-blur-sm shrink-0">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Obras</h1>
+            <p className="text-sm text-muted-foreground mt-1">Gerencie todos os projetos ativos</p>
+          </div>
+          <Button onClick={() => setIsModalOpen(true)} className="gap-2">
+            <Plus size={16} />
+            Nova Obra
+          </Button>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="rounded-2xl h-12 px-6 gap-2 font-bold shadow-lg shadow-primary/20">
-          <Plus size={20} /> Nova Obra
-        </Button>
       </div>
 
-      {/* Modern Search */}
-      <div className="relative max-w-xl mb-8">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-        <Input placeholder="Buscar obra por nome ou localização..." className="pl-12 h-14 rounded-2xl bg-background border-border/50 shadow-xl shadow-black/5" />
-      </div>
-
-      {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-10">
-        {projects.map((proj) => (
-          <motion.div
-            key={proj.id}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-          >
-            <Card className="rounded-[40px] border-border/50 shadow-2xl shadow-black/5 bg-background overflow-hidden hover:border-primary/30 transition-all cursor-pointer group">
-              <div className="aspect-[16/10] bg-secondary/40 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/40" />
-                <div className="absolute top-4 right-4">
-                  <Badge className="bg-success text-white border-none h-6 px-3 rounded-full font-bold">ATIVO</Badge>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center">
+                  <Building2 className="w-6 h-6 text-primary" />
                 </div>
-                <div className="absolute bottom-6 left-6 text-white">
-                  <h3 className="text-xl font-bold tracking-tight">{proj.nome}</h3>
-                  <div className="flex items-center gap-1.5 text-xs font-medium opacity-80 mt-1">
-                    <MapPin size={12} />
-                    <span>{proj.endereco || 'Endereço não definido'}</span>
-                  </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total de Obras</p>
+                  <p className="text-2xl font-bold">{projects.length}</p>
                 </div>
               </div>
-              <CardContent className="p-8">
-                <div className="grid grid-cols-3 gap-4 mb-8">
-                  <div className="text-center">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Cliente</p>
-                    <Building2 className="mx-auto text-primary mb-1" size={20} />
-                    <p className="text-[10px] font-bold truncate">{proj.client?.nome || 'N/A'}</p>
-                  </div>
-                  <div className="text-center border-x px-2">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Status</p>
-                    <BarChart3 className="mx-auto text-primary mb-1" size={20} />
-                    <p className="text-sm font-bold">Início</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Atividades</p>
-                    <CheckCircle2 className="mx-auto text-primary mb-1" size={20} />
-                    <p className="text-sm font-bold">0</p>
-                  </div>
-                </div>
+            </CardContent>
+          </Card>
 
-                <Button className="w-full h-12 rounded-2xl bg-secondary hover:bg-secondary/80 text-foreground font-bold group-hover:bg-primary group-hover:text-white transition-all">
-                  Gerenciar Obra
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-md bg-green-500/10 flex items-center justify-center">
+                  <CheckCircle2 className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Ativas</p>
+                  <p className="text-2xl font-bold">
+                    {projects.filter(p => p.status === 'ATIVA').length}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-md bg-blue-500/10 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Clientes</p>
+                  <p className="text-2xl font-bold">{clients.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-md bg-purple-500/10 flex items-center justify-center">
+                  <BarChart3 className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Em Execução</p>
+                  <p className="text-2xl font-bold">
+                    {projects.filter(p => p.status === 'ATIVA').length}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Projects Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <AnimatePresence mode="popLayout">
+            {projects.map((project, index) => (
+              <motion.div
+                key={project.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ delay: index * 0.03 }}
+              >
+                <Card className="hover:shadow-lg transition-all cursor-pointer group">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-lg truncate">{project.nome}</h3>
+                        <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                          <MapPin size={10} />
+                          {project.endereco || 'Endereço não informado'}
+                        </p>
+                      </div>
+                      <Badge variant="secondary">{project.status}</Badge>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Users size={12} />
+                      <span>{project.client?.nome || 'Sem cliente'}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Calendar size={12} />
+                      <span>Criado em {new Date(project.criadoEm).toLocaleDateString('pt-BR')}</span>
+                    </div>
+
+                    <Button
+                      className="w-full gap-2 mt-2"
+                      variant="outline"
+                      onClick={() => openDetails(project)}
+                    >
+                      <BarChart3 size={14} />
+                      Gerenciar
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
       </div>
 
-      {/* Nova Obra Modal */}
+      {/* Create Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="rounded-[2.5rem] p-8 max-w-md border-none shadow-2xl">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold tracking-tighter">Cadastrar Nova Obra</DialogTitle>
+            <DialogTitle>Nova Obra</DialogTitle>
           </DialogHeader>
-          <div className="space-y-6 py-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest ml-1">Nome do Projeto/Obra</label>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Nome da Obra *</label>
               <Input
-                placeholder="Ex: Edifício Horizonte"
                 value={formData.nome}
-                onChange={e => setFormData({ ...formData, nome: e.target.value })}
-                className="h-12 rounded-xl"
+                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                placeholder="Ex: Edifício Horizonte"
+                required
+                className="mt-1"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest ml-1">Endereço</label>
+
+            <div>
+              <label className="text-sm font-medium">Endereço</label>
               <Input
-                placeholder="Ex: Av. Paulista, 1000"
                 value={formData.endereco}
-                onChange={e => setFormData({ ...formData, endereco: e.target.value })}
-                className="h-12 rounded-xl"
+                onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
+                placeholder="Ex: Av. Paulista, 1000"
+                className="mt-1"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest ml-1">Cliente Solicitante</label>
-              <Select value={formData.clientId} onValueChange={id => setFormData({ ...formData, clientId: id })}>
-                <SelectTrigger className="h-12 rounded-xl">
-                  <SelectValue placeholder="Selecione o Cliente" />
+
+            <div>
+              <label className="text-sm font-medium">Cliente *</label>
+              <Select value={formData.clientId} onValueChange={(v) => setFormData({ ...formData, clientId: v })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Selecione um cliente" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  {clients.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                <SelectContent>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.nome}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <DialogFooter className="gap-3 sm:justify-center">
-            <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12 px-6">Cancelar</Button>
-            <Button onClick={handleCreate} disabled={isSaving} className="rounded-xl h-12 px-8 font-bold text-white shadow-lg shadow-primary/20">
-              {isSaving ? 'Salvando...' : 'Criar Projeto'}
-            </Button>
-          </DialogFooter>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? 'Salvando...' : 'Criar Obra'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
+      {/* Details Modal */}
+      <ProjectDetailsModal
+        project={selectedProject}
+        isOpen={isDetailsOpen}
+        onClose={() => setIsDetailsOpen(false)}
+      />
     </div>
   );
 }
-

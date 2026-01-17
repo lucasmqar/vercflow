@@ -1,59 +1,220 @@
-# VERCFLOW - Sistema de Gestão para Construtoras
+# VERCFLOW - Sistema Unificado de Gestão de Obras
 
-Este é o ecossistema VERCFLOW, organizado como um monorepo para garantir consistência e facilidade de desenvolvimento local.
+> Sistema profissional de captura, triagem, priorização e execução de atividades técnicas em obras de construção civil.
 
-## Estrutura do Projeto
+## 📋 Visão Geral
 
-- `apps/web`: Frontend React (Vite + Shadcn UI).
-- `apps/api`: Backend Node.js (Express + Prisma).
-- `packages/shared`: Tipos e contratos compartilhados.
-- `packages/document-engine`: Módulo de geração de PDFs (em breve).
+O VERCFLOW é uma plataforma completa que integra:
+- ✅ **Captura Inteligente**: Registros de campo com esboços técnicos
+- ✅ **Triagem Kanban**: Classificação e priorização de demandas
+- ✅ **Gestão de Atividades**: Planejamento e execução operacional
+- ✅ **Controle de Obras**: Gestão de projetos e clientes
+- ✅ **Equipe & Profissionais**: Gestão de recursos internos e externos
+- ✅ **Dashboards Executivos**: KPIs e métricas para CEO/Gestores
 
-## Requisitos Prévios
+## 🏗️ Arquitetura
 
-- Node.js (v18+)
-- Docker e Docker Compose
-- `npm` ou `bun`
+```
+vercflow/
+├── apps/
+│   ├── api/          # Backend Express + Prisma
+│   └── web/          # Frontend React + Vite
+├── packages/
+│   └── db/           # Prisma Schema & Migrations
+├── VERCFlow/         # Legacy advanced features
+└── docker-compose.yml
+```
 
-## Como Iniciar o Ambiente Local
+## 🚀 Setup Rápido
 
-1. **Configurar Variáveis de Ambiente**:
-   ```bash
-   cp .env.example .env
-   ```
+### 1. Pré-requisitos
+- **Node.js** 18+ e npm
+- **Docker** (recomendado) ou **PostgreSQL** 15+
 
-2. **Subir Infraestrutura (Banco de Dados, Storage, MailHog)**:
-   ```bash
-   npm run docker:up
-   ```
+### 2. Instalação
 
-3. **Instalar Dependências**:
-   ```bash
-   npm install
-   ```
+```bash
+# Clone e instale dependências
+npm install
 
-4. **Preparar o Banco de Dados**:
-   ```bash
-   npm run db:migrate
-   npm run db:seed
-   ```
+# Inicie o PostgreSQL via Docker
+docker-compose up -d
 
-5. **Rodar em Desenvolvimento**:
-   ```bash
-   npm run dev
-   ```
+# Aguarde alguns segundos e então gere o Prisma Client
+npm run db:generate
 
-## Scripts Principais (Raiz)
+# Execute as migrations
+npm run db:migrate
 
-- `dev`: Inicia todos os aplicativos em modo desenvolvimento.
-- `build`: Gera o bundle de produção de todos os módulos.
-- `test`: Executa a suíte de testes em todo o monorepo.
-- `docker:up` / `docker:down`: Gerencia os containers locais.
-- `db:migrate`: Aplica migrações do Prisma.
-- `db:seed`: Popula o banco com dados de teste coerentes.
+# Popule o banco com dados de teste
+npm run db:seed
 
-## Identidade Visual
+# Inicie o ambiente de desenvolvimento
+npm run dev
+```
 
-- **Logo**: Ícone estilizado de um "V" estrutural (Arquitetura Origami).
-- **Cor de Destaque**: Vermelho Bordo (#800000).
-- **Estética**: Glassmorphism, micro-animações e foco em performance.
+A aplicação estará disponível em:
+- **Frontend**: http://localhost:5173
+- **API**: http://localhost:4000
+- **Adminer (DB GUI)**: http://localhost:8080
+
+### 3. Login
+
+Usuários de teste criados pelo seed:
+
+| Email | Senha | Role |
+|-------|-------|------|
+| `lucas@vercflow.com` | `ceo123` | CEO |
+| `marcos@vercflow.com` | `gestor123` | GESTOR |
+| `ana@vercflow.com` | `triagem123` | TRIAGISTA |
+| `joaquim@vercflow.com` | `joaquim123` | PROFISSIONAL_INTERNO |
+
+## 📦 Scripts Disponíveis
+
+### Desenvolvimento
+```bash
+npm run dev              # Inicia API e Web em paralelo
+npm run dev -w @vercflow/web   # Apenas Frontend
+npm run dev -w @vercflow/api   # Apenas Backend
+```
+
+### Database
+```bash
+npm run db:generate      # Gera Prisma Client
+npm run db:migrate       # Cria/atualiza schema no DB
+npm run db:seed          # Popula dados de teste
+npm run db:studio        # Abre Prisma Studio (GUI)
+```
+
+### Docker
+```bash
+npm run docker:up        # Sobe containers (Postgres)
+npm run docker:down      # Para containers
+```
+
+## 🗄️ Banco de Datos
+
+### Modelos Principais
+
+- **User**: Usuários do sistema (ADMIN, CEO, GESTOR, TRIAGISTA, OPERACIONAL, etc.)
+- **Client**: Clientes/construtoras
+- **Project**: Obras (projetos de construção)
+- **Record**: Registros de campo (texto, foto, esboço)
+- **Sketch**: Esboços técnicos (canvas Fabric.js)
+- **Activity**: Atividades operacionais de obra
+- **Professional**: Profissionais internos e externos
+- **Discipline**: Disciplinas de projeto (Arquitetura, Estrutura, etc.)
+- **Task**: Tarefas dentro de disciplinas
+- **Request**: Solicitações e requisições
+
+### Enums
+
+Todos os status, tipos e prioridades são controlados por **Prisma Enums**:
+- `UserRole`, `RecordStatus`, `RecordType`, `Priority`, `ActivityStatus`, `ProfessionalTipo`
+
+## 🎨 Frontend
+
+### Tecnologias
+- **React 18** + **TypeScript**
+- **Vite** (build tool)
+- **TailwindCSS** + **shadcn/ui**
+- **Framer Motion** (animações)
+- **Zustand** (state management)
+- **Fabric.js** (sketch canvas)
+- **date-fns** (formatação de datas)
+
+### Componentes Principais
+
+- **DataView**: Componente genérico para Table/Grid/Kanban
+- **SketchCanvas**: Canvas interativo para esboços técnicos
+- **Dashboards**: Especializados por role (CEO, Gestor, Triagista)
+
+### RBAC (Role-Based Access Control)
+
+A navegação é filtrada automaticamente com base no `user.role`:
+- **CEO/ADMIN**: Acesso total
+- **GESTOR**: Captura, Triagem, Atividades, Obras, Dashboard, Clientes
+- **TRIAGISTA**: Captura, Triagem
+- **OPERACIONAL/PROFISSIONAL_INTERNO**: Captura, Atividades
+
+## 🔧 Backend
+
+### Tecnologias
+- **Express.js**
+- **Prisma ORM**
+- **PostgreSQL**
+- **TypeScript**
+
+### Endpoints Principais
+
+```
+POST   /api/auth/login
+GET    /api/records
+POST   /api/records
+POST   /api/records/:id/sketch
+POST   /api/records/:id/convert
+GET    /api/activities
+GET    /api/projects
+POST   /api/projects
+GET    /api/clients
+POST   /api/clients
+GET    /api/professionals
+POST   /api/professionals
+GET    /api/dashboard/ceo
+```
+
+## 📝 Fluxo de Trabalho
+
+1. **Captura** → Campo registra demanda (texto/foto/esboço)
+2. **Triagem** → Triagista classifica e prioriza
+3. **Formalização** → Converte registro em Atividade
+4. **Execução** → Profissional recebe e executa
+5. **Monitoramento** → Gestor/CEO acompanham dashboards
+
+## 🎯 Roadmap
+
+- [x] Infraestrutura & Monorepo
+- [x] Database unificado (Postgres + Enums)
+- [x] Seed robusto com dados de teste
+- [x] RBAC no frontend
+- [x] DataView genérico (Table/Grid/Kanban)
+- [ ] Geração de PDFs (Ficha de Triagem, Ordem de Serviço)
+- [ ] Visão Calendar para atividades
+- [ ] Notificações em tempo real
+- [ ] Upload de imagens/anexos
+- [ ] Assinatura digital de documentos
+
+## 📚 Documentação
+
+- **Artifacts**: `.gemini/antigravity/brain/[conversation-id]/`
+  - `task.md`: Checklist de tarefas
+  - `implementation_plan.md`: Plano técnico de implementação
+  - `walkthrough.md`: Resumo de mudanças e testes
+
+## 🐛 Troubleshooting
+
+### Erro: "Module '@prisma/client' has no exported member..."
+```bash
+npm run db:generate
+```
+
+### Erro: "Connection refused" ao acessar Postgres
+```bash
+docker-compose up -d
+# Aguarde 10 segundos
+npm run db:migrate
+```
+
+### Frontend não conecta ao backend
+Verifique se `apps/web/.env` contém:
+```
+VITE_API_BASE_URL=http://localhost:4000
+```
+
+## 📄 Licença
+
+Propriedade de VERCFLOW. Todos os direitos reservados.
+
+---
+
+**Desenvolvido com 💙 para revolucionar a gestão de obras.**
