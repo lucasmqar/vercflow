@@ -1,0 +1,257 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Roles for User (String-based for SQLite)
+// ADMIN, CEO, GESTOR, TRIAGISTA, OPERACIONAL, PROFISSIONAL_INTERNO, PROFISSIONAL_EXTERNO, CLIENTE_VIEW
+
+model User {
+  id              String           @id @default(cuid())
+  nome            String
+  email           String           @unique
+  senhaHash       String
+  role            String           @default("OPERACIONAL")
+  ativo           Boolean          @default(true)
+  criadoEm        DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  logs            AuditLog[]
+  records         Record[]
+  professional    Professional?
+  raciAssignments RaciAssignment[]
+  comments        Comment[]
+  requestsCreated Request[]        @relation("UserRequestsCreated")
+  requestsManaged Request[]        @relation("UserRequestsManaged")
+  recordsAsResponsavel Record[]     @relation("ResponsavelValores")
+}
+
+model Client {
+  id        String    @id @default(cuid())
+  nome      String
+  documento String?
+  contatos  String?
+  criadoEm  DateTime  @default(now())
+  projects  Project[]
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  nome        String
+  endereco    String?
+  status      String        @default("ATIVA") // ATIVA, CONCLUIDA, EM_PAUSA, CANCELADA
+  criadoEm    DateTime      @default(now())
+  clientId    String
+  client      Client        @relation(fields: [clientId], references: [id])
+  activities  Activity[]
+  records     Record[]
+  disciplines Discipline[]
+  requests    Request[]
+}
+
+model Discipline {
+  id            String           @id @default(cuid())
+  projectId     String
+  project       Project          @relation(fields: [projectId], references: [id])
+  name          String
+  category      String
+  subcategory   String?
+  description   String?
+  status        String           @default("todo")
+  currentPhase  String?
+  icon          String?
+  color         String?
+  assignedToId  String?
+  assignedTo    Professional?    @relation(fields: [assignedToId], references: [id])
+  tasks         Task[]
+  requests      Request[]
+  criadoEm      DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model Task {
+  id           String        @id @default(cuid())
+  disciplineId String
+  discipline   Discipline    @relation(fields: [disciplineId], references: [id])
+  title        String
+  description  String?
+  status       String        @default("todo")
+  priority     String        @default("MEDIA") // BAIXA, MEDIA, ALTA, CRITICA
+  dueDate      DateTime?
+  completedAt  DateTime?
+  assignedToId String?
+  assignedTo   Professional? @relation(fields: [assignedToId], references: [id])
+  isTemplate   Boolean       @default(false)
+  criadoEm     DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Request {
+  id                 String        @id @default(cuid())
+  projectId          String
+  project            Project       @relation(fields: [projectId], references: [id])
+  disciplineId       String?
+  discipline         Discipline?   @relation(fields: [disciplineId], references: [id])
+  title              String
+  description        String
+  type               String
+  status             String        @default("open")
+  priority           String        @default("MEDIA")
+  requestedById      String
+  requestedBy        User          @relation("UserRequestsCreated", fields: [requestedById], references: [id])
+  assignedToId       String?
+  assignedTo         Professional? @relation(fields: [assignedToId], references: [id])
+  dueDate            DateTime?
+  cancellationReason String?
+  cancelledById      String?
+  cancelledBy        User?         @relation("UserRequestsManaged", fields: [cancelledById], references: [id])
+  cancelledAt        DateTime?
+  criadoEm           DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
+
+model Record {
+  id                    String       @id @default(cuid())
+  refCodigo             String       @unique @default(cuid())
+  authorId              String
+  projectId             String?
+  clientId              String?
+  texto                 String?      // Legacy compatibility
+  type                 String       @default("TEXTO") // TEXTO, FOTO, ESBOCO, CHECKLIST
+  status               String       @default("REGISTRO") // REGISTRO, TRIAGEM, CLASSIFICACAO, ORDENACAO, VALIDACAO, DISTRIBUICAO, CONVERTIDO, ARQUIVADO
+  prioridade           String       @default("MEDIA")
+  natureza             String?      // Ex: ORCAMENTO, TECNICO, FINANCEIRO
+  responsavelValoresId String?
+  responsavelValores   User?        @relation("ResponsavelValores", fields: [responsavelValoresId], references: [id])
+  parentId             String?
+  parent               Record?      @relation("RecordRevisions", fields: [parentId], references: [id])
+  revisions            Record[]     @relation("RecordRevisions")
+  isInicial            Boolean      @default(true)
+  criadoEm              DateTime     @default(now())
+  project               Project?     @relation(fields: [projectId], references: [id])
+  author                User         @relation(fields: [authorId], references: [id])
+  items                 RecordItem[]
+  activities            Activity[]
+  documents             Document[]
+  sketch                Sketch?
+}
+
+model RecordItem {
+  id        String     @id @default(cuid())
+  recordId  String
+  record    Record     @relation(fields: [recordId], references: [id])
+  type      String     @default("TEXTO") // TEXTO, FOTO, ESBOCO, CHECKLIST
+  content   String     // Text, JSON do esboço, URL da imagem ou JSON do checklist
+  order     Int        @default(0)
+  criadoEm  DateTime   @default(now())
+}
+
+model Sketch {
+  id       String   @id @default(cuid())
+  recordId String   @unique
+  record   Record   @relation(fields: [recordId], references: [id])
+  dataJson String
+  imageUrl String?
+  criadoEm DateTime @default(now())
+}
+
+model Document {
+  id       String   @id @default(cuid())
+  recordId String
+  record   Record   @relation(fields: [recordId], references: [id])
+  tipo     String   @default("ESBOCO_TIMBRADO")
+  pdfUrl   String?
+  status   String   @default("RASCUNHO")
+  versao   Int      @default(1)
+  hash     String?
+  criadoEm DateTime @default(now())
+}
+
+model Activity {
+  id          String               @id @default(cuid())
+  recordId    String?
+  record      Record?              @relation(fields: [recordId], references: [id])
+  projectId   String
+  project     Project              @relation(fields: [projectId], references: [id])
+  titulo      String
+  descricao   String?
+  status      String               @default("PLANEJADO") // PLANEJADO, EM_EXECUCAO, CONCLUIDO, BLOQUEADO, CANCELADO
+  prioridade  String               @default("MEDIA")
+  dataInicio  DateTime?
+  dataFim     DateTime?
+  criadoEm    DateTime             @default(now())
+  assignments ActivityAssignment[]
+}
+
+model Professional {
+  id              String               @id @default(cuid())
+  nome            String
+  tipo            String               @default("EXTERNO_MAO_OBRA") 
+  documento       String?
+  contatos        String?
+  userId          String?              @unique
+  user            User?                @relation(fields: [userId], references: [id])
+  assignments     ActivityAssignment[]
+  disciplines     Discipline[]
+  tasks           Task[]
+  requestsManaged Request[]
+  categories      ProfessionalCategory[]
+  criadoEm        DateTime               @default(now())
+}
+
+model ProfessionalCategory {
+  id             String       @id @default(cuid())
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  category       String       // Ex: levantamento, eletrico, etc (from reference)
+  criadoEm       DateTime     @default(now())
+
+  @@unique([professionalId, category])
+}
+
+model ActivityAssignment {
+  id             String       @id @default(cuid())
+  activityId     String
+  activity       Activity     @relation(fields: [activityId], references: [id])
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  valorPrevisto  Float
+  valorReal      Float?
+  criadoEm       DateTime     @default(now())
+}
+
+model RaciAssignment {
+  id         String     @id @default(cuid())
+  entityType String
+  entityId   String
+  userId     String
+  user       User       @relation(fields: [userId], references: [id])
+  role       String     // RESPONSIBLE, ACCOUNTABLE, CONSULTED, INFORMED
+  criadoEm   DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model Comment {
+  id         String     @id @default(cuid())
+  entityType String
+  entityId   String
+  userId     String
+  user       User       @relation(fields: [userId], references: [id])
+  content    String
+  criadoEm   DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  tipoEvento  String
+  entidade    String
+  entidadeId  String
+  payloadJson String?
+  criadoEm    DateTime @default(now())
+}
