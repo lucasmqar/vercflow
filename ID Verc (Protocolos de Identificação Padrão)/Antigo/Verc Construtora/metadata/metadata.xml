@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+        <rdf:Description rdf:about="" xmlns="http://namespace.corel.com/Cdr/metadata">
+            <FontsUsed>
+                <rdf:Bag>
+                    <rdf:li>Arial</rdf:li>
+                    <rdf:li>Arial Black</rdf:li>
+                    <rdf:li>Arial Unicode MS</rdf:li>
+                    <rdf:li>Wingdings</rdf:li>
+                </rdf:Bag>
+            </FontsUsed>
+            <CoreVersion>1500</CoreVersion>
+            <Keywords></Keywords>
+            <Notes></Notes>
+            <Title></Title>
+            <Author>Usuário</Author>
+            <Subject></Subject>
+            <Copyright></Copyright>
+            <Revision>1</Revision>
+            <LastAuthor>Usuário</LastAuthor>
+            <Sided></Sided>
+            <Folds></Folds>
+            <Type></Type>
+            <Industry></Industry>
+            <ProductId>0</ProductId>
+            <ProductName>CorelDRAW X5</ProductName>
+            <AppVersion>1500</AppVersion>
+            <BuildNumber>486</BuildNumber>
+            <Platform>0</Platform>
+            <Locale>1046</Locale>
+            <RiffCompressionRatio>55.371914444847249</RiffCompressionRatio>
+            <EmbeddedOleObjects>0</EmbeddedOleObjects>
+            <FontsEmbedded>1</FontsEmbedded>
+            <Language>1046</Language>
+            <DocID>a637f80f-d6a7-476d-90ac-f94620455427</DocID>
+            <NumPages>1</NumPages>
+            <NumLayers>1</NumLayers>
+            <PageWidth>2970000</PageWidth>
+            <PageHeight>2100000</PageHeight>
+            <PageDimensions>297 x 210 mm</PageDimensions>
+            <PageSizeName>A4</PageSizeName>
+            <PageOrientation>2</PageOrientation>
+            <ResolutionX>300</ResolutionX>
+            <ResolutionY>300</ResolutionY>
+            <Effects>
+                <Perspective>0</Perspective>
+                <Envelope>0</Envelope>
+                <DropShadow>0</DropShadow>
+                <Blend>0</Blend>
+                <Extrude>0</Extrude>
+                <Bevel>0</Bevel>
+                <Contour>0</Contour>
+                <PowerClip>0</PowerClip>
+                <Clone>0</Clone>
+                <Lens>0</Lens>
+                <Transparency>0</Transparency>
+                <Distortion>0</Distortion>
+            </Effects>
+            <Objects>
+                <Total>27</Total>
+                <Group>7</Group>
+                <Curve>23</Curve>
+                <Rect>0</Rect>
+                <Bitmap>0</Bitmap>
+                <Ellipse>0</Ellipse>
+                <MeshFill>0</MeshFill>
+                <Polygon>0</Polygon>
+                <OLE>
+                    <Linked>0</Linked>
+                    <Embedded>0</Embedded>
+                </OLE>
+                <Guideline>8</Guideline>
+                <Symbol>
+                    <Definitions>0</Definitions>
+                    <Instances>0</Instances>
+                </Symbol>
+                <Text>4</Text>
+            </Objects>
+            <CurveInfo>
+                <Subpaths>83</Subpaths>
+                <Nodes>1898</Nodes>
+                <MaxNodes>965</MaxNodes>
+            </CurveInfo>
+            <BitmapInfo>
+                <Types>
+                    <rdf:Bag />
+                </Types>
+                <LinkPaths>
+                    <rdf:Bag />
+                </LinkPaths>
+            </BitmapInfo>
+            <TextInfo>
+                <ParagraphText>0</ParagraphText>
+                <ArtisticText>4</ArtisticText>
+                <Frames>0</Frames>
+                <EmptyFrames>0</EmptyFrames>
+                <Paragraphs>0</Paragraphs>
+                <Lines>5</Lines>
+                <Words>16</Words>
+                <Characters>81</Characters>
+                <Languages>
+                    <rdf:Bag>
+                        <rdf:li>1046</rdf:li>
+                    </rdf:Bag>
+                </Languages>
+            </TextInfo>
+            <Styles>
+                <rdf:Bag>
+                    <rdf:li>Gráfico padrão</rdf:li>
+                    <rdf:li>Texto artístico padrão</rdf:li>
+                </rdf:Bag>
+            </Styles>
+            <Fills>
+                <None>8</None>
+                <Uniform>19</Uniform>
+                <Fountain>0</Fountain>
+                <Texture>0</Texture>
+                <Postscript>0</Postscript>
+                <Hatch>0</Hatch>
+                <Pattern>0</Pattern>
+                <Colors>
+                    <rdf:Bag>
+                        <rdf:li>CMYK</rdf:li>
+                        <rdf:li>CMYK255</rdf:li>
+                    </rdf:Bag>
+                </Colors>
+                <Palettes>
+                    <rdf:Bag>
+                        <rdf:li>Paleta CMYK padrão</rdf:li>
+                    </rdf:Bag>
+                </Palettes>
+                <SpotColors>
+                    <rdf:Bag />
+                </SpotColors>
+            </Fills>
+            <Outlines>
+                <None>19</None>
+                <Solid>8</Solid>
+                <Dashed>0</Dashed>
+                <Enhanced>0</Enhanced>
+                <BehindFill>0</BehindFill>
+                <ScalePen>0</ScalePen>
+                <Hairline>0</Hairline>
+                <Colors>
+                    <rdf:Bag>
+                        <rdf:li>CMYK</rdf:li>
+                    </rdf:Bag>
+                </Colors>
+                <Palettes>
+                    <rdf:Bag />
+                </Palettes>
+                <SpotColors>
+                    <rdf:Bag />
+                </SpotColors>
+            </Outlines>
+            <ClipRect left="-637495" top="268521" right="417362" bottom="-385379" />
+            <Color>
+                <Profiles>
+                    <Rgb>
+                        <Name>sRGB IEC61966-2.1</Name>
+                    </Rgb>
+                    <Cmyk>
+                        <Name>U.S. Web Coated (SWOP) v2</Name>
+                    </Cmyk>
+                    <Grayscale>
+                        <Name>Dot Gain 20%</Name>
+                    </Grayscale>
+                </Profiles>
+            </Color>
+            <colorMode>1</colorMode>
+            <renderingIntent>1</renderingIntent>
+            <Properties />
+        </rdf:Description>
+    </rdf:RDF>
+</x:xmpmeta>
