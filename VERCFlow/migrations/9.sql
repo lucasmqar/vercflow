@@ -1,3 +1,0 @@
-
-ALTER TABLE tasks ADD COLUMN assigned_to INTEGER;
-ALTER TABLE tasks ADD COLUMN is_template BOOLEAN DEFAULT 0;
