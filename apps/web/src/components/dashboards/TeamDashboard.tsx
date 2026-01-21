@@ -32,8 +32,10 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { DashboardTab } from '@/types';
 
-export function TeamDashboard() {
+export function TeamDashboard({ onTabChange }: { onTabChange: (tab: DashboardTab) => void }) {
     const [activeType, setActiveType] = useState<'ALL' | 'INTERNO' | 'EXTERNO'>('ALL');
     const [professionals, setProfessionals] = useState<any[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -271,5 +273,3 @@ export function TeamDashboard() {
         </div>
     );
 }
-
-import { cn } from '@/lib/utils';

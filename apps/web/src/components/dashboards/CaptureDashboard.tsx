@@ -8,7 +8,6 @@ import {
     Clock,
     ChevronRight,
     TrendingUp,
-    MessageSquare,
     Plus,
     Layers,
     Zap
@@ -20,9 +19,9 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { RegistroModal } from '@/components/shared/RegistroModal';
-import { Record } from '@/types';
+import { Record, DashboardTab } from '@/types';
 
-export function CaptureDashboard() {
+export function CaptureDashboard({ onTabChange }: { onTabChange: (tab: DashboardTab) => void }) {
     const { user } = useAuth();
     const { registros, fetchRegistros } = useRegistros();
     const [isRegistroModalOpen, setIsRegistroModalOpen] = useState(false);
@@ -35,7 +34,7 @@ export function CaptureDashboard() {
     const recentRegistros = registros.slice(0, 8);
 
     return (
-        <div className="flex flex-col min-h-full bg-background/50 overflow-y-auto scrollbar-thin">
+        <div className="flex flex-col min-h-full bg-background/50 overflow-y-auto scrollbar-none pb-20">
 
             {/* Header / Hero Section - Technical Hub */}
             <div className="max-w-6xl mx-auto w-full px-8 pt-12 pb-8">
@@ -123,8 +122,13 @@ export function CaptureDashboard() {
                         <span className="font-mono text-[10px] font-black text-primary/60 uppercase tracking-[0.3em] mb-1">Operational Logs</span>
                         <h2 className="text-xl font-black tracking-tight text-foreground/80">Monitoramento em Tempo Real</h2>
                     </div>
-                    <Button variant="ghost" size="sm" className="rounded-lg text-[10px] font-black uppercase tracking-widest gap-2 text-muted-foreground hover:text-primary hover:bg-primary/5 border border-transparent hover:border-primary/20 transition-all px-4">
-                        Database History <ChevronRight size={14} />
+                    <Button
+                        onClick={() => onTabChange('triagem')}
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-lg text-[10px] font-black uppercase tracking-widest gap-2 text-muted-foreground hover:text-primary hover:bg-primary/5 border border-transparent hover:border-primary/20 transition-all px-4"
+                    >
+                        Ir para Triagem <ChevronRight size={14} />
                     </Button>
                 </div>
 
@@ -136,7 +140,7 @@ export function CaptureDashboard() {
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.2 + (idx * 0.04) }}
-                                className="glass-card p-4 rounded-xl border border-border/40 flex items-center justify-between group cursor-pointer transition-all duration-300 hover:translate-x-1 hover:border-primary/20 shadow-none"
+                                className="glass-card p-4 rounded-xl border border-border/40 flex items-center justify-between group cursor-pointer transition-all duration-300 hover:translate-x-1 hover:border-primary/20 shadow-none outline-none"
                             >
                                 <div className="flex items-center gap-5 min-w-0">
                                     <div className={cn(
@@ -166,7 +170,7 @@ export function CaptureDashboard() {
                                         <Badge className={cn(
                                             "text-[9px] font-black uppercase tracking-widest h-5 rounded-md border px-2",
                                             reg.status === 'TRIAGEM' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" :
-                                                reg.status === 'CONCLUIDO' ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" :
+                                                reg.status === 'CONVERTIDO' ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" :
                                                     "bg-primary/5 text-primary border-primary/20"
                                         )}>
                                             {reg.status}

@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { useAuth } from "./hooks/useAuth";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import { ConfiguracaoInicialObra } from "./pages/ConfiguracaoInicialObra";
+import { ObraDetailPage } from "./pages/ObraDetailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +27,14 @@ const App = () => {
               <Route
                 path="/login"
                 element={!isAuthenticated ? <Login /> : <Navigate to="/" />}
+              />
+              <Route
+                path="/obras/:id"
+                element={isAuthenticated ? <ObraDetailPage /> : <Navigate to="/login" />}
+              />
+              <Route
+                path="/obras/:id/configurar"
+                element={isAuthenticated ? <ConfiguracaoInicialObra /> : <Navigate to="/login" />}
               />
               <Route
                 path="/"

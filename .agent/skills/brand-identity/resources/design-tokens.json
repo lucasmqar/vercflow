@@ -1,0 +1,54 @@
+{
+    "meta": {
+        "brand_name": "VERCFLOW",
+        "description": "Core design tokens for UI implementation, synchronized with apps/web/src/index.css"
+    },
+    "colors": {
+        "primary": {
+            "DEFAULT": "#18181B",
+            "hover": "#27272A",
+            "foreground": "#F8FAFC"
+        },
+        "secondary": {
+            "DEFAULT": "#F4F4F5",
+            "foreground": "#18181B"
+        },
+        "background": "#FFFFFF",
+        "foreground": "#09090B",
+        "muted": "#F4F4F5",
+        "accent": "#F4F4F5",
+        "destructive": "#EF4444",
+        "success": "#10B981",
+        "blueprint": {
+            "primary": "#3B82F6",
+            "background": "#020617"
+        }
+    },
+    "typography": {
+        "font_family_headings": [
+            "Inter",
+            "sans-serif"
+        ],
+        "font_family_body": [
+            "Inter",
+            "sans-serif"
+        ],
+        "font_family_mono": [
+            "Geist Mono",
+            "monospace"
+        ],
+        "font_weight_bold": "700",
+        "font_weight_normal": "400",
+        "base_size": "14px",
+        "letter_spacing": "-0.011em"
+    },
+    "ui": {
+        "border_radius_default": "0.5rem",
+        "border_radius_small": "0.25rem",
+        "spacing_base_unit": "4px",
+        "glassmorphism": {
+            "blur": "8px",
+            "opacity": "0.5"
+        }
+    }
+}

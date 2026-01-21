@@ -25,6 +25,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { getApiUrl } from '@/lib/api';
+import { DashboardTab } from '@/types';
 
 interface DashboardKPIs {
     kpis: {
@@ -36,7 +37,7 @@ interface DashboardKPIs {
     topProjects: any[];
 }
 
-export function CEODashboard() {
+export function CEODashboard({ onTabChange }: { onTabChange: (tab: DashboardTab) => void }) {
     const [data, setData] = useState<DashboardKPIs | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -102,7 +103,7 @@ export function CEODashboard() {
                 {/* Primary KPIs - 4 Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                        <Card className="border-l-4 border-l-blue-500 hover:shadow-xl transition-all">
+                        <Card onClick={() => onTabChange('financeiro')} className="border-l-4 border-l-blue-500 hover:shadow-xl transition-all cursor-pointer">
                             <CardContent className="pt-6">
                                 <div className="flex items-start justify-between">
                                     <div className="space-y-2">
@@ -124,7 +125,7 @@ export function CEODashboard() {
                     </motion.div>
 
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                        <Card className="border-l-4 border-l-green-500 hover:shadow-xl transition-all">
+                        <Card onClick={() => onTabChange('obras')} className="border-l-4 border-l-green-500 hover:shadow-xl transition-all cursor-pointer">
                             <CardContent className="pt-6">
                                 <div className="flex items-start justify-between">
                                     <div className="space-y-2">
@@ -144,7 +145,7 @@ export function CEODashboard() {
                     </motion.div>
 
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                        <Card className="border-l-4 border-l-purple-500 hover:shadow-xl transition-all">
+                        <Card onClick={() => onTabChange('equipe')} className="border-l-4 border-l-purple-500 hover:shadow-xl transition-all cursor-pointer">
                             <CardContent className="pt-6">
                                 <div className="flex items-start justify-between">
                                     <div className="space-y-2">
@@ -164,7 +165,7 @@ export function CEODashboard() {
                     </motion.div>
 
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-                        <Card className="border-l-4 border-l-orange-500 hover:shadow-xl transition-all">
+                        <Card onClick={() => onTabChange('atividades')} className="border-l-4 border-l-orange-500 hover:shadow-xl transition-all cursor-pointer">
                             <CardContent className="pt-6">
                                 <div className="flex items-start justify-between">
                                     <div className="space-y-2">

@@ -43,17 +43,34 @@ export interface User {
 export interface Client {
   id: string;
   nome: string;
+  tipo: string;
   documento?: string;
+  rgIe?: string;
   contatos?: string;
+  enderecoCompleto?: string;
+  representacao?: string;
+  configOrgaos?: string;
+  criadoEm: string;
 }
 
 export interface Project {
   id: string;
+  codigoInterno?: string;
   nome: string;
   endereco?: string;
-  status: string;
+  tipoObra?: string;
+  dadosLote?: string;
+  areaConstruida?: number;
+  pavimentos?: number;
+  exigenciasAprovacao?: string;
+  status: 'ORCAMENTO' | 'NEGOCIACAO' | 'FECHADA' | 'ATIVA' | 'CONCLUIDA' | 'EM_PAUSA' | 'CANCELADA';
+  categoria?: 'COMERCIAL' | 'INDUSTRIAL' | 'RESIDENCIAL' | 'HOSPITALAR' | 'CONDOMINIO' | 'EDIFICIO';
   clientId: string;
   client?: Client;
+  mestreObraId?: string;
+  engenheiroId?: string;
+  criadoEm: string;
+  updatedAt: string;
   _count?: {
     activities: number;
     records: number;
@@ -110,6 +127,19 @@ export interface Document {
   pdfUrl?: string;
   status: string;
   versao: number;
+  fees?: Fee[];
+  criadoEm: string;
+}
+
+export interface Fee {
+  id: string;
+  projectId: string;
+  documentId?: string;
+  nome: string;
+  valor: number;
+  vencimento?: string;
+  status: 'PENDENTE' | 'PAGO' | 'CANCELADO';
+  anexoUrl?: string;
   criadoEm: string;
 }
 
@@ -125,6 +155,8 @@ export interface Activity {
   prioridade: Priority;
   dataInicio?: string;
   dataFim?: string;
+  disciplineId?: string;
+  discipline?: Discipline;
   assignments?: ActivityAssignment[];
   criadoEm: string;
 }
@@ -160,13 +192,16 @@ export interface ActivityAssignment {
 export interface Discipline {
   id: string;
   projectId: string;
+  codigo: string;
   name: string;
   category: string;
   status: string;
-  currentPhase?: string;
-  icon?: string;
-  color?: string;
-  tasks?: Task[];
+  fase?: string;
+  responsibleId?: string;
+  responsible?: Professional;
+  previsao?: string;
+  entregaReal?: string;
+  versaoAtual?: string;
 }
 
 export interface Task {
@@ -179,6 +214,7 @@ export interface Task {
 }
 
 export type DashboardTab =
+  | 'home'
   | 'captura'
   | 'triagem'
   | 'atividades'
@@ -187,4 +223,7 @@ export type DashboardTab =
   | 'dashboard'
   | 'config'
   | 'clientes'
-  | 'disciplinas';
+  | 'disciplinas'
+  | 'financeiro'
+  | 'estoque'
+  | 'gestao-projetos';

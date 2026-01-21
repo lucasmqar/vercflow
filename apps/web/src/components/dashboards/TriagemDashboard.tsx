@@ -33,7 +33,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useRegistros } from '@/hooks/useRegistros';
-import { Record, Professional, Project, RecordItem } from '@/types';
+import { Record, Professional, Project, RecordItem, DashboardTab } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -66,7 +66,7 @@ interface ActivityForm {
 
 type ViewMode = 'kanban' | 'list' | 'grid';
 
-export function TriagemDashboard() {
+export function TriagemDashboard({ onTabChange }: { onTabChange: (tab: DashboardTab) => void }) {
   const { registros, fetchRegistros, updateRegistroStatus, deleteRegistro } = useRegistros();
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return (localStorage.getItem('triagem-view-mode') as ViewMode) || 'kanban';
@@ -196,52 +196,53 @@ export function TriagemDashboard() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-background/50 overflow-hidden font-sans">
-      {/* Refined Header */}
-      <div className="px-6 py-4 border-b border-border/40 bg-background/5 backdrop-blur-md flex items-center justify-between shrink-0">
-        <div>
-          <h1 className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Search size={18} className="text-primary/70" />
-            Triagem & Validação Técnica
-          </h1>
-          <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider opacity-60">Workflow de Desdobramento</p>
-        </div>
-
-        <div className="flex gap-3 items-center">
-          {/* View Mode Toggle - Technical Style */}
-          <div className="flex gap-1 bg-muted/20 rounded-lg p-1 border border-border/40">
-            {[
-              { id: 'kanban', icon: Columns, label: 'Kanban' },
-              { id: 'list', icon: List, label: 'Lista' },
-              { id: 'grid', icon: LayoutGrid, label: 'Grid' },
-            ].map(mode => (
-              <button
-                key={mode.id}
-                onClick={() => {
-                  setViewMode(mode.id as ViewMode);
-                  localStorage.setItem('triagem-view-mode', mode.id);
-                }}
-                className={cn(
-                  "h-8 px-3 rounded-md flex items-center gap-2 text-xs font-semibold transition-all duration-200",
-                  viewMode === mode.id
-                    ? "bg-primary text-primary-foreground technical-shadow"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                )}
-              >
-                <mode.icon size={14} />
-                <span className="hidden lg:inline">{mode.label}</span>
-              </button>
-            ))}
+    <div className="flex flex-col h-full bg-gradient-to-br from-secondary/5 to-background overflow-hidden font-sans">
+      {/* Standard Header */}
+      <div className="p-4 lg:p-6 border-b bg-background/95 backdrop-blur-sm shrink-0">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Triagem Técnica</h1>
+            <p className="text-sm text-muted-foreground mt-1 uppercase tracking-widest font-medium opacity-60">Classificação e Distribuição de Registros</p>
           </div>
+          <div className="flex items-center gap-4">
+            {/* View Mode Toggle */}
+            <div className="flex gap-1 bg-muted/20 rounded-lg p-1 border border-border/40">
+              {[
+                { id: 'kanban', icon: Columns, label: 'Kanban' },
+                { id: 'list', icon: List, label: 'Lista' },
+                { id: 'grid', icon: LayoutGrid, label: 'Grid' },
+              ].map(mode => (
+                <button
+                  key={mode.id}
+                  onClick={() => {
+                    setViewMode(mode.id as ViewMode);
+                    localStorage.setItem('triagem-view-mode', mode.id);
+                  }}
+                  className={cn(
+                    "h-8 px-3 rounded-md flex items-center gap-2 text-xs font-semibold transition-all duration-200",
+                    viewMode === mode.id
+                      ? "bg-primary text-primary-foreground technical-shadow"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  )}
+                >
+                  <mode.icon size={14} />
+                  <span className="hidden lg:inline">{mode.label}</span>
+                </button>
+              ))}
+            </div>
 
-          <div className="w-[1px] h-6 bg-border/40 mx-1" />
+            <div className="w-[1px] h-6 bg-border/40 mx-1" />
 
-          <Button variant="outline" className="h-9 rounded-md text-xs font-bold gap-2 px-3 border-border/60 hover:bg-muted/50">
-            <History size={15} /> <span className="hidden sm:inline">Histórico</span>
-          </Button>
-          <Button className="h-9 rounded-md text-xs font-bold gap-2 px-4 shadow-glow hover:translate-y-[-1px] transition-all">
-            <Plus size={16} /> Novo Registro
-          </Button>
+            <Button variant="outline" className="h-10 rounded-xl text-xs font-bold gap-2 px-4 shadow-none">
+              <History size={15} /> Histórico
+            </Button>
+            <Button
+              onClick={() => onTabChange('captura')}
+              className="h-10 rounded-xl text-xs font-black uppercase tracking-widest px-6 shadow-glow"
+            >
+              <Plus size={16} /> Novo Registro
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -267,7 +268,7 @@ export function TriagemDashboard() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin">
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-none">
             {recordsWithHierarchy.filter(r => r.isInicial).map(reg => (
               <div key={reg.id} className="space-y-1">
                 <div
@@ -337,7 +338,7 @@ export function TriagemDashboard() {
                       <Icon size={16} className={cn("opacity-40", col.color)} />
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin">
+                    <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-none">
                       <AnimatePresence mode="popLayout">
                         {items.map((record) => (
                           <motion.div
@@ -354,7 +355,7 @@ export function TriagemDashboard() {
                               )}
                               onClick={() => openDetails(record)}
                             >
-                              <CardContent className="p-4">
+                              <CardContent className="p-4 outline-none">
                                 <div className="flex items-center justify-between mb-3">
                                   <div className="flex items-center gap-1.5">
                                     <div className={cn(
@@ -512,7 +513,7 @@ export function TriagemDashboard() {
 
           {/* Grid View - Technical Cards */}
           {viewMode === 'grid' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 h-full overflow-y-auto pb-4 scrollbar-thin">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 h-full overflow-y-auto pb-4 scrollbar-none">
               {registros.map((record) => {
                 const statusConfig = columnsConfig.find(c => c.id === record.status);
                 const Icon = statusConfig?.icon || Clock;
@@ -522,7 +523,7 @@ export function TriagemDashboard() {
                     className="glass-card rounded-xl border-border/40 hover:border-primary/40 cursor-pointer transition-all hover:translate-y-[-2px] group relative h-fit"
                     onClick={() => openDetails(record)}
                   >
-                    <CardContent className="p-5">
+                    <CardContent className="p-5 outline-none">
                       <div className="flex items-start justify-between mb-4">
                         <span className="text-[10px] font-mono font-black text-primary/70 tracking-tighter">{record.refCodigo}</span>
                         <div className={cn("p-2 rounded-lg", statusConfig?.bg)}>
@@ -709,5 +710,5 @@ function AlertDescription({ children, className, ...props }: any) {
   return <div className={cn("text-sm [&_p]:leading-relaxed", className)} {...props}>{children}</div>
 }
 function ScrollArea({ children, className }: { children: React.ReactNode, className?: string }) {
-  return <div className={cn("overflow-y-auto scrollbar-thin scrollbar-thumb-primary/10", className)}>{children}</div>
+  return <div className={cn("overflow-y-auto scrollbar-none", className)}>{children}</div>
 }

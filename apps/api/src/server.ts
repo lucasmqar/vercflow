@@ -11,6 +11,8 @@ import cors from 'cors';
 import {
     PrismaClient
 } from '@prisma/client';
+import { generateInitialChecklist } from './ChecklistEngine';
+import { generateProjectBrandedReport } from './PdfService';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -159,6 +161,70 @@ app.get('/api/records', async (req, res) => {
 });
 
 // 4. Projects: For filters
+// 7.1 Enquadramento: Auto-link disciplines based on category
+app.post('/api/projects/:id/enquadramento', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const project = await prisma.project.findUnique({ where: { id } });
+        if (!project) return res.status(404).json({ error: 'Obra não encontrada' });
+
+        const category = project.categoria;
+        let suggestedCodes: string[] = ['1.x']; // Always Preliminares
+
+        if (category === 'RESIDENCIAL') suggestedCodes = ['1.x', '2.x', '3.x', '4.x', '5.x'];
+        else if (category === 'COMERCIAL') suggestedCodes = ['1.x', '2.x', '3.x', '4.x', '5.x', '6.x'];
+        else if (category === 'INDUSTRIAL') suggestedCodes = ['1.x', '3.x', '4.x', '5.x', '7.x', '8.x'];
+        else if (category === 'HOSPITALAR') suggestedCodes = ['1.x', '2.x', '3.x', '4.x', '5.x', '9.x', '10.x'];
+
+        // Link missing disciplines (simplified)
+        const existing = await prisma.discipline.findMany({ where: { projectId: id } });
+        const existingCodes = existing.map(e => e.codigo);
+        const toCreate = suggestedCodes.filter(c => !existingCodes.includes(c));
+
+        if (toCreate.length > 0) {
+            await Promise.all(toCreate.map(code =>
+                prisma.discipline.create({
+                    data: {
+                        projectId: id,
+                        codigo: code,
+                        name: `Disciplina ${code}`, // Stub name
+                        category: 'GERADO_AUTO',
+                        status: 'NAO_CONTRATADO'
+                    }
+                })
+            ));
+        }
+
+        res.json({ message: `Enquadramento ${category} processado`, created: toCreate.length });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro no enquadramento' });
+    }
+});
+
+// 7.2 Fees Management
+app.get('/api/projects/:id/fees', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const fees = await prisma.fee.findMany({ where: { projectId: id }, orderBy: { criadoEm: 'desc' } });
+        res.json(fees);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar taxas' });
+    }
+});
+
+app.post('/api/fees', async (req, res) => {
+    const { projectId, documentId, nome, valor, vencimento } = req.body;
+    try {
+        const fee = await prisma.fee.create({
+            data: { projectId, documentId, nome, valor, vencimento: vencimento ? new Date(vencimento) : null }
+        });
+        res.json(fee);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao criar taxa' });
+    }
+});
+
 app.get('/api/projects', async (req, res) => {
     try {
         const projects = await prisma.project.findMany({
@@ -169,6 +235,39 @@ app.get('/api/projects', async (req, res) => {
         res.json(projects);
     } catch (error) {
         res.status(500).json({ error: 'Erro ao buscar projetos' });
+    }
+});
+
+app.get('/api/projects/:id/report', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const pdfBuffer = await generateProjectBrandedReport(id);
+        res.contentType("application/pdf");
+        res.send(pdfBuffer);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao gerar relatório da obra' });
+    }
+});
+
+app.get('/api/projects/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const project = await prisma.project.findUnique({
+            where: { id },
+            include: {
+                client: {
+                    select: {
+                        id: true,
+                        nome: true
+                    }
+                }
+            }
+        });
+        if (!project) return res.status(404).json({ error: 'Obra não encontrada' });
+        res.json(project);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar detalhes da obra' });
     }
 });
 
@@ -274,6 +373,49 @@ app.patch('/api/records/:id', async (req, res) => {
     }
 });
 
+app.post('/api/docs/formalize', async (req, res) => {
+    const { recordId } = req.body;
+    try {
+        const record = await prisma.record.findUnique({
+            where: { id: recordId },
+            include: { sketch: true, author: true }
+        });
+
+        if (!record) return res.status(404).json({ error: 'Registro não encontrado' });
+
+        const hash = Math.random().toString(36).substring(7).toUpperCase();
+
+        const doc = await prisma.document.create({
+            data: {
+                recordId,
+                tipo: 'PROTOCOLADO_VALIDO',
+                status: 'EMITIDO',
+                versao: 1,
+                hash,
+                pdfUrl: `/api/docs/view/${recordId}?h=${hash}`
+            }
+        });
+
+        // Update record status
+        await prisma.record.update({
+            where: { id: recordId },
+            data: { status: 'CONVERTIDO' }
+        });
+
+        res.json(doc);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao formalizar documento' });
+    }
+});
+
+// View PDF Stub
+app.get('/api/docs/view/:recordId', async (req, res) => {
+    const { recordId } = req.params;
+    const { h } = req.query;
+    res.send(`<h1>Documento Validado VERCFLOW</h1><p>Protocolo: ${h}</p><p>Registro: ${recordId}</p>`);
+});
+
 app.delete('/api/records/:id', async (req, res) => {
     const { id } = req.params;
 
@@ -363,15 +505,75 @@ app.post('/api/users', async (req, res) => {
 
 // 7. Projects: Management
 app.post('/api/projects', async (req, res) => {
-    const { nome, endereco, clientId } = req.body;
+    const {
+        nome, clientId, codigoInterno, tipoObra,
+        responsavelTecnico, localizacao, areaConstruida, pavimentos,
+        urgencia, estrutura, subsolo, piscina, condominio,
+        corpoBombeiros, vigilanciaSanitaria, operacaoContinua
+    } = req.body;
+
     try {
         const project = await prisma.project.create({
-            data: { nome, endereco, clientId },
+            data: {
+                nome,
+                endereco: localizacao,
+                clientId,
+                codigoInterno,
+                tipoObra,
+                areaConstruida: areaConstruida ? parseFloat(areaConstruida) : null,
+                pavimentos: pavimentos ? parseInt(pavimentos) : null,
+                exigenciasAprovacao: JSON.stringify({
+                    estrutura, subsolo, piscina, condominio,
+                    corpoBombeiros, vigilanciaSanitaria, operacaoContinua,
+                    urgencia, responsavelTecnico
+                }),
+                status: 'ORCAMENTO',
+            },
             include: { client: { select: { nome: true } } }
         });
+
+        // Trigger Checklist Engine with all parameters
+        await generateInitialChecklist(project.id, req.body);
+
         res.json(project);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Erro ao criar obra' });
+    }
+});
+
+// 7b. Project Configuration Wizard
+app.post('/api/projects/:id/configure', async (req, res) => {
+    const { id } = req.params;
+    const { selectedDisciplines, selectedAmbientes, selectedOrgaos } = req.body;
+
+    try {
+        // Update project with configuration
+        await prisma.project.update({
+            where: { id },
+            data: {
+                exigenciasAprovacao: JSON.stringify(selectedOrgaos)
+            }
+        });
+
+        // Generate checklists
+        const result = await generateInitialChecklist(id, { selectedDisciplines, selectedOrgaos });
+
+        // Store ambientes as metadata (could be separate table in future)
+        // For now, we'll just confirm success
+
+        res.json({
+            success: true,
+            message: 'Configuração concluída',
+            stats: {
+                disciplinas: selectedDisciplines.length,
+                ambientes: selectedAmbientes.length,
+                orgaos: Object.values(selectedOrgaos).filter(Boolean).length
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao configurar obra' });
     }
 });
 
@@ -387,13 +589,27 @@ app.get('/api/clients', async (req, res) => {
 });
 
 app.post('/api/clients', async (req, res) => {
-    const { nome, documento, contatos } = req.body;
+    const {
+        nome, tipo, documento, rgIe, contatos,
+        enderecoCompleto, representacao, configOrgaos
+    } = req.body;
+
     try {
         const client = await prisma.client.create({
-            data: { nome, documento, contatos }
+            data: {
+                nome,
+                tipo: tipo || 'PF',
+                documento,
+                rgIe,
+                contatos: typeof contatos === 'object' ? JSON.stringify(contatos) : contatos,
+                enderecoCompleto,
+                representacao: typeof representacao === 'object' ? JSON.stringify(representacao) : representacao,
+                configOrgaos: typeof configOrgaos === 'object' ? JSON.stringify(configOrgaos) : configOrgaos
+            }
         });
         res.json(client);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Erro ao criar cliente' });
     }
 });
@@ -439,6 +655,134 @@ app.patch('/api/activities/:id', async (req, res) => {
         res.json(activity);
     } catch (error) {
         res.status(500).json({ error: 'Erro ao atualizar atividade' });
+    }
+});
+
+// 10. Dashboards: Home & CEO
+app.get('/api/dashboard/home', async (req, res) => {
+    try {
+        const [
+            obrasAtivas,
+            obrasEmAprovacao,
+            documentosVencidos,
+            atividadesEmExecucao,
+            recentRecords,
+            obrasRecentes,
+            pedidosAtrasados
+        ] = await Promise.all([
+            prisma.project.count({ where: { status: 'ATIVA' } }),
+            prisma.project.count({ where: { status: 'EM_APROVACAO_ORGAOS' } }),
+            prisma.checklistItem.count({
+                where: {
+                    status: 'PENDENTE',
+                    prazo: { lt: new Date() }
+                }
+            }),
+            prisma.activity.findMany({
+                where: { status: 'EM_EXECUCAO' },
+                take: 5,
+                include: { project: { select: { nome: true } } }
+            }),
+            prisma.record.findMany({
+                take: 10,
+                orderBy: { criadoEm: 'desc' },
+                include: { author: { select: { nome: true } } }
+            }),
+            prisma.project.findMany({
+                take: 5,
+                orderBy: { criadoEm: 'desc' },
+                include: { client: { select: { nome: true } } }
+            }),
+            prisma.purchaseRequest.count({
+                where: {
+                    status: 'PENDENTE',
+                    criadoEm: { lt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) } // Over 3 days
+                }
+            })
+        ]);
+
+        // Calculate records by phase
+        const recordsByPhase = await prisma.record.groupBy({
+            by: ['status'],
+            _count: true
+        });
+
+        res.json({
+            obrasAtivas,
+            obrasEmAprovacao,
+            pendenciasCriticas: documentosVencidos + pedidosAtrasados,
+            documentosVencidos,
+            projetosAtrasados: 0,
+            comprasUrgentes: pedidosAtrasados,
+            recordsByPhase: recordsByPhase.reduce((acc: any, curr) => {
+                acc[curr.status] = curr._count;
+                return acc;
+            }, {}),
+            atividadesEmExecucao,
+            recentRecords,
+            obrasRecentes,
+            alertas: pedidosAtrasados > 0 ? [{
+                id: 'logistics-1',
+                tipo: 'CRITICO',
+                titulo: 'Pedidos em Atraso',
+                descricao: `Existem ${pedidosAtrasados} pedidos de compra pendentes há mais de 3 dias.`
+            }] : []
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar dados do dashboard' });
+    }
+});
+
+// 11. Logistics: Vehicles
+app.get('/api/vehicles', async (req, res) => {
+    try {
+        const vehicles = await prisma.vehicle.findMany({
+            include: { responsavel: { select: { nome: true } } }
+        });
+        res.json(vehicles);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar veículos' });
+    }
+});
+
+app.post('/api/vehicles', async (req, res) => {
+    const { placa, modelo, marca, tipo, cor, ano, responsavelId } = req.body;
+    try {
+        const vehicle = await prisma.vehicle.create({
+            data: { placa, modelo, marca, tipo, cor, ano, responsavelId }
+        });
+        res.json(vehicle);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao cadastrar veículo' });
+    }
+});
+
+// 12. Stock: Movements
+app.get('/api/stock/movements', async (req, res) => {
+    try {
+        const movements = await prisma.stockMovement.findMany({
+            include: {
+                usuario: { select: { nome: true } },
+                obra: { select: { nome: true } }
+            },
+            orderBy: { criadoEm: 'desc' }
+        });
+        res.json(movements);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar movimentações' });
+    }
+});
+
+app.post('/api/stock/movements', async (req, res) => {
+    const { tipo, item, quantidade, unidade, obraId, usuarioId, observacao } = req.body;
+    try {
+        const movement = await prisma.stockMovement.create({
+            data: { tipo, item, quantidade, unidade, obraId, usuarioId, observacao }
+        });
+        res.json(movement);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao registrar movimentação' });
     }
 });
 
@@ -656,6 +1000,86 @@ app.patch('/api/record-items/:id', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao atualizar item' });
+    }
+});
+
+// 12. Purchasing Flow: POP Compras
+app.get('/api/purchases', async (req, res) => {
+    try {
+        const purchases = await prisma.purchaseRequest.findMany({
+            include: {
+                project: { select: { nome: true } },
+                cotacoes: true,
+                ordemCompra: true
+            },
+            orderBy: { criadoEm: 'desc' }
+        });
+        res.json(purchases);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar pedidos de compra' });
+    }
+});
+
+app.post('/api/purchases', async (req, res) => {
+    const { projectId, solicitanteId, disciplina, urgencia, obs } = req.body;
+    try {
+        const purchase = await prisma.purchaseRequest.create({
+            data: {
+                projectId,
+                solicitanteId,
+                disciplina,
+                urgencia: urgencia || 'NORMAL',
+                obs,
+                status: 'SOLICITADO'
+            }
+        });
+        res.json(purchase);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao criar pedido de compra' });
+    }
+});
+
+app.post('/api/purchases/:id/quotations', async (req, res) => {
+    const { id } = req.params;
+    const { fornecedor, valorTotal, prazoEntrega, condicaoPagamento } = req.body;
+    try {
+        const cotacao = await prisma.purchaseQuotation.create({
+            data: {
+                requestId: id,
+                fornecedor,
+                valorTotal,
+                prazoEntrega,
+                condicaoPagamento
+            }
+        });
+        res.json(cotacao);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao cadastrar cotação' });
+    }
+});
+
+app.post('/api/purchases/:id/order', async (req, res) => {
+    const { id } = req.params;
+    const { numeroOC, valorFinal } = req.body;
+    try {
+        const result = await prisma.$transaction(async (tx) => {
+            const order = await tx.purchaseOrder.create({
+                data: {
+                    requestId: id,
+                    numeroOC,
+                    valorFinal,
+                    status: 'EMITIDA'
+                }
+            });
+            await tx.purchaseRequest.update({
+                where: { id },
+                data: { status: 'OC_EMITIDA' }
+            });
+            return order;
+        });
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao emitir ordem de compra' });
     }
 });
 

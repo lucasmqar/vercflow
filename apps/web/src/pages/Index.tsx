@@ -8,36 +8,55 @@ import { TeamDashboard } from '@/components/dashboards/TeamDashboard';
 import { ObrasDashboard } from '@/components/dashboards/ObrasDashboard';
 import { SettingsDashboard } from '@/components/dashboards/SettingsDashboard';
 import { ClientesDashboard } from '@/components/dashboards/ClientesDashboard';
+import { HomeDashboard } from '@/components/dashboards/HomeDashboard';
+import { FinancialDashboard } from '@/components/dashboards/FinancialDashboard';
+import { StockDashboard } from '@/components/dashboards/StockDashboard';
+import DisciplinasDashboard from '@/components/dashboards/DisciplinasDashboard';
+import { ProjectManagementDashboard } from '@/components/dashboards/ProjectManagementDashboard';
 import type { DashboardTab } from '@/types';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<DashboardTab>('captura');
+  const [activeTab, setActiveTab] = useState<DashboardTab>('home');
+
+  const handleTabChange = (tab: DashboardTab) => {
+    setActiveTab(tab);
+  };
 
   const renderDashboard = () => {
     switch (activeTab) {
+      case 'home':
+        return <HomeDashboard onTabChange={handleTabChange} />;
       case 'captura':
-        return <CaptureDashboard />;
+        return <CaptureDashboard onTabChange={handleTabChange} />;
       case 'triagem':
-        return <TriagemDashboard />;
+        return <TriagemDashboard onTabChange={handleTabChange} />;
       case 'atividades':
-        return <ActivitiesDashboard />;
+        return <ActivitiesDashboard onTabChange={handleTabChange} />;
       case 'dashboard':
-        return <CEODashboard />;
+        return <CEODashboard onTabChange={handleTabChange} />;
       case 'equipe':
-        return <TeamDashboard />;
+        return <TeamDashboard onTabChange={handleTabChange} />;
       case 'obras':
-        return <ObrasDashboard />;
+        return <ObrasDashboard onTabChange={handleTabChange} />;
       case 'clientes':
-        return <ClientesDashboard />;
+        return <ClientesDashboard onTabChange={handleTabChange} />;
+      case 'disciplinas':
+        return <DisciplinasDashboard onTabChange={handleTabChange} />;
+      case 'financeiro':
+        return <FinancialDashboard onTabChange={handleTabChange} />;
+      case 'estoque':
+        return <StockDashboard onTabChange={handleTabChange} />;
+      case 'gestao-projetos':
+        return <ProjectManagementDashboard onTabChange={handleTabChange} />;
       case 'config':
-        return <SettingsDashboard />;
+        return <SettingsDashboard onTabChange={handleTabChange} />;
       default:
-        return <CaptureDashboard />;
+        return <HomeDashboard onTabChange={handleTabChange} />;
     }
   };
 
   return (
-    <MainLayout activeTab={activeTab} onTabChange={setActiveTab}>
+    <MainLayout activeTab={activeTab} onTabChange={handleTabChange}>
       {renderDashboard()}
     </MainLayout>
   );

@@ -27,74 +27,81 @@ model User {
   requestsCreated Request[]        @relation("UserRequestsCreated")
   requestsManaged Request[]        @relation("UserRequestsManaged")
   recordsAsResponsavel Record[]     @relation("ResponsavelValores")
+  
+  // Vercflow specific roles
+  obrasAsMestre     Project[] @relation("MestreObra")
+  obrasAsEngenheiro Project[] @relation("EngenheiroResponsavel")
+  vehicles          Vehicle[] @relation("VehicleResponsable")
+  stockMovements    StockMovement[] @relation("UserStockMovements")
 }
 
 model Client {
-  id        String    @id @default(cuid())
-  nome      String
-  documento String?
-  contatos  String?
-  criadoEm  DateTime  @default(now())
-  projects  Project[]
+  id                String    @id @default(cuid())
+  nome              String
+  tipo              String    @default("PF") // PF, PJ
+  documento         String?   // CPF ou CNPJ
+  rgIe              String?   // RG ou Inscrição Estadual
+  contatos          String?   // JSON {telefone, whatsapp, email}
+  enderecoCompleto  String?
+  representacao     String?   // JSON for procurations {equatorial: {validade, anexoUrl}, saneago: {...}}
+  configOrgaos      String?   // JSON {prefeitura: boolean, condomínio: boolean, suderv: boolean, etc}
+  criadoEm          DateTime  @default(now())
+  projects          Project[]
 }
 
 model Project {
-  id          String        @id @default(cuid())
+  id                    String        @id @default(cuid())
+  codigoInterno         String?       @unique
+  nome                  String
+  endereco              String?
+  tipoObra              String?       // RESIDENCIAL, COMERCIAL, INDUSTRIAL, SAUDE, etc
+  dadosLote             String?       // JSON {quadra, lote, matricula, areaLote, cno}
+  areaConstruida        Float?
+  pavimentos            Int?
+  exigenciasAprovacao   String?       // JSON {prefeitura, condomínio, cbm, visa, etc}
+  status                String        @default("ORCAMENTO") // ORCAMENTO, NEGOCIACAO, FECHADA, ATIVA, CONCLUIDA, EM_PAUSA, CANCELADA
+  categoria             String?       // COMERCIAL, INDUSTRIAL, RESIDENCIAL, HOSPITALAR, CONDOMINIO, EDIFICIO
+  criadoEm              DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  
+  clientId              String
+  client                Client        @relation(fields: [clientId], references: [id])
+  
+  mestreObraId          String?
+  mestreObra            User?         @relation("MestreObra", fields: [mestreObraId], references: [id])
+  
+  engenheiroId          String?
+  engenheiroResponsavel User?         @relation("EngenheiroResponsavel", fields: [engenheiroId], references: [id])
+  
+  activities            Activity[]
+  records               Record[]
+  disciplines           Discipline[]
+  requests              Request[]
+  checklistItems        ChecklistItem[]
+  purchaseRequests      PurchaseRequest[]
+  files                 ProjectFile[]
+  fees                  Fee[]
+  stockMovements        StockMovement[]
+}
+
+model Fee {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  documentId  String?
+  document    Document? @relation(fields: [documentId], references: [id])
   nome        String
-  endereco    String?
-  status      String        @default("ATIVA") // ATIVA, CONCLUIDA, EM_PAUSA, CANCELADA
-  criadoEm    DateTime      @default(now())
-  clientId    String
-  client      Client        @relation(fields: [clientId], references: [id])
-  activities  Activity[]
-  records     Record[]
-  disciplines Discipline[]
-  requests    Request[]
-}
-
-model Discipline {
-  id            String           @id @default(cuid())
-  projectId     String
-  project       Project          @relation(fields: [projectId], references: [id])
-  name          String
-  category      String
-  subcategory   String?
-  description   String?
-  status        String           @default("todo")
-  currentPhase  String?
-  icon          String?
-  color         String?
-  assignedToId  String?
-  assignedTo    Professional?    @relation(fields: [assignedToId], references: [id])
-  tasks         Task[]
-  requests      Request[]
-  criadoEm      DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-}
-
-model Task {
-  id           String        @id @default(cuid())
-  disciplineId String
-  discipline   Discipline    @relation(fields: [disciplineId], references: [id])
-  title        String
-  description  String?
-  status       String        @default("todo")
-  priority     String        @default("MEDIA") // BAIXA, MEDIA, ALTA, CRITICA
-  dueDate      DateTime?
-  completedAt  DateTime?
-  assignedToId String?
-  assignedTo   Professional? @relation(fields: [assignedToId], references: [id])
-  isTemplate   Boolean       @default(false)
-  criadoEm     DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  valor       Float
+  vencimento  DateTime?
+  status      String   @default("PENDENTE") // PENDENTE, PAGO, CANCELADO
+  anexoUrl    String?
+  criadoEm    DateTime @default(now())
 }
 
 model Request {
   id                 String        @id @default(cuid())
   projectId          String
   project            Project       @relation(fields: [projectId], references: [id])
-  disciplineId       String?
-  discipline         Discipline?   @relation(fields: [disciplineId], references: [id])
   title              String
   description        String
   type               String
@@ -111,6 +118,124 @@ model Request {
   cancelledAt        DateTime?
   criadoEm           DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
+}
+
+model Discipline {
+  id            String           @id @default(cuid())
+  projectId     String
+  project       Project          @relation(fields: [projectId], references: [id])
+  codigo        String           // 1.x a 14.x conforme lista oficial
+  name          String
+  category      String
+  status        String           @default("NAO_CONTRATADO") // NAO_CONTRATADO, EM_DESENVOLVIMENTO, ENVIADO, APROVADO, REPROVADO
+  fase          String?          // PRELIMINAR, LEGAL, EXECUTIVO, CONDOMINIO (para ARQUITETURA 2.x)
+  responsibleId String?
+  responsible   Professional?    @relation(fields: [responsibleId], references: [id])
+  activities    Activity[]
+  previsao      DateTime?
+  entregaReal   DateTime?
+  versaoAtual   String?
+  checklistItems ChecklistItem[]
+  
+  criadoEm      DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([projectId, codigo, fase])
+}
+
+model ChecklistItem {
+  id             String      @id @default(cuid())
+  projectId      String
+  project        Project     @relation(fields: [projectId], references: [id])
+  disciplineId   String?
+  discipline     Discipline? @relation(fields: [disciplineId], references: [id])
+  
+  tipo           String      // DOCUMENTO_FASE, PROJETO_FASE, MATERIAL_AMBIENTE
+  codigo         String?     // Ex: 2.3, 14.4
+  descricao      String
+  ambiente       String?     // Para itens 14.x
+  departamento   String?
+  responsavelId  String?
+  prazo          DateTime?
+  status         String      @default("PENDENTE") // PENDENTE, EM_ANDAMENTO, ENVIADO, APROVADO, REPROVADO, COMPRADO, ENTREGUE, INSTALADO
+  
+  // Campos de compra (para Materiais)
+  quantidade     Float?
+  marca          String?
+  nf             String?
+  fornecedor     String?
+  
+  anexoUrl       String?
+  revisao        Int         @default(0)
+  
+  criadoEm       DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model PurchaseRequest {
+  id              String             @id @default(cuid())
+  projectId       String
+  project         Project            @relation(fields: [projectId], references: [id])
+  solicitanteId   String
+  disciplina      String?
+  status          String             @default("SOLICITADO") // SOLICITADO, EM_COTACAO, AGUARDANDO_APROVACAO, OC_EMITIDA, EM_ENTREGA, CONFERIDO, FINALIZADO
+  urgencia        String             @default("NORMAL")
+  obs             String?
+  cotacoes        PurchaseQuotation[]
+  ordemCompra     PurchaseOrder?
+  criadoEm        DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+model PurchaseQuotation {
+  id                String          @id @default(cuid())
+  requestId         String
+  request           PurchaseRequest @relation(fields: [requestId], references: [id])
+  fornecedor        String
+  valorTotal        Float
+  prazoEntrega      String?
+  condicaoPagamento String?
+  anexoUrl          String?
+  selecionada       Boolean         @default(false)
+  criadoEm          DateTime        @default(now())
+}
+
+model PurchaseOrder {
+  id                String          @id @default(cuid())
+  requestId         String          @unique
+  request           PurchaseRequest @relation(fields: [requestId], references: [id])
+  numeroOC          String          @unique
+  valorFinal        Float
+  dataEmissao       DateTime        @default(now())
+  status            String          @default("EMITIDA")
+  nf                String?
+  documentoNfUrl    String?
+  criadoEm          DateTime        @default(now())
+}
+
+model ProjectFile {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id])
+  nome          String   // Nome padronizado: João Silva – ARQ – EXE – R0 – F01.pdf
+  tipo          String?  // ALV, ORC, CPR, CRO, PED, REL, MEM, OUT, ARQ, EST, HID, ELE, etc
+  fase          String?  // PRE, LEG, EXE, CON
+  revisao       String   @default("R0")
+  folha         String?
+  url           String
+  extensao      String
+  criadoEm      DateTime @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  tipoEvento  String
+  entidade    String
+  entidadeId  String
+  payloadJson String?
+  criadoEm    DateTime @default(now())
 }
 
 model Record {
@@ -168,6 +293,7 @@ model Document {
   status   String   @default("RASCUNHO")
   versao   Int      @default(1)
   hash     String?
+  fees     Fee[]
   criadoEm DateTime @default(now())
 }
 
@@ -184,6 +310,8 @@ model Activity {
   dataInicio  DateTime?
   dataFim     DateTime?
   criadoEm    DateTime             @default(now())
+  disciplineId String?
+  discipline  Discipline?          @relation(fields: [disciplineId], references: [id])
   assignments ActivityAssignment[]
 }
 
@@ -197,7 +325,6 @@ model Professional {
   user            User?                @relation(fields: [userId], references: [id])
   assignments     ActivityAssignment[]
   disciplines     Discipline[]
-  tasks           Task[]
   requestsManaged Request[]
   categories      ProfessionalCategory[]
   criadoEm        DateTime               @default(now())
@@ -245,14 +372,31 @@ model Comment {
   criadoEm   DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 }
+model StockMovement {
+  id            String   @id @default(cuid())
+  tipo          String   // ENTRADA, SAIDA, TRANSFERENCIA
+  item          String
+  quantidade    Float
+  unidade       String?
+  obraId        String?
+  obra          Project? @relation(fields: [obraId], references: [id])
+  usuarioId     String
+  usuario       User     @relation("UserStockMovements", fields: [usuarioId], references: [id])
+  observacao    String?
+  criadoEm      DateTime @default(now())
+}
 
-model AuditLog {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  tipoEvento  String
-  entidade    String
-  entidadeId  String
-  payloadJson String?
-  criadoEm    DateTime @default(now())
+model Vehicle {
+  id            String   @id @default(cuid())
+  placa         String   @unique
+  modelo        String
+  marca         String
+  tipo          String   // CAMINHAO, CARRO, MOTO, UTILITARIO
+  cor           String?
+  ano           Int?
+  responsavelId String?
+  responsavel   User?    @relation("VehicleResponsable", fields: [responsavelId], references: [id])
+  status        String   @default("DISPONIVEL") // DISPONIVEL, EM_USO, MANUTENCAO
+  quilometragem Int      @default(0)
+  criadoEm      DateTime @default(now())
 }

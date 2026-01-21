@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { SketchCanvas } from '@/components/sketch/SketchCanvas';
 import { getApiUrl } from '@/lib/api';
+import { ShaderAnimation } from '@/components/ui/ShaderAnimation';
 import { Project, Client, Record, RecordType } from '@/types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -264,6 +265,18 @@ export function RegistroModal({ isOpen, onClose, onSuccess, parentRecord }: Regi
                         )}
                     </AnimatePresence>
 
+                    {/* Submitting Overlay */}
+                    {isSubmitting && (
+                        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center text-white bg-black">
+                            <ShaderAnimation />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-md">
+                                <div className="w-16 h-16 rounded-full border-4 border-white/20 border-t-white animate-spin mb-8" />
+                                <h2 className="text-3xl font-black tracking-tighter uppercase mb-1">Verc Formalize</h2>
+                                <p className="text-[9px] font-black opacity-60 tracking-[0.4em] uppercase">Protocolando Registro Técnico...</p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Main Editor Surface */}
                     <div className="flex-1 flex flex-col bg-background">
                         <ScrollArea className="flex-1">
@@ -356,20 +369,25 @@ export function RegistroModal({ isOpen, onClose, onSuccess, parentRecord }: Regi
                                                         />
                                                     </div>
                                                 )}\n                                                {item.type === 'CHECKLIST' && (
-                                                    <div className="flex items-center gap-3 p-3 bg-muted/5">
-                                                        <div className="flex-shrink-0 w-5 h-5 rounded-[4px] border-2 border-primary/40 flex items-center justify-center bg-background">
+                                                    <div className="flex items-center gap-3 p-3 bg-muted/5 group/checkitem transition-all hover:bg-muted/10">
+                                                        <div className="flex-shrink-0 w-5 h-5 rounded-[4px] border-2 border-primary/40 flex items-center justify-center bg-background group-focus-within/checkitem:border-primary transition-colors">
                                                             <div className="w-2.5 h-2.5 rounded-[1px] bg-primary opacity-20" />
                                                         </div>
                                                         <Input
                                                             autoFocus
                                                             placeholder="Item do checklist..."
-                                                            className="h-8 border-none shadow-none focus-visible:ring-0 bg-transparent text-sm p-0 font-medium"
+                                                            className="h-8 border-none shadow-none focus-visible:ring-0 bg-transparent text-sm p-0 font-medium placeholder:opacity-30"
                                                             value={item.content}
                                                             onChange={(e) => updateItemContent(index, e.target.value)}
                                                             onKeyDown={(e) => {
                                                                 if (e.key === 'Enter') {
                                                                     e.preventDefault();
-                                                                    addItem('CHECKLIST');
+                                                                    if (item.content.trim()) {
+                                                                        addItem('CHECKLIST');
+                                                                    }
+                                                                } else if (e.key === 'Backspace' && !item.content && items.length > 1) {
+                                                                    e.preventDefault();
+                                                                    removeItem(index);
                                                                 }
                                                             }}
                                                         />

@@ -83,9 +83,6 @@ export function RecordDetailsModal({ record: initialRecord, isOpen, onClose }: R
                             <FileText size={13} /> Exportar PDF
                         </Button>
                         <div className="w-[1px] h-6 bg-border/40 mx-1" />
-                        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 rounded-md hover:bg-muted/50">
-                            <X size={18} className="opacity-60" />
-                        </Button>
                     </div>
                 </div>
 

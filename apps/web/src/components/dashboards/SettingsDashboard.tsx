@@ -36,8 +36,9 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
+import { DashboardTab } from '@/types';
 
-export function SettingsDashboard() {
+export function SettingsDashboard({ onTabChange }: { onTabChange: (tab: DashboardTab) => void }) {
     const { user, logout } = useAuth();
     const [users, setUsers] = useState<any[]>([]);
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
@@ -115,12 +116,12 @@ export function SettingsDashboard() {
     const filteredGroups = settingsGroups.filter(g => !g.isAdmin || (user?.role === 'ADMIN' || user?.role === 'CEO'));
 
     return (
-        <div className="p-4 lg:p-10 h-[calc(100vh-64px)] flex flex-col bg-secondary/10 overflow-y-auto custom-scrollbar">
+        <div className="p-4 lg:p-10 h-full flex flex-col bg-secondary/10 overflow-y-auto scrollbar-none font-sans pb-24">
 
             <div className="max-w-4xl mx-auto w-full">
                 <div className="mb-10 text-center lg:text-left flex flex-col lg:flex-row justify-between items-end gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tighter">Configurações</h1>
+                        <h1 className="text-3xl font-black tracking-tighter text-foreground">Configurações</h1>
                         <p className="text-muted-foreground font-medium">Controle total da sua experiência e do ecossistema VERCFLOW</p>
                     </div>
                     <Badge variant="outline" className="rounded-full px-4 py-1.5 border-primary/20 bg-primary/5 text-primary font-bold">
@@ -133,7 +134,7 @@ export function SettingsDashboard() {
                         <div key={idx} className="space-y-4">
                             <div className="flex items-center gap-2 px-2">
                                 <group.icon size={18} className="text-primary" />
-                                <h3 className="text-sm font-bold uppercase tracking-widest opacity-50">{group.title}</h3>
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">{group.title}</h3>
                             </div>
 
                             <Card className="rounded-[2rem] border-border/50 shadow-xl shadow-black/5 bg-background overflow-hidden relative isolate">
@@ -143,10 +144,10 @@ export function SettingsDashboard() {
                                         <React.Fragment key={iIndex}>
                                             <div
                                                 onClick={item.onClick}
-                                                className="p-6 flex items-center justify-between hover:bg-secondary/20 transition-colors group cursor-pointer"
+                                                className="p-6 flex items-center justify-between hover:bg-secondary/20 transition-colors group cursor-pointer outline-none"
                                             >
                                                 <div className="space-y-1">
-                                                    <p className="font-bold tracking-tight">{item.label}</p>
+                                                    <p className="font-bold tracking-tight text-foreground/90 group-hover:text-primary transition-colors">{item.label}</p>
                                                     <p className="text-sm text-muted-foreground">{item.description}</p>
                                                 </div>
 
@@ -167,13 +168,13 @@ export function SettingsDashboard() {
                         </div>
                     ))}
 
-                    <div className="pt-6 pb-20">
+                    <div className="pt-6">
                         <Button
                             onClick={logout}
                             variant="destructive"
-                            className="w-full h-14 rounded-2xl font-bold gap-2 shadow-lg shadow-destructive/20 hover:scale-[1.01] transition-transform"
+                            className="w-full h-14 rounded-2xl font-black uppercase tracking-widest gap-2 shadow-lg shadow-destructive/20 hover:scale-[1.01] transition-all"
                         >
-                            <LogOut size={20} /> Encerrar Sessão
+                            <LogOut size={20} /> Encerrar Sessão no Vercflow
                         </Button>
                     </div>
                 </div>
@@ -182,24 +183,24 @@ export function SettingsDashboard() {
             {/* User Management Modal */}
             <Dialog open={isUserModalOpen} onOpenChange={setIsUserModalOpen}>
                 <DialogContent className="rounded-[2.5rem] max-w-2xl p-0 overflow-hidden border-none shadow-2xl">
-                    <div className="bg-primary/5 p-8 border-b">
+                    <div className="bg-primary/5 p-8 border-b border-border/40">
                         <DialogHeader>
-                            <DialogTitle className="text-2xl font-bold tracking-tighter flex items-center gap-2">
+                            <DialogTitle className="text-2xl font-black tracking-tighter flex items-center gap-2">
                                 <UsersIcon className="text-primary" /> Gestão de Usuários
                             </DialogTitle>
                         </DialogHeader>
                     </div>
 
-                    <div className="p-8 space-y-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    <div className="p-8 space-y-8 max-h-[60vh] overflow-y-auto scrollbar-none">
                         {/* Add User Section */}
                         <div className="space-y-6 bg-secondary/20 p-6 rounded-3xl border border-border/50">
-                            <h4 className="text-sm font-bold uppercase tracking-widest opacity-60">Cadastrar Novo Usuário</h4>
+                            <h4 className="text-[10px] font-black uppercase tracking-widest opacity-60">Cadastrar Novo Usuário</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
                                     <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Nome</Label>
                                     <Input
                                         placeholder="Nome do usuário"
-                                        className="rounded-xl h-11"
+                                        className="rounded-xl h-11 border-border/40 bg-background/50"
                                         value={newUser.nome}
                                         onChange={e => setNewUser({ ...newUser, nome: e.target.value })}
                                     />
@@ -208,7 +209,7 @@ export function SettingsDashboard() {
                                     <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Email</Label>
                                     <Input
                                         placeholder="email@vercflow.com"
-                                        className="rounded-xl h-11"
+                                        className="rounded-xl h-11 border-border/40 bg-background/50"
                                         value={newUser.email}
                                         onChange={e => setNewUser({ ...newUser, email: e.target.value })}
                                     />
@@ -216,15 +217,15 @@ export function SettingsDashboard() {
                                 <div className="space-y-1">
                                     <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Papel (Role)</Label>
                                     <Select value={newUser.role} onValueChange={r => setNewUser({ ...newUser, role: r })}>
-                                        <SelectTrigger className="rounded-xl h-11">
+                                        <SelectTrigger className="rounded-xl h-11 border-border/40 bg-background/50">
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent className="rounded-xl">
-                                            <SelectItem value="CEO">CEO / Proprietário</SelectItem>
-                                            <SelectItem value="ADMIN">Administrador</SelectItem>
-                                            <SelectItem value="GESTOR">Gestor de Obras</SelectItem>
-                                            <SelectItem value="USUARIO_CAMPO">Equipe de Campo</SelectItem>
-                                            <SelectItem value="EXTERNO">Colaborador Externo</SelectItem>
+                                        <SelectContent className="rounded-xl border-border/40">
+                                            <SelectItem value="CEO" className="rounded-lg">CEO / Proprietário</SelectItem>
+                                            <SelectItem value="ADMIN" className="rounded-lg">Administrador</SelectItem>
+                                            <SelectItem value="GESTOR" className="rounded-lg">Gestor de Obras</SelectItem>
+                                            <SelectItem value="USUARIO_CAMPO" className="rounded-lg">Equipe de Campo</SelectItem>
+                                            <SelectItem value="EXTERNO" className="rounded-lg">Colaborador Externo</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -232,9 +233,9 @@ export function SettingsDashboard() {
                                     <Button
                                         onClick={handleCreateUser}
                                         disabled={isSavingUser}
-                                        className="w-full h-11 rounded-xl font-bold gap-2"
+                                        className="w-full h-11 rounded-xl font-black uppercase tracking-widest gap-2 shadow-glow"
                                     >
-                                        <Plus size={18} /> Criar Usuário
+                                        {isSavingUser ? 'Processando...' : <><Plus size={18} /> Criar Usuário</>}
                                     </Button>
                                 </div>
                             </div>
@@ -242,20 +243,20 @@ export function SettingsDashboard() {
 
                         {/* List Users */}
                         <div className="space-y-4">
-                            <h4 className="text-sm font-bold uppercase tracking-widest opacity-60">Usuários Ativos</h4>
+                            <h4 className="text-[10px] font-black uppercase tracking-widest opacity-60">Usuários Ativos no Sistema</h4>
                             <div className="space-y-3">
                                 {users.map((u: any) => (
-                                    <div key={u.id} className="p-4 bg-background border rounded-2xl flex items-center justify-between group hover:border-primary/30 transition-all">
+                                    <div key={u.id} className="p-4 bg-background border border-border/40 rounded-2xl flex items-center justify-between group hover:border-primary/30 transition-all shadow-sm">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
+                                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary border border-primary/10">
                                                 {u.nome?.charAt(0)}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-sm">{u.nome}</p>
+                                                <p className="font-bold text-sm text-foreground/80">{u.nome}</p>
                                                 <p className="text-xs text-muted-foreground">{u.email}</p>
                                             </div>
                                         </div>
-                                        <Badge className="bg-secondary text-foreground border-none font-bold text-[10px]">
+                                        <Badge variant="outline" className="bg-secondary/50 text-foreground border-border/40 font-black text-[9px] uppercase tracking-tighter">
                                             {u.role}
                                         </Badge>
                                     </div>
@@ -264,8 +265,8 @@ export function SettingsDashboard() {
                         </div>
                     </div>
 
-                    <DialogFooter className="p-6 bg-secondary/10 border-t">
-                        <Button variant="ghost" className="rounded-xl" onClick={() => setIsUserModalOpen(false)}>Fechar Gerenciador</Button>
+                    <DialogFooter className="p-6 bg-secondary/10 border-t border-border/40 justify-center sm:justify-center">
+                        <Button variant="ghost" className="rounded-xl font-bold text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground" onClick={() => setIsUserModalOpen(false)}>Fechar Gerenciador de Acesso</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

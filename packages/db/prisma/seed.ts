@@ -10,7 +10,7 @@ async function main() {
     await prisma.comment.deleteMany();
     await prisma.raciAssignment.deleteMany();
     await prisma.activityAssignment.deleteMany();
-    await prisma.task.deleteMany();
+    await prisma.checklistItem.deleteMany();
     await prisma.request.deleteMany();
     await prisma.discipline.deleteMany();
     await prisma.activity.deleteMany();
@@ -205,29 +205,34 @@ async function main() {
     // 8. Create Disciplines & Tasks (Legacy Sync)
     console.log('📚 Syncing Disciplines & Tasks...');
     for (const p of createdProjects) {
-        const disciplineNames = ['Arquitetura', 'Estrutura', 'Hidráulica', 'Elétrica'];
-        for (const dName of disciplineNames) {
+        const disciplineNames = [
+            { codigo: '2.x', name: 'Arquitetura', fase: 'EXECUTIVO' },
+            { codigo: '3.x', name: 'Estrutura', fase: 'EXECUTIVO' },
+            { codigo: '4.x', name: 'Hidráulica', fase: 'EXECUTIVO' },
+            { codigo: '5.x', name: 'Elétrica', fase: 'EXECUTIVO' }
+        ];
+        for (const d of disciplineNames) {
             const disc = await prisma.discipline.create({
                 data: {
                     projectId: p.id,
-                    name: dName,
+                    codigo: d.codigo,
+                    name: d.name,
                     category: 'PROJETO',
-                    status: 'in_progress',
-                    currentPhase: 'Executivo',
-                    icon: 'Layout',
-                    color: '#3B82F6',
+                    status: 'EM_DESENVOLVIMENTO',
+                    fase: d.fase,
                 }
             });
 
-            // Add 5 tasks per discipline
+            // Add 5 checklist items per discipline
             for (let i = 1; i <= 5; i++) {
-                await prisma.task.create({
+                await prisma.checklistItem.create({
                     data: {
+                        projectId: p.id,
                         disciplineId: disc.id,
-                        title: `Checklist ${dName} - Item ${i}`,
-                        status: i % 2 === 0 ? 'completed' : 'todo',
-                        priority: 'MEDIA',
-                        dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+                        tipo: 'DOCUMENTO_FASE',
+                        descricao: `Checklist ${d.name} - Item ${i}`,
+                        status: i % 2 === 0 ? 'APROVADO' : 'PENDENTE',
+                        prazo: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
                     }
                 });
             }
