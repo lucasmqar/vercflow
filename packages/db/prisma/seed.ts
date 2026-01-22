@@ -205,21 +205,38 @@ async function main() {
     // 8. Create Disciplines & Tasks (Legacy Sync)
     console.log('📚 Syncing Disciplines & Tasks...');
     for (const p of createdProjects) {
-        const disciplineNames = [
-            { codigo: '2.x', name: 'Arquitetura', fase: 'EXECUTIVO' },
-            { codigo: '3.x', name: 'Estrutura', fase: 'EXECUTIVO' },
-            { codigo: '4.x', name: 'Hidráulica', fase: 'EXECUTIVO' },
-            { codigo: '5.x', name: 'Elétrica', fase: 'EXECUTIVO' }
+        const disciplinesList = [
+            // 1. PROJETOS
+            { codigo: '01.ARQ', name: 'Arquitetura', category: 'PROJETOS' },
+            { codigo: '02.EST', name: 'Estrutural', category: 'PROJETOS' },
+            { codigo: '03.HID', name: 'Hidráulica', category: 'PROJETOS' },
+            { codigo: '04.ELE', name: 'Elétrica', category: 'PROJETOS' },
+            { codigo: '05.MEC', name: 'Mecânica/Climatização', category: 'PROJETOS' },
+            { codigo: '06.INC', name: 'Incêndio (PPCI)', category: 'PROJETOS' },
+            { codigo: '07.AUT', name: 'Automação', category: 'PROJETOS' },
+            // 2. SUDERV
+            { codigo: '1.1.CER', name: 'Certidão Ocupação Solo', category: 'SUDERV' },
+            { codigo: '1.2.ALV', name: 'Alvará de Construção', category: 'SUDERV' },
+            { codigo: '1.3.REF', name: 'Alvará de Reforma', category: 'SUDERV' },
+            { codigo: '1.4.HAB', name: 'Habite-se', category: 'SUDERV' },
+            // 3. SEMMA
+            { codigo: '2.1.USO', name: 'Uso do Solo (PJ)', category: 'SEMMA' },
+            { codigo: '2.3.PRE', name: 'Prévia de Localização', category: 'SEMMA' },
+            // 4. VIGILÂNCIA
+            { codigo: '3.0.VIS', name: 'Vigilância Sanitária', category: 'VIGILANCIA' },
+            // 5. FISCALIZAÇÃO
+            { codigo: '4.0.FIS', name: 'Fiscalização de Obras', category: 'FISCALIZACAO' },
         ];
-        for (const d of disciplineNames) {
+
+        for (const d of disciplinesList) {
             const disc = await prisma.discipline.create({
                 data: {
                     projectId: p.id,
                     codigo: d.codigo,
                     name: d.name,
-                    category: 'PROJETO',
-                    status: 'EM_DESENVOLVIMENTO',
-                    fase: d.fase,
+                    category: d.category,
+                    status: Math.random() > 0.7 ? 'APROVADO' : 'EM_DESENVOLVIMENTO',
+                    fase: 'EXECUTIVO',
                 }
             });
 

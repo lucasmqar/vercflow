@@ -6,7 +6,7 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/com
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
-export default function Login() {
+export function Login() {
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const [isLoading, setIsLoading] = useState(false);

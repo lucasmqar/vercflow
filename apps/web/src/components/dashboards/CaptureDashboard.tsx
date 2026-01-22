@@ -21,7 +21,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { RegistroModal } from '@/components/shared/RegistroModal';
 import { Record, DashboardTab } from '@/types';
 
-export function CaptureDashboard({ onTabChange }: { onTabChange: (tab: DashboardTab) => void }) {
+export function CaptureDashboard({ onTabChange, onOpenWizard }: { onTabChange: (tab: DashboardTab) => void, onOpenWizard?: () => void }) {
     const { user } = useAuth();
     const { registros, fetchRegistros } = useRegistros();
     const [isRegistroModalOpen, setIsRegistroModalOpen] = useState(false);

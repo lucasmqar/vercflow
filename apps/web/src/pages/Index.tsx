@@ -6,13 +6,15 @@ import { ActivitiesDashboard } from '@/components/dashboards/ActivitiesDashboard
 import { CEODashboard } from '@/components/dashboards/CEODashboard';
 import { TeamDashboard } from '@/components/dashboards/TeamDashboard';
 import { ObrasDashboard } from '@/components/dashboards/ObrasDashboard';
-import { SettingsDashboard } from '@/components/dashboards/SettingsDashboard';
+import { DesktopSettingsDashboard } from '@/components/dashboards/SettingsDashboard';
 import { ClientesDashboard } from '@/components/dashboards/ClientesDashboard';
 import { HomeDashboard } from '@/components/dashboards/HomeDashboard';
 import { FinancialDashboard } from '@/components/dashboards/FinancialDashboard';
 import { StockDashboard } from '@/components/dashboards/StockDashboard';
 import DisciplinasDashboard from '@/components/dashboards/DisciplinasDashboard';
 import { ProjectManagementDashboard } from '@/components/dashboards/ProjectManagementDashboard';
+import { GestaoProjetosDashboard } from '@/components/dashboards/GestaoProjetosDashboard';
+import { FrotaDashboard } from '@/components/dashboards/FrotaDashboard';
 import type { DashboardTab } from '@/types';
 
 const Index = () => {
@@ -47,9 +49,11 @@ const Index = () => {
       case 'estoque':
         return <StockDashboard onTabChange={handleTabChange} />;
       case 'gestao-projetos':
-        return <ProjectManagementDashboard onTabChange={handleTabChange} />;
+        return <GestaoProjetosDashboard onTabChange={handleTabChange} />;
+      case 'frota':
+        return <FrotaDashboard onTabChange={handleTabChange} />;
       case 'config':
-        return <SettingsDashboard onTabChange={handleTabChange} />;
+        return <DesktopSettingsDashboard onTabChange={handleTabChange} />;
       default:
         return <HomeDashboard onTabChange={handleTabChange} />;
     }

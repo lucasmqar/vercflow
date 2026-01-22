@@ -227,10 +227,28 @@ app.post('/api/fees', async (req, res) => {
 
 app.get('/api/projects', async (req, res) => {
     try {
+        const { status, tipo, clientId, responsavelId } = req.query;
+
+        const where: any = {};
+        if (status) where.status = status as string;
+        if (tipo) where.tipoObra = tipo as string;
+        if (clientId) where.clientId = clientId as string;
+        if (responsavelId) {
+            where.OR = [
+                { mestreObraId: responsavelId as string },
+                { engenheiroId: responsavelId as string }
+            ];
+        }
+
         const projects = await prisma.project.findMany({
+            where,
             include: {
-                client: { select: { nome: true } }
-            }
+                client: { select: { nome: true } },
+                mestreObra: { select: { nome: true } },
+                engenheiroResponsavel: { select: { nome: true } },
+                _count: { select: { activities: true, disciplines: true } }
+            },
+            orderBy: { updatedAt: 'desc' }
         });
         res.json(projects);
     } catch (error) {
@@ -661,6 +679,10 @@ app.patch('/api/activities/:id', async (req, res) => {
 // 10. Dashboards: Home & CEO
 app.get('/api/dashboard/home', async (req, res) => {
     try {
+        const { role, userId } = req.query;
+        const userRole = role as string || 'OPERACIONAL';
+
+        // Core metrics (all roles)
         const [
             obrasAtivas,
             obrasEmAprovacao,
@@ -668,7 +690,11 @@ app.get('/api/dashboard/home', async (req, res) => {
             atividadesEmExecucao,
             recentRecords,
             obrasRecentes,
-            pedidosAtrasados
+            pedidosAtrasados,
+            totalInvestment,
+            teamCount,
+            tasksCompleted,
+            tasksTotal
         ] = await Promise.all([
             prisma.project.count({ where: { status: 'ATIVA' } }),
             prisma.project.count({ where: { status: 'EM_APROVACAO_ORGAOS' } }),
@@ -681,52 +707,240 @@ app.get('/api/dashboard/home', async (req, res) => {
             prisma.activity.findMany({
                 where: { status: 'EM_EXECUCAO' },
                 take: 5,
-                include: { project: { select: { nome: true } } }
+                include: {
+                    project: { select: { nome: true } },
+                    assignments: {
+                        include: {
+                            professional: { select: { nome: true } }
+                        }
+                    }
+                }
             }),
             prisma.record.findMany({
                 take: 10,
                 orderBy: { criadoEm: 'desc' },
-                include: { author: { select: { nome: true } } }
+                include: {
+                    author: { select: { nome: true } },
+                    project: { select: { nome: true } }
+                }
             }),
             prisma.project.findMany({
                 take: 5,
-                orderBy: { criadoEm: 'desc' },
-                include: { client: { select: { nome: true } } }
+                orderBy: { updatedAt: 'desc' },
+                where: { status: { in: ['ATIVA', 'FECHADA'] } },
+                include: {
+                    client: { select: { nome: true } },
+                    _count: { select: { activities: true } }
+                }
             }),
             prisma.purchaseRequest.count({
                 where: {
-                    status: 'PENDENTE',
-                    criadoEm: { lt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) } // Over 3 days
+                    status: { in: ['SOLICITADO', 'EM_COTACAO'] },
+                    criadoEm: { lt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) }
                 }
-            })
+            }),
+            prisma.activityAssignment.aggregate({
+                _sum: { valorPrevisto: true, valorReal: true }
+            }),
+            prisma.user.count({ where: { ativo: true } }),
+            prisma.activity.count({ where: { status: 'CONCLUIDO' } }),
+            prisma.activity.count()
         ]);
 
-        // Calculate records by phase
-        const recordsByPhase = await prisma.record.groupBy({
-            by: ['status'],
-            _count: true
+        // Timeline events (last 7 days)
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const timelineEvents = await prisma.record.findMany({
+            where: { criadoEm: { gte: sevenDaysAgo } },
+            take: 20,
+            orderBy: { criadoEm: 'desc' },
+            include: {
+                author: { select: { nome: true } },
+                project: { select: { nome: true } }
+            }
         });
 
+        // Role-specific KPIs
+        let primaryKPIs: any = {};
+
+        if (userRole === 'CEO') {
+            const margin = ((totalInvestment._sum.valorPrevisto || 0) - (totalInvestment._sum.valorReal || 0)) /
+                (totalInvestment._sum.valorPrevisto || 1) * 100;
+
+            primaryKPIs = {
+                investimentoTotal: {
+                    label: 'Investimento Total',
+                    value: `R$ ${(totalInvestment._sum.valorPrevisto || 0).toLocaleString('pt-BR')}`,
+                    change: '+12%',
+                    trend: 'up',
+                    color: 'blue'
+                },
+                margemLucro: {
+                    label: 'Margem de Lucro',
+                    value: `${margin.toFixed(1)}%`,
+                    change: '+3.2%',
+                    trend: 'up',
+                    color: 'green'
+                },
+                obrasAtivas: {
+                    label: 'Obras Ativas',
+                    value: obrasAtivas.toString(),
+                    change: '100% operacionais',
+                    trend: 'neutral',
+                    color: 'purple'
+                },
+                satisfacaoCliente: {
+                    label: 'Satisfação Cliente',
+                    value: '4.8/5.0',
+                    change: '+0.2 vs mês',
+                    trend: 'up',
+                    color: 'orange'
+                }
+            };
+        } else if (userRole === 'GESTOR') {
+            const budgetUtilization = ((totalInvestment._sum.valorReal || 0) / (totalInvestment._sum.valorPrevisto || 1)) * 100;
+
+            primaryKPIs = {
+                obrasAtivas: {
+                    label: 'Obras Ativas',
+                    value: obrasAtivas.toString(),
+                    change: `${obrasEmAprovacao} em aprovação`,
+                    trend: 'neutral',
+                    color: 'blue'
+                },
+                tarefasPendentes: {
+                    label: 'Tarefas Pendentes',
+                    value: (tasksTotal - tasksCompleted).toString(),
+                    change: `${Math.round((tasksCompleted / tasksTotal) * 100)}% concluídas`,
+                    trend: 'up',
+                    color: 'orange'
+                },
+                equipeAlocada: {
+                    label: 'Equipe Alocada',
+                    value: teamCount.toString(),
+                    change: `${atividadesEmExecucao.length} ativ. ativas`,
+                    trend: 'neutral',
+                    color: 'purple'
+                },
+                budgetUtilizado: {
+                    label: 'Budget Utilizado',
+                    value: `${budgetUtilization.toFixed(0)}%`,
+                    change: `R$ ${(totalInvestment._sum.valorReal || 0).toLocaleString('pt-BR')}`,
+                    trend: budgetUtilization > 90 ? 'down' : 'up',
+                    color: budgetUtilization > 90 ? 'red' : 'green'
+                }
+            };
+        } else {
+            // OPERACIONAL / default
+            const myTasks = userId ? await prisma.activity.count({
+                where: {
+                    assignments: {
+                        some: { professional: { userId: userId as string } }
+                    },
+                    status: { in: ['PLANEJADO', 'EM_EXECUCAO'] }
+                }
+            }) : 0;
+
+            primaryKPIs = {
+                minhasTarefas: {
+                    label: 'Minhas Tarefas',
+                    value: myTasks.toString(),
+                    change: '3 para hoje',
+                    trend: 'neutral',
+                    color: 'blue'
+                },
+                registrosHoje: {
+                    label: 'Registros Hoje',
+                    value: recentRecords.filter(r => {
+                        const today = new Date();
+                        const created = new Date(r.criadoEm);
+                        return created.toDateString() === today.toDateString();
+                    }).length.toString(),
+                    change: `${recentRecords.length} esta semana`,
+                    trend: 'up',
+                    color: 'green'
+                },
+                documentosPendentes: {
+                    label: 'Docs Pendentes',
+                    value: documentosVencidos.toString(),
+                    change: documentosVencidos > 5 ? 'Atenção' : 'Em dia',
+                    trend: documentosVencidos > 5 ? 'down' : 'up',
+                    color: documentosVencidos > 5 ? 'red' : 'orange'
+                },
+                horasTrabalhadas: {
+                    label: 'Horas (Mês)',
+                    value: '142h',
+                    change: '85% meta',
+                    trend: 'up',
+                    color: 'purple'
+                }
+            };
+        }
+
+        // Quick Stats (6 mini cards)
+        const quickStats = {
+            documentosGerados: await prisma.document.count({
+                where: {
+                    criadoEm: { gte: new Date(new Date().setDate(1)) } // This month
+                }
+            }),
+            comprasUrgentes: pedidosAtrasados,
+            pendenciasCriticas: documentosVencidos,
+            eficienciaEquipe: Math.round((tasksCompleted / tasksTotal) * 100),
+            slaCompliance: 96,
+            budgetUtilizado: Math.round(((totalInvestment._sum.valorReal || 0) / (totalInvestment._sum.valorPrevisto || 1)) * 100)
+        };
+
+        // Critical Alerts
+        const alertas: any[] = [];
+        if (pedidosAtrasados > 0) {
+            alertas.push({
+                id: 'purchase-delay',
+                tipo: 'URGENTE',
+                titulo: 'Pedidos de Compra Atrasados',
+                descricao: `${pedidosAtrasados} pedidos pendentes há mais de 3 dias.`,
+                action: 'estoque'
+            });
+        }
+        if (documentosVencidos > 5) {
+            alertas.push({
+                id: 'docs-overdue',
+                tipo: 'CRITICO',
+                titulo: 'Documentos Vencidos',
+                descricao: `${documentosVencidos} itens de checklist com prazo vencido.`,
+                action: 'gestao-projetos'
+            });
+        }
+
         res.json({
+            // Legacy support
             obrasAtivas,
             obrasEmAprovacao,
-            pendenciasCriticas: documentosVencidos + pedidosAtrasados,
             documentosVencidos,
+            pendenciasCriticas: documentosVencidos + pedidosAtrasados,
             projetosAtrasados: 0,
             comprasUrgentes: pedidosAtrasados,
-            recordsByPhase: recordsByPhase.reduce((acc: any, curr) => {
-                acc[curr.status] = curr._count;
-                return acc;
-            }, {}),
             atividadesEmExecucao,
             recentRecords,
             obrasRecentes,
-            alertas: pedidosAtrasados > 0 ? [{
-                id: 'logistics-1',
-                tipo: 'CRITICO',
-                titulo: 'Pedidos em Atraso',
-                descricao: `Existem ${pedidosAtrasados} pedidos de compra pendentes há mais de 3 dias.`
-            }] : []
+
+            // New dashboard data
+            userRole,
+            primaryKPIs,
+            quickStats,
+            timelineEvents: timelineEvents.map(event => ({
+                id: event.id,
+                date: event.criadoEm,
+                type: event.type,
+                title: event.texto?.substring(0, 60) || 'Registro de campo',
+                user: event.author.nome,
+                project: event.project?.nome || 'Geral'
+            })),
+            alertas: alertas.slice(0, 3), // Max 3 alerts
+            finansialStats: {
+                totalInvestment: totalInvestment._sum.valorPrevisto || 0,
+                totalSpent: totalInvestment._sum.valorReal || 0,
+                budgetRemaining: (totalInvestment._sum.valorPrevisto || 0) - (totalInvestment._sum.valorReal || 0)
+            }
         });
     } catch (error) {
         console.error(error);
@@ -814,6 +1028,409 @@ app.get('/api/dashboard/ceo', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao buscar KPIs do dashboard' });
+    }
+});
+
+// Engineering Dashboard: Pipeline (Orçamentos)
+app.get('/api/projects/pipeline', async (req, res) => {
+    try {
+        const [orcamentos, totalValor, taxaConversao] = await Promise.all([
+            prisma.project.findMany({
+                where: { status: { in: ['ORCAMENTO', 'NEGOCIACAO'] } },
+                include: {
+                    client: { select: { nome: true } },
+                    mestreObra: { select: { nome: true } },
+                    _count: { select: { activities: true } }
+                },
+                orderBy: { criadoEm: 'desc' }
+            }),
+            prisma.activityAssignment.aggregate({
+                where: {
+                    activity: {
+                        project: { status: { in: ['ORCAMENTO', 'NEGOCIACAO'] } }
+                    }
+                },
+                _sum: { valorPrevisto: true }
+            }),
+            prisma.project.count({ where: { status: 'FECHADA' } })
+        ]);
+
+        const totalOrcamentos = orcamentos.length;
+        const totalProjetos = await prisma.project.count();
+
+        res.json({
+            orcamentos,
+            metricas: {
+                totalAtivos: totalOrcamentos,
+                valorEstimado: totalValor._sum.valorPrevisto || 0,
+                taxaConversao: totalProjetos > 0 ? Math.round((taxaConversao / totalProjetos) * 100) : 0
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar pipeline de orçamentos' });
+    }
+});
+
+// Engineering Dashboard: Completed Projects
+app.get('/api/projects/completed', async (req, res) => {
+    try {
+        const completed = await prisma.project.findMany({
+            where: { status: { in: ['CONCLUIDA', 'CANCELADA'] } },
+            include: {
+                client: { select: { nome: true } },
+                mestreObra: { select: { nome: true } },
+                engenheiroResponsavel: { select: { nome: true } },
+                _count: { select: { activities: true } }
+            },
+            orderBy: { updatedAt: 'desc' }
+        });
+
+        res.json(completed.map((p: any) => ({
+            ...p,
+            statistics: {
+                totalDocs: 0, // Would need Document model relation
+                totalFees: 0, // Would need Fee aggregation
+                prazoReal: 'N/A',
+                budgetFinal: 0
+            }
+        })));
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar obras concluídas' });
+    }
+});
+
+// Project Schedule/Timeline
+app.get('/api/projects/:id/schedule', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [project, disciplines, activities] = await Promise.all([
+            prisma.project.findUnique({ where: { id } }),
+            prisma.discipline.findMany({
+                where: { projectId: id },
+                include: { responsible: { select: { nome: true } } }
+            }),
+            prisma.activity.findMany({
+                where: { projectId: id },
+                include: {
+                    assignments: {
+                        include: { professional: { select: { nome: true } } }
+                    }
+                },
+                orderBy: { dataInicio: 'asc' }
+            })
+        ]);
+
+        // Generate mock timeline phases (in real app, derive from activities)
+        const phases = [
+            { id: 'fundacao', nome: 'Fundação', inicio: new Date(), fim: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), progresso: 100, responsavel: 'João Silva' },
+            { id: 'estrutura', nome: 'Estrutura', inicio: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), fim: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), progresso: 60, responsavel: 'Maria Santos' },
+            { id: 'alvenaria', nome: 'Alvenaria', inicio: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), fim: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000), progresso: 30, responsavel: 'Pedro Costa' },
+            { id: 'instalacoes', nome: 'Instalações', inicio: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000), fim: new Date(Date.now() + 150 * 24 * 60 * 60 * 1000), progresso: 0, responsavel: null },
+            { id: 'acabamento', nome: 'Acabamento', inicio: new Date(Date.now() + 150 * 24 * 60 * 60 * 1000), fim: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000), progresso: 0, responsavel: null }
+        ];
+
+        res.json({
+            project,
+            phases,
+            milestones: [
+                { id: 'm1', titulo: 'Aprovação de Projeto', data: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), concluido: false },
+                { id: 'm2', titulo: 'Estrutura Concluída', data: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), concluido: false },
+                { id: 'm3', titulo: 'Instalações Finalizadas', data: new Date(Date.now() + 150 * 24 * 60 * 60 * 1000), concluido: false }
+            ],
+            disciplines,
+            activities
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar cronograma' });
+    }
+});
+
+// Project Professionals Management
+app.get('/api/projects/:id/professionals', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const assignments = await prisma.activityAssignment.findMany({
+            where: {
+                activity: { projectId: id }
+            },
+            include: {
+                professional: {
+                    include: {
+                        user: { select: { nome: true } },
+                        categories: true
+                    }
+                },
+                activity: { select: { titulo: true, status: true } }
+            }
+        });
+
+        // Group by professional
+        const professionalsMap = new Map();
+        assignments.forEach((assignment: any) => {
+            const profId = assignment.professional.id;
+            if (!professionalsMap.has(profId)) {
+                professionalsMap.set(profId, {
+                    ...assignment.professional,
+                    horasAlocadas: 0,
+                    custoPrevisto: 0,
+                    custoRealizado: 0,
+                    atividades: []
+                });
+            }
+            const prof = professionalsMap.get(profId);
+            prof.horasAlocadas += 8; // Mock hours
+            prof.custoPrevisto += assignment.valorPrevisto;
+            prof.custoRealizado += assignment.valorReal || 0;
+            prof.atividades.push(assignment.activity);
+        });
+
+        res.json(Array.from(professionalsMap.values()));
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar profissionais da obra' });
+    }
+});
+
+// ========== GESTÃO DE DISCIPLINAS ==========
+// Get all disciplines (grouped or flat)
+app.get('/api/disciplines', async (req, res) => {
+    const { projectId } = req.query;
+    try {
+        const disciplines = await prisma.discipline.findMany({
+            where: projectId ? { projectId: projectId as string } : undefined,
+            include: {
+                project: { select: { nome: true } },
+                responsible: { select: { nome: true } },
+                _count: { select: { activities: true } }
+            },
+            orderBy: { codigo: 'asc' }
+        });
+
+        // Group by category
+        const grouped = disciplines.reduce((acc: any, disc) => {
+            if (!acc[disc.category]) acc[disc.category] = [];
+            acc[disc.category].push(disc);
+            return acc;
+        }, {});
+
+        res.json({ disciplines, grouped });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar disciplinas' });
+    }
+});
+
+// Get discipline details
+app.get('/api/disciplines/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const discipline = await prisma.discipline.findUnique({
+            where: { id },
+            include: {
+                project: { include: { client: true } },
+                responsible: { include: { user: true } },
+                activities: {
+                    include: {
+                        assignments: {
+                            include: { professional: true }
+                        }
+                    }
+                },
+                checklistItems: true
+            }
+        });
+
+        if (!discipline) {
+            return res.status(404).json({ error: 'Disciplina não encontrada' });
+        }
+
+        // Find other projects using this discipline code
+        const relatedProjects = await prisma.project.findMany({
+            where: {
+                disciplines: {
+                    some: { codigo: discipline.codigo }
+                }
+            },
+            include: { client: true }
+        });
+
+        res.json({ discipline, relatedProjects });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar detalhes da disciplina' });
+    }
+});
+
+// ========== GESTÃO DE ARQUIVOS DE PROJETO ==========
+// Upload project file with classification
+app.post('/api/projects/:id/files', async (req, res) => {
+    const { id } = req.params;
+    const { nome, tipo, fase, revisao, folha, url, extensao, disciplineId, origem, faseObra, tags } = req.body;
+
+    try {
+        const file = await prisma.projectFile.create({
+            data: {
+                projectId: id,
+                disciplineId,
+                nome,
+                tipo,
+                fase,
+                revisao: revisao || 'R0',
+                folha,
+                url,
+                extensao,
+                origem,
+                faseObra,
+                tags: tags ? JSON.stringify(tags) : null
+            }
+        });
+
+        // Auto-update discipline status if linked
+        if (disciplineId) {
+            await prisma.discipline.update({
+                where: { id: disciplineId },
+                data: {
+                    status: 'EM_DESENVOLVIMENTO',
+                    versaoAtual: revisao || 'R0'
+                }
+            });
+        }
+
+        res.json(file);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao fazer upload do arquivo' });
+    }
+});
+
+// Get project files
+app.get('/api/projects/:id/files', async (req, res) => {
+    const { id } = req.params;
+    const { disciplineId, origem, faseObra } = req.query;
+
+    try {
+        const where: any = { projectId: id };
+        if (disciplineId) where.disciplineId = disciplineId as string;
+        if (origem) where.origem = origem as string;
+        if (faseObra) where.faseObra = faseObra as string;
+
+        const files = await prisma.projectFile.findMany({
+            where,
+            orderBy: { criadoEm: 'desc' }
+        });
+
+        res.json(files);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar arquivos do projeto' });
+    }
+});
+
+// ========== GESTÃO DE ESTOQUE ==========
+// Get stock movements with context filter
+app.get('/api/stock/movements', async (req, res) => {
+    const { context, obraId } = req.query;
+
+    try {
+        const where: any = {};
+
+        // context=obra: only movements with obraId
+        // context=local: only movements without obraId (almoxarifado)
+        if (context === 'obra') {
+            where.obraId = { not: null };
+            if (obraId) where.obraId = obraId as string;
+        } else if (context === 'local') {
+            where.obraId = null;
+        }
+
+        const movements = await prisma.stockMovement.findMany({
+            where,
+            include: {
+                usuario: { select: { nome: true } },
+                obra: { select: { nome: true } }
+            },
+            orderBy: { criadoEm: 'desc' }
+        });
+
+        res.json(movements);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar movimentações de estoque' });
+    }
+});
+
+// Create stock movement
+app.post('/api/stock/movements', async (req, res) => {
+    const { tipo, item, quantidade, unidade, obraId, usuarioId, observacao } = req.body;
+
+    try {
+        const movement = await prisma.stockMovement.create({
+            data: { tipo, item, quantidade, unidade, obraId, usuarioId, observacao }
+        });
+
+        res.json(movement);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao criar movimentação de estoque' });
+    }
+});
+
+// ========== GESTÃO DE FROTA ==========
+// CRUD for vehicles
+app.get('/api/vehicles', async (req, res) => {
+    try {
+        const vehicles = await prisma.vehicle.findMany({
+            include: { responsavel: { select: { nome: true } } },
+            orderBy: { placa: 'asc' }
+        });
+        res.json(vehicles);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar veículos' });
+    }
+});
+
+app.post('/api/vehicles', async (req, res) => {
+    const { placa, modelo, marca, tipo, cor, ano, responsavelId } = req.body;
+
+    try {
+        const vehicle = await prisma.vehicle.create({
+            data: { placa, modelo, marca, tipo, cor, ano, responsavelId, status: 'DISPONIVEL' }
+        });
+        res.json(vehicle);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao criar veículo' });
+    }
+});
+
+app.patch('/api/vehicles/:id', async (req, res) => {
+    const { id } = req.params;
+    const { modelo, marca, tipo, cor, ano, responsavelId, status, quilometragem } = req.body;
+
+    try {
+        const vehicle = await prisma.vehicle.update({
+            where: { id },
+            data: { modelo, marca, tipo, cor, ano, responsavelId, status, quilometragem }
+        });
+        res.json(vehicle);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao atualizar veículo' });
+    }
+});
+
+app.delete('/api/vehicles/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        await prisma.vehicle.delete({ where: { id } });
+        res.json({ message: 'Veículo removido com sucesso' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao remover veículo' });
     }
 });
 

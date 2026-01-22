@@ -217,6 +217,7 @@ model ProjectFile {
   id            String   @id @default(cuid())
   projectId     String
   project       Project  @relation(fields: [projectId], references: [id])
+  disciplineId  String?  // Vincula a uma disciplina específica
   nome          String   // Nome padronizado: João Silva – ARQ – EXE – R0 – F01.pdf
   tipo          String?  // ALV, ORC, CPR, CRO, PED, REL, MEM, OUT, ARQ, EST, HID, ELE, etc
   fase          String?  // PRE, LEG, EXE, CON
@@ -224,6 +225,9 @@ model ProjectFile {
   folha         String?
   url           String
   extensao      String
+  origem        String?  // CONSTRUTORA, RECEBIDO, TERCEIRO
+  faseObra      String?  // ORCAMENTO, EXECUCAO, CONCLUIDA
+  tags          String?  // JSON array de tags personalizadas
   criadoEm      DateTime @default(now())
 }
 

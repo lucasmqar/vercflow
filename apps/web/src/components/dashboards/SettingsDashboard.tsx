@@ -12,7 +12,8 @@ import {
     Users as UsersIcon,
     Plus,
     Mail,
-    Lock
+    Lock,
+    History
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,6 +30,8 @@ import {
     DialogFooter
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import HeaderAnimated from '@/components/common/HeaderAnimated';
+import { PlaceholderModal } from '@/components/shared/PlaceholderModal';
 import {
     Select,
     SelectContent,
@@ -38,12 +41,20 @@ import {
 } from '@/components/ui/select';
 import { DashboardTab } from '@/types';
 
-export function SettingsDashboard({ onTabChange }: { onTabChange: (tab: DashboardTab) => void }) {
+export function SettingsDashboard({ onTabChange, onOpenWizard }: { onTabChange: (tab: DashboardTab) => void, onOpenWizard?: () => void }) {
     const { user, logout } = useAuth();
     const [users, setUsers] = useState<any[]>([]);
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
     const [isSavingUser, setIsSavingUser] = useState(false);
     const [newUser, setNewUser] = useState({ nome: '', email: '', role: 'USUARIO_PADRAO', senhaHash: '123456' });
+    const [modalConfig, setModalConfig] = useState<{ isOpen: boolean; title: string; icon?: any }>({
+        isOpen: false,
+        title: "",
+    });
+
+    const openPlaceholder = (title: string, icon?: any) => {
+        setModalConfig({ isOpen: true, title, icon });
+    };
 
     useEffect(() => {
         if (user?.role === 'ADMIN' || user?.role === 'CEO') {
@@ -85,8 +96,18 @@ export function SettingsDashboard({ onTabChange }: { onTabChange: (tab: Dashboar
             title: "Conta & Perfil",
             icon: UserIcon,
             items: [
-                { label: "Informações Pessoais", description: user?.nome || "Carregando...", action: "Editar" },
-                { label: "Segurança & Autenticação", description: "Senha e chaves de acesso", action: "Gerenciar" }
+                {
+                    label: "Informações Pessoais",
+                    description: user?.nome || "Carregando...",
+                    action: "Editar",
+                    onClick: () => openPlaceholder("Editar Informações Pessoais", UserIcon)
+                },
+                {
+                    label: "Segurança & Autenticação",
+                    description: "Senha e chaves de acesso",
+                    action: "Gerenciar",
+                    onClick: () => openPlaceholder("Segurança & Autenticação", Shield)
+                }
             ]
         },
         {
@@ -100,7 +121,12 @@ export function SettingsDashboard({ onTabChange }: { onTabChange: (tab: Dashboar
                     action: "Ver Lista",
                     onClick: () => setIsUserModalOpen(true)
                 },
-                { label: "Logs de Atividade", description: "Auditoria de alterações globais", action: "Acessar" }
+                {
+                    label: "Logs de Atividade",
+                    description: "Auditoria de alterações globais",
+                    action: "Acessar",
+                    onClick: () => openPlaceholder("Registro de Auditoria VERC", History)
+                }
             ]
         },
         {
@@ -121,7 +147,7 @@ export function SettingsDashboard({ onTabChange }: { onTabChange: (tab: Dashboar
             <div className="max-w-4xl mx-auto w-full">
                 <div className="mb-10 text-center lg:text-left flex flex-col lg:flex-row justify-between items-end gap-4">
                     <div>
-                        <h1 className="text-3xl font-black tracking-tighter text-foreground">Configurações</h1>
+                        <HeaderAnimated title="Configurações" />
                         <p className="text-muted-foreground font-medium">Controle total da sua experiência e do ecossistema VERCFLOW</p>
                     </div>
                     <Badge variant="outline" className="rounded-full px-4 py-1.5 border-primary/20 bg-primary/5 text-primary font-bold">
@@ -179,6 +205,13 @@ export function SettingsDashboard({ onTabChange }: { onTabChange: (tab: Dashboar
                     </div>
                 </div>
             </div>
+
+            <PlaceholderModal
+                isOpen={modalConfig.isOpen}
+                onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
+                title={modalConfig.title}
+                icon={modalConfig.icon}
+            />
 
             {/* User Management Modal */}
             <Dialog open={isUserModalOpen} onOpenChange={setIsUserModalOpen}>

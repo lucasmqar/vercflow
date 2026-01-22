@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
+  onSelect?: (item: SearchResult) => void;
 }
 
 type SearchResult = {
@@ -37,7 +38,7 @@ const quickActions: SearchResult[] = [
   { id: 'new-obra', type: 'action', title: 'Nova Obra', subtitle: 'Cadastrar novo empreendimento', icon: Building },
 ];
 
-export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
+export function CommandPalette({ isOpen, onClose, onSelect }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   // const navigate = useNavigate(); // Hook if we had routing set up for all items
@@ -111,6 +112,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     } else if (e.key === 'Enter' && results[selectedIndex]) {
       // Handle selection
       console.log('Selected:', results[selectedIndex]);
+      if (onSelect) onSelect(results[selectedIndex]);
       onClose();
     }
   };
@@ -180,6 +182,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                         key={`${result.type}-${result.id}`}
                         onClick={() => {
                           console.log('Click select:', result);
+                          if (onSelect) onSelect(result);
                           onClose();
                         }}
                         onMouseEnter={() => setSelectedIndex(index)}

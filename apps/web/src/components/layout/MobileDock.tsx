@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState } from 'react';
 import {
     Plus,
@@ -5,17 +7,28 @@ import {
     User,
     Sun,
     Moon,
-    ClipboardList,
     LayoutDashboard,
     Zap,
     Layers,
     Search,
-    Settings
+    Settings,
+    Building2,
+    Target,
+    Shield,
+    Box,
+    Truck,
+    DollarSign,
+    PieChart,
+    Hammer,
+    Users,
+    ChevronUp,
+    Grid
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/components/providers/ThemeProvider';
 import type { DashboardTab } from '@/types';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface MobileDockProps {
     activeTab: DashboardTab;
@@ -29,89 +42,132 @@ export function MobileDock({ activeTab, onTabChange, onOpenCommandPalette }: Mob
     const { theme, setTheme, actualTheme } = useTheme();
 
     const toggleTheme = () => {
-        setTheme(theme === 'dark' ? 'light' : 'dark');
+        setTheme(actualTheme === 'dark' ? 'light' : 'dark');
     };
 
     const navItems = [
+        { id: 'dashboard', icon: PieChart, label: 'Resumo' },
+        { id: 'home', icon: LayoutDashboard, label: 'Geral' },
+        { id: 'comercial', icon: Target, label: 'Comercial' },
+        { id: 'obras', icon: Building2, label: 'Obras' },
+        { id: 'gestao-projetos', icon: Layers, label: 'Projetos' },
+        { id: 'clientes', icon: Users, label: 'Clientes' },
+        { id: 'disciplinas', icon: Hammer, label: 'Engenharia' },
+        { id: 'triagem', icon: Shield, label: 'Triagem' },
+        { id: 'atividades', icon: Zap, label: 'Campo' },
+        { id: 'captura', icon: Plus, label: 'Captura' },
+        { id: 'estoque', icon: Box, label: 'Compras' },
+        { id: 'frota', icon: Truck, label: 'Frota' },
+        { id: 'financeiro', icon: DollarSign, label: 'Financeiro' },
+        { id: 'equipe', icon: User, label: 'Pessoas' },
         { id: 'config', icon: Settings, label: 'Ajustes' },
-        { id: 'equipe', icon: User, label: 'Equipe' },
-        { id: 'atividades', icon: Zap, label: 'Tarefas' },
-        { id: 'triagem', icon: Layers, label: 'Triagem' },
-        { id: 'dashboard', icon: LayoutDashboard, label: 'Painel' },
-        { id: 'search', icon: Search, isAction: true, label: 'Busca' },
     ];
 
+    const activeItem = navItems.find(item => item.id === activeTab) || navItems[1];
+
     return (
-        <div className="fixed bottom-6 right-6 z-[9999] lg:hidden flex flex-col items-end pointer-events-none">
-            {/* Dock Menu Container */}
-            <div
-                className={cn(
-                    "flex flex-col-reverse items-end gap-3 mb-4 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
-                    isExpanded ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-10 pointer-events-none"
-                )}
-            >
-                {/* Theme Toggle */}
-                <button
-                    onClick={() => {
-                        toggleTheme();
-                        setIsExpanded(false);
-                    }}
-                    className="w-12 h-12 rounded-full flex items-center justify-center glass-hub text-foreground shadow-lg hover:scale-105 active:scale-95 transition-transform"
-                >
-                    {actualTheme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-                </button>
-
-                {/* Nav Items */}
-                {navItems.map((item, idx) => {
-                    const isActive = activeTab === item.id;
-                    const Icon = item.icon;
-
-                    return (
-                        <div key={item.label} className="flex items-center gap-3">
-                            <span className={cn(
-                                "px-2 py-1 bg-background/80 backdrop-blur-md text-[10px] font-bold uppercase tracking-widest rounded-md border border-white/10 shadow-sm transition-opacity duration-300",
-                                isExpanded ? "opacity-100" : "opacity-0"
-                            )}>
-                                {item.label}
-                            </span>
-                            <button
-                                onClick={() => {
-                                    if (item.id === 'search') {
-                                        onOpenCommandPalette();
-                                    } else {
-                                        onTabChange(item.id as DashboardTab);
-                                    }
-                                    setIsExpanded(false);
-                                }}
-                                className={cn(
-                                    "w-12 h-12 rounded-full flex items-center justify-center glass-hub shadow-lg transition-all duration-300 active:scale-95",
-                                    isActive ? "bg-primary text-primary-foreground border-primary" : "text-muted-foreground hover:text-foreground"
-                                )}
-                                style={{
-                                    transitionDelay: `${idx * 50}ms`
-                                }}
-                            >
-                                <Icon size={20} />
-                            </button>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Main FAB */}
-            <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className={cn(
-                    "w-16 h-16 rounded-full flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-white/20 backdrop-blur-xl transition-all duration-500 pointer-events-auto z-[10000]",
-                    isExpanded ? "bg-primary text-primary-foreground rotate-45" : "bg-white/10 text-foreground hover:scale-105 active:scale-95"
-                )}
-                style={{
-                    background: isExpanded ? '' : 'rgba(255, 255, 255, 0.05)', // Fallback for glass
-                    backdropFilter: 'blur(20px)'
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] lg:hidden">
+            {/* LiquidGlass Container */}
+            <motion.div
+                initial={false}
+                animate={isExpanded ? {
+                    width: "90vw",
+                    height: "auto",
+                    borderRadius: "40px",
+                    padding: "24px"
+                } : {
+                    width: "72px",
+                    height: "72px",
+                    borderRadius: "36px",
+                    padding: "0px"
                 }}
+                transition={{ type: "spring", damping: 20, stiffness: 200 }}
+                className="bg-background/80 backdrop-blur-3xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.4)] overflow-hidden relative"
             >
-                <Plus size={32} strokeWidth={1.5} />
-            </button>
+                <AnimatePresence mode="wait">
+                    {!isExpanded ? (
+                        <motion.button
+                            key="collapsed"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsExpanded(true)}
+                            className="w-full h-full flex items-center justify-center text-primary group"
+                        >
+                            <motion.div
+                                animate={{ y: [0, -2, 0] }}
+                                transition={{ repeat: Infinity, duration: 2 }}
+                            >
+                                <activeItem.icon size={28} strokeWidth={2.5} />
+                            </motion.div>
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-background" />
+                        </motion.button>
+                    ) : (
+                        <motion.div
+                            key="expanded"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className="flex flex-col gap-6"
+                        >
+                            <div className="flex items-center justify-between pb-4 border-b border-white/5">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center text-white">
+                                        <Grid size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase tracking-widest leading-none">Vercflow OS</h3>
+                                        <p className="text-[10px] text-muted-foreground font-bold mt-1">SISTEMA INTEGRADO</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setIsExpanded(false)}
+                                    className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-4 gap-4 max-h-[50vh] overflow-y-auto no-scrollbar py-2">
+                                {navItems.map((item) => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => {
+                                            onTabChange(item.id as DashboardTab);
+                                            setIsExpanded(false);
+                                        }}
+                                        className={cn(
+                                            "flex flex-col items-center gap-2 p-3 rounded-[24px] transition-all",
+                                            activeTab === item.id
+                                                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105"
+                                                : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                                        )}
+                                    >
+                                        <item.icon size={20} />
+                                        <span className="text-[9px] font-black uppercase tracking-tighter">{item.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/5">
+                                <button
+                                    onClick={onOpenCommandPalette}
+                                    className="flex items-center justify-center gap-2 h-12 rounded-[20px] bg-muted/40 font-black text-[10px] uppercase tracking-widest text-muted-foreground"
+                                >
+                                    <Search size={16} /> Buscar
+                                </button>
+                                <button
+                                    onClick={toggleTheme}
+                                    className="flex items-center justify-center gap-2 h-12 rounded-[20px] bg-muted/40 font-black text-[10px] uppercase tracking-widest text-muted-foreground"
+                                >
+                                    {actualTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                                    {actualTheme === 'dark' ? 'Light' : 'Dark'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </motion.div>
         </div>
     );
 }

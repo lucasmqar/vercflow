@@ -69,12 +69,51 @@ export interface Project {
   client?: Client;
   mestreObraId?: string;
   engenheiroId?: string;
+  orcamentoId?: string; // Link to the original commercial budget
+  propostaId?: string;   // Link to the approved proposal
   criadoEm: string;
   updatedAt: string;
   _count?: {
     activities: number;
     records: number;
   }
+}
+
+export interface Lead {
+  id: string;
+  clientId: string;
+  client?: Client;
+  nomeObra: string;
+  localizacao: string;
+  areaEstimada?: number;
+  tipoObra: string;
+  status: 'NOVO' | 'EM_QUALIFICACAO' | 'QUALIFICADO' | 'PERDIDO' | 'CONVERTIDO';
+  criadoEm: string;
+}
+
+export interface Budget {
+  id: string;
+  leadId?: string;
+  lead?: Lead;
+  projectId?: string;
+  project?: Project;
+  escopoMacro: string;
+  valorEstimado: number;
+  prazoEstimadoMeses: number;
+  status: 'EM_ELABORACAO' | 'ENVIADO' | 'APROVADO' | 'REJEITADO';
+  criadoEm: string;
+}
+
+export interface Proposal {
+  id: string;
+  budgetId: string;
+  budget?: Budget;
+  versao: number;
+  valorFinal: number;
+  condicoesEspeciais?: string;
+  status: 'PENDENTE' | 'NEGOCIACAO' | 'APROVADA' | 'RECUSADA' | 'FECHADA';
+  dataValidade?: string;
+  criadoEm: string;
 }
 
 export interface Record {
@@ -214,16 +253,15 @@ export interface Task {
 }
 
 export type DashboardTab =
-  | 'home'
-  | 'captura'
-  | 'triagem'
-  | 'atividades'
-  | 'obras'
-  | 'equipe'
-  | 'dashboard'
-  | 'config'
-  | 'clientes'
-  | 'disciplinas'
-  | 'financeiro'
-  | 'estoque'
-  | 'gestao-projetos';
+  | 'home'         // Geral (Home + Resumo)
+  | 'comercial'    // Comercial (Leads + Clientes)
+  | 'obras'        // Obras
+  | 'captura'      // Captura
+  | 'triagem'      // Triagem
+  | 'projetos'     // Projetos (Board + Disciplinas)
+  | 'engenharia'   // Engenharia (Core + Site Controls + Assets)
+  | 'estoque'      // Estoque (Stock + Purchases)
+  | 'frota'        // Frota
+  | 'financeiro'   // Financeiro (Cashflow + Propostas)
+  | 'equipe'       // Equipe (Pessoas)
+  | 'config';      // Ajustes
