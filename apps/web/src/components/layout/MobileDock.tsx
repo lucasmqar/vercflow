@@ -22,7 +22,10 @@ import {
     Hammer,
     Users,
     ChevronUp,
-    Grid
+    Grid,
+    Camera,
+    ShieldCheck,
+    Palette
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -46,21 +49,20 @@ export function MobileDock({ activeTab, onTabChange, onOpenCommandPalette }: Mob
     };
 
     const navItems = [
-        { id: 'dashboard', icon: PieChart, label: 'Resumo' },
-        { id: 'home', icon: LayoutDashboard, label: 'Geral' },
+        { id: 'home', icon: LayoutDashboard, label: 'Início' },
+        { id: 'captura', icon: Camera, label: 'Captura' },
+        { id: 'triagem', icon: ShieldCheck, label: 'Triagem' },
         { id: 'comercial', icon: Target, label: 'Comercial' },
         { id: 'obras', icon: Building2, label: 'Obras' },
-        { id: 'gestao-projetos', icon: Layers, label: 'Projetos' },
-        { id: 'clientes', icon: Users, label: 'Clientes' },
-        { id: 'disciplinas', icon: Hammer, label: 'Engenharia' },
-        { id: 'triagem', icon: Shield, label: 'Triagem' },
-        { id: 'atividades', icon: Zap, label: 'Campo' },
-        { id: 'captura', icon: Plus, label: 'Captura' },
-        { id: 'estoque', icon: Box, label: 'Compras' },
-        { id: 'frota', icon: Truck, label: 'Frota' },
+        { id: 'projetos', icon: Layers, label: 'Projetos' },
+        { id: 'projetos', icon: Layers, label: 'Projetos' },
+        { id: 'engenharia', icon: Hammer, label: 'Engenharia' },
+        { id: 'design', icon: Palette, label: 'Design' }, // New tab
         { id: 'financeiro', icon: DollarSign, label: 'Financeiro' },
-        { id: 'equipe', icon: User, label: 'Pessoas' },
-        { id: 'config', icon: Settings, label: 'Ajustes' },
+        { id: 'estoque', icon: Box, label: 'Compras' }, // Compras & Estoque (label shortened for mobile)
+        { id: 'rh-sst', icon: Shield, label: 'RH / SST' },
+        { id: 'logistica', icon: Truck, label: 'Logística' },
+        { id: 'config', icon: Settings, label: 'Admin' },
     ];
 
     const activeItem = navItems.find(item => item.id === activeTab) || navItems[1];

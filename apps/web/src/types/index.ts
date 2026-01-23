@@ -53,17 +53,35 @@ export interface Client {
   criadoEm: string;
 }
 
+export interface Attachment {
+  id: string;
+  name: string;
+  url: string;
+  type: 'IMAGE' | 'PDF' | 'DOC' | 'OTHER';
+  size: number;
+  uploadedAt: string;
+}
+
+export interface WorkClassification {
+  zona: 'URBANA' | 'RURAL' | 'MISTA_EXPANSAO';
+  subzona?: 'VIA_PUBLICA' | 'CONDOMINIO_FECHADO' | 'LOTEAMENTO_ABERTO' | 'FAZENDA' | 'SITIO' | 'CHACARA' | 'RURAL_PRODUTIVA' | 'RURAL_INDUSTRIAL' | 'RURAL_EXPANSAO' | 'INSTITUCIONAL' | 'INDUSTRIAL_PLANEJADA';
+  uso: 'HABITACAO_UNIFAMILIAR' | 'HABITACAO_MULTIFAMILIAR' | 'COMERCIAL_VAREJISTA' | 'SERVICOS' | 'INDUSTRIAL_LEVE' | 'INDUSTRIAL_PESADO' | 'SAUDE' | 'INSTITUCIONAL';
+}
+
 export interface Project {
   id: string;
   codigoInterno?: string;
   nome: string;
   endereco?: string;
   tipoObra?: string;
+  constructionType?: string; // Added to fix type error
+  classificacao?: WorkClassification;
   dadosLote?: string;
   areaConstruida?: number;
+  area?: number; // Added to fix type error - likely alias for areaConstruida
   pavimentos?: number;
   exigenciasAprovacao?: string;
-  status: 'ORCAMENTO' | 'NEGOCIACAO' | 'FECHADA' | 'ATIVA' | 'CONCLUIDA' | 'EM_PAUSA' | 'CANCELADA';
+  status: 'ORCAMENTO' | 'NEGOCIACAO' | 'FECHADA' | 'ATIVA' | 'CONCLUIDA' | 'EM_PAUSA' | 'CANCELADA' | 'PLANEJAMENTO';
   categoria?: 'COMERCIAL' | 'INDUSTRIAL' | 'RESIDENCIAL' | 'HOSPITALAR' | 'CONDOMINIO' | 'EDIFICIO';
   clientId: string;
   client?: Client;
@@ -71,6 +89,7 @@ export interface Project {
   engenheiroId?: string;
   orcamentoId?: string; // Link to the original commercial budget
   propostaId?: string;   // Link to the approved proposal
+  attachments?: Attachment[];
   criadoEm: string;
   updatedAt: string;
   _count?: {
@@ -85,9 +104,11 @@ export interface Lead {
   client?: Client;
   nomeObra: string;
   localizacao: string;
+  classificacao?: WorkClassification;
   areaEstimada?: number;
   tipoObra: string;
   status: 'NOVO' | 'EM_QUALIFICACAO' | 'QUALIFICADO' | 'PERDIDO' | 'CONVERTIDO';
+  attachments?: Attachment[];
   criadoEm: string;
 }
 
@@ -100,7 +121,7 @@ export interface Budget {
   escopoMacro: string;
   valorEstimado: number;
   prazoEstimadoMeses: number;
-  status: 'EM_ELABORACAO' | 'ENVIADO' | 'APROVADO' | 'REJEITADO';
+  status: 'EM_ELABORACAO' | 'AGUARDANDO_ENGENHARIA' | 'ENVIADO' | 'APROVADO' | 'REJEITADO'; // Added AGUARDANDO_ENGENHARIA
   criadoEm: string;
 }
 
@@ -253,15 +274,16 @@ export interface Task {
 }
 
 export type DashboardTab =
-  | 'home'         // Geral (Home + Resumo)
-  | 'comercial'    // Comercial (Leads + Clientes)
-  | 'obras'        // Obras
+  | 'home'         // Início
   | 'captura'      // Captura
-  | 'triagem'      // Triagem
-  | 'projetos'     // Projetos (Board + Disciplinas)
-  | 'engenharia'   // Engenharia (Core + Site Controls + Assets)
-  | 'estoque'      // Estoque (Stock + Purchases)
-  | 'frota'        // Frota
-  | 'financeiro'   // Financeiro (Cashflow + Propostas)
-  | 'equipe'       // Equipe (Pessoas)
-  | 'config';      // Ajustes
+  | 'triagem'      // Triagem (Restored)
+  | 'comercial'    // Comercial
+  | 'obras'        // Obras
+  | 'projetos'     // Projetos
+  | 'engenharia'   // Engenharia
+  | 'financeiro'   // Financeiro
+  | 'estoque'      // Compras & Estoque
+  | 'rh-sst'       // RH / SST
+  | 'logistica'    // Logística
+  | 'design'       // Acabamentos & Design
+  | 'config';      // Admin / Configurações

@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    LayoutDashboard, Building2, Layers, Shield, Zap, Box, Users, DollarSign, PieChart, Hammer, Truck, Settings, Plus, Search, Target, Activity, FileText, ShoppingCart
+    LayoutDashboard, Building2, Layers, Shield, Zap, Box, Users, DollarSign, PieChart, Hammer, Truck, Settings, Plus, Search, Target, Activity, FileText, ShoppingCart, Camera, ShieldCheck, Palette
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,18 +16,19 @@ export function DesktopNav({ activeTab, onTabChange }: DesktopNavProps) {
     const { user } = useAuth();
 
     const navItems = [
-        { id: 'home', icon: LayoutDashboard, label: 'Geral' },
+        { id: 'home', icon: LayoutDashboard, label: 'Início' },
+        { id: 'captura', icon: Camera, label: 'Captura' },
+        { id: 'triagem', icon: ShieldCheck, label: 'Triagem' },
         { id: 'comercial', icon: Target, label: 'Comercial' },
         { id: 'obras', icon: Building2, label: 'Obras' },
-        { id: 'captura', icon: Plus, label: 'Captura' },
-        { id: 'triagem', icon: Shield, label: 'Triagem' },
         { id: 'projetos', icon: Layers, label: 'Projetos' },
         { id: 'engenharia', icon: Hammer, label: 'Engenharia' },
-        { id: 'estoque', icon: Box, label: 'Estoque' },
-        { id: 'frota', icon: Truck, label: 'Frota' },
+        { id: 'design', icon: Palette, label: 'Design' },
         { id: 'financeiro', icon: DollarSign, label: 'Financeiro' },
-        { id: 'equipe', icon: Users, label: 'Equipe' },
-        { id: 'config', icon: Settings, label: 'Ajustes' },
+        { id: 'estoque', icon: Box, label: 'Compras & Estoque' },
+        { id: 'rh-sst', icon: Shield, label: 'RH / SST' },
+        { id: 'logistica', icon: Truck, label: 'Logística' },
+        { id: 'config', icon: Settings, label: 'Admin' },
     ];
 
     return (

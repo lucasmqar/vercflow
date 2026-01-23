@@ -46,6 +46,10 @@ import { DashboardTab } from '@/types';
 import { ReusableKanbanBoard } from '@/components/tasks/ReusableKanbanBoard';
 import { getApiUrl } from '@/lib/api';
 import { PlaceholderModal } from '@/components/shared/PlaceholderModal';
+import { ObraDetailPage } from './ObraDetailPage';
+
+import { useAppFlow } from '@/store/useAppFlow';
+import { toast } from 'sonner';
 
 export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (tab: DashboardTab) => void, onOpenWizard?: () => void }) {
   const [moduleView, setModuleView] = useState<'geral' | 'atividades'>('geral');
@@ -55,18 +59,16 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
     title: "",
     type: "none"
   });
-  const [selectedObra, setSelectedObra] = useState<number | null>(null);
+  const [selectedObraId, setSelectedObraId] = useState<string | null>(null);
+
+  const { projects } = useAppFlow();
+
+  // Filter only active or relevant projects for Construction Management
+  const activeObras = projects.filter(p => p.status === 'ATIVA' || p.status === 'CONCLUIDA' || p.status === 'PLANEJAMENTO');
 
   const openPlaceholder = (title: string, icon?: any, type: any = "none") => {
     setModalConfig({ isOpen: true, title, icon, type });
   };
-
-  // Mock Obras
-  const obras = [
-    { id: 1, nome: "Edifício Sky Tower", endereco: "Av. Paulista, 1000", progresso: 78, status: "EM ANDAMENTO", entrega: "Dez/2024", equipe: 45, orcamento: "R$ 12.5M", custo: "R$ 9.2M" },
-    { id: 2, nome: "Residencial Park View", endereco: "Rua das Flores, 500", progresso: 32, status: "EM ANDAMENTO", entrega: "Jun/2025", equipe: 28, orcamento: "R$ 4.8M", custo: "R$ 1.5M" },
-    { id: 3, nome: "Galpão Logístico Alpha", endereco: "Rod. Anhanguera, km 20", progresso: 95, status: "RETA FINAL", entrega: "Ago/2024", equipe: 12, orcamento: "R$ 8.2M", custo: "R$ 7.9M" },
-  ];
 
   return (
     <div className="p-4 lg:p-8 space-y-8 h-full overflow-y-auto font-sans bg-secondary/10 pb-32 no-scrollbar">
@@ -75,9 +77,9 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
         <div>
           <div className="flex items-center gap-3 mb-1">
             <HeaderAnimated title="Gestão de Obras" />
-            {selectedObra && (
+            {selectedObraId && (
               <Badge className="bg-primary/10 text-primary border-none font-black text-[10px] flex items-center gap-2 px-3 h-7">
-                <ChevronRight size={14} /> {obras.find(o => o.id === selectedObra)?.nome.toUpperCase()}
+                <ChevronRight size={14} /> {activeObras.find(o => o.id === selectedObraId)?.nome.toUpperCase()}
               </Badge>
             )}
           </div>
@@ -136,7 +138,7 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
               <Card className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl p-8 shadow-sm">
                 <h4 className="font-black text-[10px] uppercase tracking-widest text-muted-foreground mb-6 opacity-60">Operações de Campo</h4>
                 <nav className="space-y-2">
-                  <LocalNavItem icon={LayoutGrid} label="Portfolio Global" active={!selectedObra} onClick={() => setSelectedObra(null)} />
+                  <LocalNavItem icon={LayoutGrid} label="Portfolio Global" active={!selectedObraId} onClick={() => setSelectedObraId(null)} />
                   <LocalNavItem icon={ClipboardList} label="Diários de Obra" onClick={() => openPlaceholder("Diário de Obra Digital", ClipboardList)} />
                   <LocalNavItem icon={Activity} label="Cronograma Master" onClick={() => openPlaceholder("Cronograma Master (Gantt)", Activity)} />
                   <LocalNavItem icon={Target} label="Metas Semanais" onClick={() => openPlaceholder("Metas & KPIs Semanais", Target)} />
@@ -145,7 +147,7 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
                 </nav>
               </Card>
 
-              {selectedObra && (
+              {selectedObraId && (
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
                   <Card className="rounded-[2.5rem] border-primary/20 bg-primary/5 p-8 border-dashed border-2 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -155,11 +157,11 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
                     <div className="space-y-6 relative z-10">
                       <div>
                         <p className="text-[9px] font-black text-muted-foreground uppercase mb-1 opacity-60">Budget Projetado</p>
-                        <p className="text-2xl font-black tracking-tighter">{obras.find(o => o.id === selectedObra)?.orcamento}</p>
+                        <p className="text-2xl font-black tracking-tighter">R$ 1.5M</p>
                       </div>
                       <div>
                         <p className="text-[9px] font-black text-muted-foreground uppercase mb-1 opacity-60">Custo Real Acumulado</p>
-                        <p className="text-2xl font-black tracking-tighter text-primary">{obras.find(o => o.id === selectedObra)?.custo}</p>
+                        <p className="text-2xl font-black tracking-tighter text-primary">R$ 450k</p>
                       </div>
                       <div className="pt-4 border-t border-primary/10">
                         <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted-foreground">
@@ -187,7 +189,7 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
 
                 <TabsContent value="vis-geral" className="space-y-6 mt-0">
                   <AnimatePresence mode="wait">
-                    {!selectedObra ? (
+                    {!selectedObraId ? (
                       <motion.div
                         key="portfolio"
                         initial={{ opacity: 0, y: 10 }}
@@ -195,11 +197,19 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
                         exit={{ opacity: 0, scale: 0.98 }}
                         className="space-y-6"
                       >
-                        {obras.map((obra) => (
+                        {activeObras.length === 0 && (
+                          <Card className="p-12 text-center rounded-[2.5rem] bg-muted/5 border-dashed border-2">
+                            <Building2 size={48} className="mx-auto text-muted-foreground opacity-20 mb-4" />
+                            <h3 className="text-xl font-black text-muted-foreground">Nenhuma Obra Ativa</h3>
+                            <p className="text-sm opacity-60 mt-2">Use o botão "Nova Obra" para começar.</p>
+                          </Card>
+                        )}
+
+                        {activeObras.map((obra) => (
                           <div
                             key={obra.id}
                             className="p-1 rounded-[2.5rem] transition-all bg-transparent"
-                            onClick={() => setSelectedObra(obra.id)}
+                            onClick={() => setSelectedObraId(obra.id)}
                           >
                             <Card className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl hover:border-primary/20 transition-all cursor-pointer group shadow-sm">
                               <CardContent className="p-8">
@@ -207,7 +217,7 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
                                   <div className="flex items-center gap-6">
                                     <div className="w-16 h-16 rounded-[1.5rem] bg-secondary/50 border border-white/5 flex items-center justify-center text-primary font-black shadow-inner group-hover:scale-110 transition-transform relative overflow-hidden">
                                       <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                      <span className="text-xl relative z-10">{obra.id}</span>
+                                      <span className="text-xl relative z-10">OB</span>
                                     </div>
                                     <div>
                                       <div className="flex items-center gap-4 mb-2">
@@ -216,10 +226,10 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
                                       </div>
                                       <div className="flex flex-wrap gap-4">
                                         <p className="text-[10px] text-muted-foreground flex items-center gap-2 font-black uppercase tracking-widest opacity-60">
-                                          <MapPin size={12} className="text-primary" /> {obra.endereco}
+                                          <MapPin size={12} className="text-primary" /> {obra.endereco || 'Local não definido'}
                                         </p>
                                         <p className="text-[10px] text-muted-foreground flex items-center gap-2 font-black uppercase tracking-widest opacity-60">
-                                          <Users size={12} className="text-primary" /> {obra.equipe} H.H
+                                          <Users size={12} className="text-primary" /> 12 H.H
                                         </p>
                                       </div>
                                     </div>
@@ -228,41 +238,11 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
                                   <div className="flex items-center gap-10 text-right">
                                     <div className="hidden sm:block">
                                       <p className="text-[9px] font-black uppercase text-muted-foreground opacity-50 mb-1 tracking-widest">Entrega</p>
-                                      <p className="text-base font-black tracking-tight">{obra.entrega}</p>
+                                      <p className="text-base font-black tracking-tight">Em Planejamento</p>
                                     </div>
                                     <Button variant="ghost" className="w-12 h-12 rounded-[1rem] border border-white/5 group-hover:bg-primary group-hover:text-white transition-all p-0 hover:scale-110 active:scale-90 shadow-sm">
                                       <ChevronRight size={24} />
                                     </Button>
-                                  </div>
-                                </div>
-
-                                <div className="mt-8 pt-8 border-t border-white/5 grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
-                                  <div className="lg:col-span-8 space-y-3">
-                                    <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">
-                                      <span>Cronograma Físico</span>
-                                      <span className="text-primary">{obra.progresso}%</span>
-                                    </div>
-                                    <div className="h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden">
-                                      <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${obra.progresso}%` }}
-                                        transition={{ duration: 1.5, ease: "circOut" }}
-                                        className="h-full bg-primary"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="lg:col-span-4 flex justify-end gap-2">
-                                    <Badge variant="secondary" className="bg-secondary/40 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 border border-white/5">Budget {obra.orcamento}</Badge>
-                                    <Badge
-                                      variant="secondary"
-                                      className="bg-primary/10 text-primary border-primary/20 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 hover:bg-primary hover:text-white transition-all cursor-pointer"
-                                      onClick={(e: any) => {
-                                        e.stopPropagation();
-                                        openPlaceholder(`Relatório BI: ${obra.nome}`, BarChart3);
-                                      }}
-                                    >
-                                      Relatório BI
-                                    </Badge>
                                   </div>
                                 </div>
                               </CardContent>
@@ -271,16 +251,17 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
                         ))}
                       </motion.div>
                     ) : (
+
                       <motion.div
                         key="detail"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
+                        className="fixed inset-0 z-50 bg-background"
                       >
-                        <ObraDetailView
-                          obra={obras.find(o => o.id === selectedObra)}
-                          onBack={() => setSelectedObra(null)}
-                          openPlaceholder={openPlaceholder}
+                        <ObraDetailPage
+                          obra={activeObras.find(o => o.id === selectedObraId)!}
+                          onBack={() => setSelectedObraId(null)}
                         />
                       </motion.div>
                     )}

@@ -25,23 +25,83 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import HeaderAnimated from '@/components/common/HeaderAnimated';
-import { DashboardTab, Lead, Budget, Proposal } from '@/types';
+import { DashboardTab } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { PlaceholderModal } from '@/components/shared/PlaceholderModal';
+import { useAppFlow } from '@/store/useAppFlow';
+import { toast } from 'sonner';
 
-export function ComercialDashboard({ onTabChange }: { onTabChange: (tab: DashboardTab) => void }) {
+import { LeadListPage, LeadDetailPage } from './comercial/LeadManagement';
+import { BudgetListPage, BudgetDetailPage } from './comercial/BudgetManagement';
+import { ProposalListPage, ProposalDetailPage } from './comercial/ProposalManagement';
+
+export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange: (tab: DashboardTab) => void, onOpenWizard?: () => void }) {
     const [view, setView] = useState<'leads' | 'orcamentos' | 'propostas' | 'clientes'>('leads');
+    const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+    const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
+    const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
+
     const [openPlaceholder, setOpenPlaceholder] = useState(false);
     const [modalConfig, setModalConfig] = useState<any>({});
+
+    const {
+        leads,
+        budgets,
+        proposals,
+        createBudget,
+        createProposal,
+        updateProposalStatus
+    } = useAppFlow();
+
+    // Stats calculation based on real data
+    const totalPipeline = budgets.reduce((acc, b) => acc + b.valorEstimado, 0) + proposals.reduce((acc, p) => acc + p.valorFinal, 0);
+    const activeLeads = leads.filter(l => l.status !== 'PERDIDO' && l.status !== 'CONVERTIDO').length;
+    const pendingProposals = proposals.filter(p => p.status === 'PENDENTE' || p.status === 'NEGOCIACAO').length;
 
     const handlePlaceholder = (title: string, desc: string, icon: any, type: any = 'none') => {
         setModalConfig({ title, description: desc, icon, type });
         setOpenPlaceholder(true);
     };
 
+    const handleQuickAdd = () => {
+        if (view === 'leads' && onOpenWizard) {
+            onOpenWizard();
+        } else {
+            handlePlaceholder(`Novo ${view === 'orcamentos' ? 'Orçamento' : 'Proposta'}`, `Registre um novo item no funil do Comercial.`, Plus, 'none');
+        }
+    };
+
+    // Flow Logic
+    const handleConvertLead = (lead: any) => {
+        const budgetId = createBudget({
+            leadId: lead.id,
+            escopoMacro: `Orçamento para a obra ${lead.nomeObra}.`,
+            valorEstimado: lead.areaEstimada ? lead.areaEstimada * 2500 : 500000,
+            prazoEstimadoMeses: 12,
+            status: 'EM_ELABORACAO'
+        });
+        setSelectedLeadId(null);
+        setView('orcamentos');
+        setSelectedBudgetId(budgetId);
+        toast.success("Lead convertido em Orçamento!");
+    };
+
+    const handleCreateProposal = (budget: any) => {
+        const proposalId = createProposal({
+            budgetId: budget.id,
+            versao: 1,
+            valorFinal: budget.valorEstimado * 0.95,
+            status: 'PENDENTE'
+        });
+        setSelectedBudgetId(null);
+        setView('propostas');
+        setSelectedProposalId(proposalId);
+        toast.success("Proposta comercial gerada!");
+    };
+
     return (
-        <div className="p-4 lg:p-8 space-y-8 h-full overflow-y-auto font-sans bg-secondary/10 pb-24">
+        <div className="p-4 lg:p-8 space-y-8 h-full overflow-y-auto font-sans bg-secondary/10 pb-24 no-scrollbar">
             {/* Header */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 <div>
@@ -51,89 +111,128 @@ export function ComercialDashboard({ onTabChange }: { onTabChange: (tab: Dashboa
                     </p>
                 </div>
                 <div className="flex gap-3 bg-muted/20 p-1 rounded-2xl border border-border/40">
-                    <Button
-                        variant="ghost"
-                        onClick={() => setView('leads')}
-                        className={cn(
-                            "rounded-xl text-[10px] font-black uppercase tracking-widest px-6 h-10",
-                            view === 'leads' ? "bg-background shadow-sm text-primary" : "text-muted-foreground"
-                        )}
-                    >
-                        Leads
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        onClick={() => setView('orcamentos')}
-                        className={cn(
-                            "rounded-xl text-[10px] font-black uppercase tracking-widest px-6 h-10",
-                            view === 'orcamentos' ? "bg-background shadow-sm text-primary" : "text-muted-foreground"
-                        )}
-                    >
-                        Orçamentos
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        onClick={() => setView('propostas')}
-                        className={cn(
-                            "rounded-xl text-[10px] font-black uppercase tracking-widest px-6 h-10",
-                            view === 'propostas' ? "bg-background shadow-sm text-primary" : "text-muted-foreground"
-                        )}
-                    >
-                        Propostas
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        onClick={() => setView('clientes')}
-                        className={cn(
-                            "rounded-xl text-[10px] font-black uppercase tracking-widest px-6 h-10",
-                            view === 'clientes' ? "bg-background shadow-sm text-primary" : "text-muted-foreground"
-                        )}
-                    >
-                        Clientes
-                    </Button>
+                    {['leads', 'orcamentos', 'propostas', 'clientes'].map((v) => (
+                        <Button
+                            key={v}
+                            variant="ghost"
+                            onClick={() => {
+                                setView(v as any);
+                                setSelectedLeadId(null);
+                                setSelectedBudgetId(null);
+                                setSelectedProposalId(null);
+                            }}
+                            className={cn(
+                                "rounded-xl text-[10px] font-black uppercase tracking-widest px-6 h-10",
+                                view === v ? "bg-background shadow-sm text-primary" : "text-muted-foreground"
+                            )}
+                        >
+                            {v.charAt(0).toUpperCase() + v.slice(1)}
+                        </Button>
+                    ))}
                 </div>
             </div>
 
-            {/* Top Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <StatCard title="Pipeline Total" value="R$ 8.4M" change="+12.5%" icon={TrendingUp} color="blue" />
-                <StatCard title="Leads Ativos" value="24" change="+4" icon={Users} color="orange" />
-                <StatCard title="Taxa Conversão" value="18.5%" change="-2.1%" icon={Target} color="emerald" />
-                <StatCard title="Aguardando" value="7" desc="Propostas enviadas" icon={Clock} color="purple" />
+            {/* Top Stats Cards (Hide in detail views) */}
+            {!selectedLeadId && !selectedBudgetId && !selectedProposalId && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <StatCard
+                        title="Pipeline Total"
+                        value={totalPipeline.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' })}
+                        change="+12.5%"
+                        icon={TrendingUp}
+                        color="blue"
+                    />
+                    <StatCard title="Leads Ativos" value={activeLeads.toString()} change="+4" icon={Users} color="orange" />
+                    <StatCard title="Taxa Conversão" value="18.5%" change="-2.1%" icon={Target} color="emerald" />
+                    <StatCard title="Aguardando" value={pendingProposals.toString()} desc="Propostas enviadas" icon={Clock} color="purple" />
+                </div>
+            )}
+
+            {/* Action Cards Area (Replaces Floating Button) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {view === 'leads' && !selectedLeadId && (
+                    <Card className="rounded-[2rem] border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer border-dashed border-2 group" onClick={onOpenWizard}>
+                        <CardContent className="p-6 flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                                <Plus size={24} />
+                            </div>
+                            <div>
+                                <h3 className="font-black uppercase tracking-widest text-sm">Criar Novo Lead</h3>
+                                <p className="text-xs text-muted-foreground font-medium">Registrar nova oportunidade</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Just placeholders for budgets/proposals for now as main flow starts at Lead */}
+                {view === 'orcamentos' && !selectedBudgetId && (
+                    <Card className="rounded-[2rem] border-border/40 bg-muted/5 border-dashed border-2 opacity-50 cursor-not-allowed">
+                        <CardContent className="p-6 flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                                <Plus size={24} className="text-muted-foreground" />
+                            </div>
+                            <div>
+                                <h3 className="font-black uppercase tracking-widest text-sm text-muted-foreground">Criar Orçamento</h3>
+                                <p className="text-xs text-muted-foreground font-medium">Inicie via conversão de Lead</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
 
-            {/* Filters & Search */}
-            <div className="flex flex-col md:flex-row gap-4">
-                <div className="relative flex-1">
-                    <Search className="absolute left-4 top-3.5 text-muted-foreground" size={18} />
-                    <Input placeholder="Buscar por cliente, obra ou código..." className="pl-12 h-12 rounded-xl border-border/40 bg-background/50 text-sm font-medium shadow-inner" />
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" className="rounded-xl h-12 gap-2 font-black px-6 border-border/40 uppercase text-[10px] tracking-widest"><Filter size={18} /> Filtros</Button>
-                    <Button
-                        onClick={() => handlePlaceholder(`Novo ${view === 'leads' ? 'Lead' : view === 'orcamentos' ? 'Orçamento' : 'Proposta'}`, `Registre um novo item no funil do Comercial.`, Plus, view === 'leads' ? 'lead' : 'none')}
-                        className="rounded-xl h-12 gap-2 font-black px-6 uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20"
-                    >
-                        <Plus size={18} /> Novo {view === 'leads' ? 'Lead' : view === 'orcamentos' ? 'Orçamento' : 'Proposta'}
-                    </Button>
-                </div>
-            </div>
-
-            {/* List View */}
             <AnimatePresence mode="wait">
                 <motion.div
-                    key={view}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="grid gap-4"
+                    key={`${view}-${selectedLeadId}-${selectedBudgetId}-${selectedProposalId}`}
+                    initial={{ opacity: 0, scale: 0.99 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.99 }}
+                    transition={{ duration: 0.2 }}
+                    className="min-h-[500px]"
                 >
-                    {view === 'leads' && <LeadsList onAction={handlePlaceholder} />}
-                    {view === 'orcamentos' && <BudgetsList onAction={handlePlaceholder} />}
-                    {view === 'propostas' && <ProposalsList onAction={handlePlaceholder} />}
+                    {view === 'leads' && (
+                        selectedLeadId ? (
+                            <LeadDetailPage
+                                lead={leads.find(l => l.id === selectedLeadId)!}
+                                onBack={() => setSelectedLeadId(null)}
+                                onConvert={handleConvertLead}
+                            />
+                        ) : (
+                            <LeadListPage onSelect={(l) => setSelectedLeadId(l.id)} />
+                        )
+                    )}
+
+                    {view === 'orcamentos' && (
+                        selectedBudgetId ? (
+                            <BudgetDetailPage
+                                budget={budgets.find(b => b.id === selectedBudgetId)!}
+                                onBack={() => setSelectedBudgetId(null)}
+                                onCreateProposal={handleCreateProposal}
+                            />
+                        ) : (
+                            <BudgetListPage onSelect={(b) => setSelectedBudgetId(b.id)} />
+                        )
+                    )}
+
+                    {view === 'propostas' && (
+                        selectedProposalId ? (
+                            <ProposalDetailPage
+                                proposal={proposals.find(p => p.id === selectedProposalId)!}
+                                onBack={() => setSelectedProposalId(null)}
+                                onApprove={(id) => {
+                                    updateProposalStatus(id, 'APROVADA');
+                                    toast.success("Proposta Aprovada! Obra ativada com sucesso.");
+                                }}
+                            />
+                        ) : (
+                            <ProposalListPage onSelect={(p) => setSelectedProposalId(p.id)} />
+                        )
+                    )}
+
                     {view === 'clientes' && <EnhancedClientesList onAction={handlePlaceholder} />}
                 </motion.div>
             </AnimatePresence>
+
+
 
             <PlaceholderModal
                 isOpen={openPlaceholder}
@@ -174,129 +273,6 @@ function StatCard({ title, value, change, desc, icon: Icon, color }: any) {
                 {desc && <p className="text-[10px] font-bold opacity-40 mt-1">{desc}</p>}
             </CardContent>
         </Card>
-    );
-}
-
-function LeadsList({ onAction }: any) {
-    const data = [
-        { id: '1', client: 'Hospital Santa Rosa', obra: 'Reforma Ala C', area: 1200, status: 'QUALIFICADO', date: 'Há 2 dias' },
-        { id: '2', client: 'Grupo Madero', obra: 'Nova Unidade Campinas', area: 450, status: 'NOVO', date: 'Há 5 horas' },
-        { id: '3', client: 'Residencial Aurora', obra: 'Infraestrutura Hidráulica', area: 2500, status: 'EM_QUALIFICACAO', date: 'Ontem' },
-    ];
-
-    return (
-        <>
-            {data.map(item => (
-                <Card key={item.id} className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl hover:border-primary/20 hover:shadow-2xl transition-all group overflow-hidden">
-                    <CardContent className="p-8">
-                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                            <div className="flex items-center gap-6">
-                                <div className="w-16 h-16 rounded-[1.5rem] bg-amber-500/10 flex items-center justify-center text-amber-600">
-                                    <Target size={30} />
-                                </div>
-                                <div>
-                                    <h3 className="font-black text-xl leading-none group-hover:text-primary transition-colors">{item.client}</h3>
-                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-2">{item.obra} • {item.area}m²</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <Badge className="bg-amber-500/10 text-amber-600 font-black text-[10px] tracking-widest uppercase border-none">{item.status}</Badge>
-                                <Button variant="ghost" size="icon" className="rounded-full" onClick={() => onAction('Detalhes do Lead', `Visualizar pipeline para ${item.client}.`, Target)}>
-                                    <ChevronRight />
-                                </Button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
-        </>
-    );
-}
-
-function BudgetsList({ onAction }: any) {
-    const data = [
-        { id: '1', client: 'Condomínio Spazio', value: 'R$ 850.000', status: 'EM_ELABORACAO', date: 'Vence em 3 dias' },
-        { id: '2', client: 'Prefeitura Municipal', value: 'R$ 2.4M', status: 'ENVIADO', date: 'Há 1 semana' },
-    ];
-
-    return (
-        <>
-            {data.map(item => (
-                <Card key={item.id} className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl hover:border-primary/20 transition-all group">
-                    <CardContent className="p-8">
-                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                            <div className="flex items-center gap-6">
-                                <div className="w-16 h-16 rounded-[1.5rem] bg-blue-500/10 flex items-center justify-center text-blue-600">
-                                    <DollarSign size={30} />
-                                </div>
-                                <div>
-                                    <h3 className="font-black text-xl leading-none">{item.client}</h3>
-                                    <p className="text-xs font-black text-primary uppercase tracking-widest mt-2">{item.value}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <Badge className="bg-blue-500/10 text-blue-600 font-black text-[10px] tracking-widest uppercase border-none">{item.status}</Badge>
-                                <Button variant="ghost" size="icon" className="rounded-full" onClick={() => onAction('Edição de Orçamento', `Configurar itens de escopo macro para ${item.client}.`, DollarSign)}>
-                                    <ChevronRight />
-                                </Button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
-        </>
-    );
-}
-
-function ProposalsList({ onAction }: any) {
-    const data = [
-        { id: '1', client: 'Indústria Textil X', status: 'APROVADA', version: 'v3', val: 'R$ 1.2M' },
-        { id: '2', client: 'Posto Petrobras', status: 'NEGOCIACAO', version: 'v1', val: 'R$ 450k' },
-    ];
-
-    return (
-        <>
-            {data.map(item => (
-                <Card key={item.id} className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl hover:border-emerald-500/20 transition-all group">
-                    <CardContent className="p-8">
-                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                            <div className="flex items-center gap-6">
-                                <div className="w-16 h-16 rounded-[1.5rem] bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                                    <FileText size={30} />
-                                </div>
-                                <div>
-                                    <h3 className="font-black text-xl leading-none">{item.client}</h3>
-                                    <div className="flex items-center gap-3 mt-2">
-                                        <Badge variant="outline" className="text-[9px] font-black">{item.version}</Badge>
-                                        <p className="text-xs font-bold text-muted-foreground uppercase">{item.val}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <Badge className={cn(
-                                    "font-black text-[10px] tracking-widest uppercase border-none",
-                                    item.status === 'APROVADA' ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"
-                                )}>
-                                    {item.status}
-                                </Badge>
-                                {item.status === 'APROVADA' ? (
-                                    <Button
-                                        onClick={() => onAction('Ativar Obra', `Gerar DNA da obra e distribuir tarefas para ${item.client}.`, CheckCircle2)}
-                                        className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl px-6"
-                                    >
-                                        Ativar Obra
-                                    </Button>
-                                ) : (
-                                    <Button variant="ghost" size="icon" className="rounded-full" onClick={() => onAction('Gestão de Proposta', `Negociação e versões para ${item.client}.`, FileText)}>
-                                        <ChevronRight />
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
-        </>
     );
 }
 

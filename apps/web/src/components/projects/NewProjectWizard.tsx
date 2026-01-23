@@ -321,7 +321,9 @@ export function NewProjectWizard({ isOpen, onClose, onComplete }: NewProjectWiza
                             Cancelar
                         </Button>
                         <Button
-                            onClick={step === 4 ? () => onComplete(formData) : nextStep}
+                            onClick={step === 4 ? () => {
+                                onComplete(formData);
+                            } : nextStep}
                             className="rounded-xl h-12 font-black uppercase text-[10px] tracking-widest px-8 gap-2 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
                         >
                             {step === 4 ? 'Distribuir Tarefas' : 'Próximo Passo'} <ChevronRight size={18} />

@@ -10,11 +10,9 @@ import {
     Settings2,
     ChevronRight,
     Zap,
-    LayoutGrid,
     ClipboardCheck,
     Building2,
     Layers,
-    ArrowRight,
     MapPin,
     Droplets,
     Wind,
@@ -22,7 +20,13 @@ import {
     Paintbrush,
     CheckCircle2,
     Clock,
-    AlertCircle
+    AlertCircle,
+    ShoppingCart,
+    AlertTriangle,
+    Wrench,
+    Expand,
+    MoreHorizontal,
+    Maximize2
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,302 +34,327 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { DashboardTab } from '@/types';
+import { DashboardTab, Project } from '@/types';
 import { ReusableKanbanBoard } from '@/components/tasks/ReusableKanbanBoard';
 import HeaderAnimated from '@/components/common/HeaderAnimated';
 import { PlaceholderModal } from '@/components/shared/PlaceholderModal';
+import { useAppFlow } from '@/store/useAppFlow';
+import { EngenhariaRequests } from './EngenhariaRequests';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+
+// Standardized Disciplines Taxonomy (Based on Market Standards & User Input)
+const STANDARD_DISCIPLINES = [
+    { code: 'PROJ-ARQ', label: 'Arquitetura & Urbanismo', description: 'Executivo, Detalhamento, Legal', icon: Building2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { code: 'PROJ-EST', label: 'Estrutura & Fundações', description: 'Concreto, Metálica, Contenções', icon: Layers, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { code: 'PROJ-HID', label: 'Instalações Hidrossanitárias', description: 'Água Fria/Quente, Esgoto, Pluvial', icon: Droplets, color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
+    { code: 'PROJ-ELE', label: 'Instalações Elétricas', description: 'Baixa Tensão, Lógica, SPDA', icon: Zap, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
+    { code: 'PROJ-CLI', label: 'Climatização & Exaustão', description: 'HVAC, VRF, Exaustão Mecânica', icon: Wind, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { code: 'PROJ-INC', label: 'Prevenção de Incêndio', description: 'Hidrantes, Sprinklers, Detecção', icon: ShieldAlert, color: 'text-red-500', bg: 'bg-red-500/10' },
+    { code: 'PROJ-LEG', label: 'Legalização & Licenças', description: 'Prefeitura, Bombeiros, Ambiental', icon: FileText, color: 'text-slate-500', bg: 'bg-slate-500/10' },
+];
 
 export function EngenhariaDashboard({ onTabChange, onOpenWizard }: { onTabChange: (tab: DashboardTab) => void, onOpenWizard?: () => void }) {
-    const [viewMode, setViewMode] = useState<'geral' | 'site' | 'atividades'>('geral');
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedProject, setSelectedProject] = useState<Project | null>(null); // For Fullscreen Detail Mode
     const [modalConfig, setModalConfig] = useState<{ isOpen: boolean; title: string; icon?: any }>({
         isOpen: false,
         title: "",
     });
+    const [movimentacaoModalOpen, setMovimentacaoModalOpen] = useState(false);
+
+    const { projects, getRequestsForDepartment } = useAppFlow();
+    const requestsCount = getRequestsForDepartment('ENGENHARIA').length;
+
+    // Derived stats
+    const activeProjectsCount = projects.filter(p => p.status === 'ATIVA' || p.status === 'PLANEJAMENTO').length;
+
+    // Quick Actions
+    const quickActions = [
+        { id: 'compra', label: 'Solicitar Compra', icon: ShoppingCart, color: 'text-blue-500' },
+        { id: 'servico', label: 'Novo Serviço', icon: Wrench, color: 'text-green-500' },
+        { id: 'alerta', label: 'Registrar Alerta', icon: AlertTriangle, color: 'text-amber-500' },
+        { id: 'rdo', label: 'RDO - Diário', icon: FileText, color: 'text-purple-500' },
+    ];
 
     const openPlaceholder = (title: string, icon?: any) => {
         setModalConfig({ isOpen: true, title, icon });
+        setMovimentacaoModalOpen(false);
     };
-
-    const disciplines = [
-        { code: '1.x', label: 'Estudos & Viabilidade', items: 12, status: '90%', color: 'border-blue-500', icon: MapPin },
-        { code: '2.x', label: 'Arquitetura & Design', items: 45, status: '75%', color: 'border-emerald-500', icon: Building2 },
-        { code: '3.x', label: 'Engenharia Estrutural', items: 28, status: '40%', color: 'border-amber-500', icon: Layers },
-        { code: '4.x', label: 'Instalações Hidrosanitárias', items: 32, status: '20%', color: 'border-cyan-500', icon: Droplets },
-        { code: '5.x', label: 'Engenharia Elétrica', items: 40, status: '15%', color: 'border-orange-500', icon: Zap },
-        { code: '6.x', label: 'Climatização & HVAC', items: 15, status: '10%', color: 'border-purple-500', icon: Wind },
-        { code: '7.x', label: 'Projetos Especiais', items: 8, status: '0%', color: 'border-rose-500', icon: ShieldAlert },
-        { code: '8.x', label: 'Acabamentos & Interiores', items: 22, status: '5%', color: 'border-pink-500', icon: Paintbrush },
-        { code: '9.x', label: 'Documentação Legal', items: 30, status: '60%', color: 'border-slate-500', icon: FileText },
-    ];
 
     return (
         <div className="flex flex-col h-full bg-gradient-to-br from-background to-secondary/5 overflow-hidden font-sans pb-32">
-            {/* Module Header */}
-            <div className="p-8 border-b bg-background/95 backdrop-blur-md shrink-0">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-8">
+            {/* Header - Unified Control Room Style */}
+            <div className="pt-8 px-8 pb-4 shrink-0 flex flex-col gap-6">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
                     <div>
-                        <HeaderAnimated title="Engenharia & Projetos" />
+                        <HeaderAnimated title="Engenharia Central" />
                         <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] font-black opacity-60 mt-2">
-                            Coordenação Global de Disciplinas • VERC Intelligence
+                            Controle Técnico • Gestão de Obras • Matriz de Projetos
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <div className="flex p-1 bg-muted/20 rounded-2xl border border-border/40 backdrop-blur-xl">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setViewMode('geral')}
-                                className={cn(
-                                    "rounded-xl text-[10px] font-black uppercase tracking-widest px-6 h-10 transition-all",
-                                    viewMode === 'geral' ? "bg-background shadow-md text-primary" : "text-muted-foreground hover:bg-white/5"
-                                )}
-                            >
-                                Core
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setViewMode('site')}
-                                className={cn(
-                                    "rounded-xl text-[10px] font-black uppercase tracking-widest px-6 h-10 transition-all",
-                                    viewMode === 'site' ? "bg-background shadow-md text-primary" : "text-muted-foreground hover:bg-white/5"
-                                )}
-                            >
-                                Diário & Site
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setViewMode('atividades')}
-                                className={cn(
-                                    "rounded-xl text-[10px] font-black uppercase tracking-widest px-6 h-10 transition-all",
-                                    viewMode === 'atividades' ? "bg-background shadow-md text-primary" : "text-muted-foreground hover:bg-white/5"
-                                )}
-                            >
-                                Board
-                            </Button>
+                    <div className="flex items-center gap-3">
+                        {/* Quick Access Toolbar */}
+                        <div className="flex bg-background border border-border/40  rounded-xl p-1 shadow-sm">
+                            {quickActions.map(action => (
+                                <Button
+                                    key={action.id}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted"
+                                    onClick={() => openPlaceholder(action.label, action.icon)}
+                                    title={action.label}
+                                >
+                                    <action.icon size={16} className={action.color} />
+                                </Button>
+                            ))}
                         </div>
-                        <Button
-                            onClick={onOpenWizard}
-                            className="h-12 rounded-2xl font-black uppercase tracking-widest text-[11px] px-8 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
-                        >
-                            <Plus size={18} className="mr-2" /> Novo Orçamento
-                        </Button>
-                    </div>
-                </div>
 
-                <div className="flex flex-col md:flex-row items-center gap-4">
-                    <div className="relative flex-1 w-full">
-                        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground opacity-50" />
-                        <Input
-                            placeholder="Buscar disciplinas, normas técnicas ou RTs..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-12 h-14 rounded-2xl bg-background/60 border-border/40 text-sm font-bold shadow-sm focus:ring-primary/20"
-                        />
-                    </div>
-                    <div className="flex items-center gap-2 w-full md:w-auto">
-                        <Badge variant="outline" className="h-14 px-8 rounded-2xl border-dashed flex items-center gap-3 text-[10px] font-black uppercase tracking-widest bg-emerald-500/5 text-emerald-500 border-emerald-500/20">
-                            <ShieldCheck size={18} /> Compliance 100%
-                        </Badge>
                         <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-14 w-14 rounded-2xl border-border/40 hover:bg-white/5"
-                            onClick={() => openPlaceholder("Configurações de Engenharia", Settings2)}
+                            onClick={() => setMovimentacaoModalOpen(true)}
+                            className="h-10 rounded-xl font-black uppercase tracking-widest text-[10px] px-6 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
                         >
-                            <Settings2 size={20} />
+                            <Plus size={16} className="mr-2" /> Movimentação
                         </Button>
                     </div>
                 </div>
             </div>
 
-            {/* Main Content Area */}
-            <div className="flex-1 overflow-y-auto p-8 scrollbar-thin">
-                <AnimatePresence mode="wait">
-                    {viewMode === 'geral' ? (
-                        <motion.div
-                            key="geral"
-                            initial={{ opacity: 0, scale: 0.98 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.98 }}
-                            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                            className="space-y-12"
-                        >
-                            {/* Dashboard Highlights */}
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                {[
-                                    { label: 'Projetos Ativos', value: '42', icon: Layers, color: 'text-primary', trend: '+12%' },
-                                    { label: 'RTs Alocados', value: '15', icon: Building2, color: 'text-blue-500', trend: 'OK' },
-                                    { label: 'Pendências VISA', value: '03', icon: Zap, color: 'text-amber-500', trend: 'URGENTE' },
-                                    { label: 'Aprovações Hoje', value: '08', icon: CheckCircle2, color: 'text-emerald-500', trend: '+4' },
-                                ].map((stat, i) => (
-                                    <Card key={i} className="rounded-[2.5rem] border-border/40 bg-background/40 backdrop-blur-xl p-6 shadow-sm border border-white/5 hover:border-white/10 transition-all">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className={cn("p-3 rounded-2xl bg-muted/50", stat.color)}>
-                                                <stat.icon size={22} strokeWidth={2.5} />
-                                            </div>
-                                            <Badge variant="secondary" className="text-[10px] font-black">{stat.trend}</Badge>
+            {/* Main Unified Grid Content */}
+            <div className="flex-1 overflow-y-auto p-8 pt-2 scrollbar-thin">
+                <div className="grid grid-cols-12 gap-6 h-full min-h-[800px]">
+
+                    {/* LEFT COLUMN: Project List & Status (4 cols) */}
+                    <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+                        {/* Status Summary */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <Card className="rounded-2xl p-4 bg-background border-border/40">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Obras Ativas</div>
+                                <div className="text-2xl font-black flex items-center gap-2">
+                                    {activeProjectsCount} <span className="text-emerald-500 text-xs bg-emerald-500/10 px-2 py-0.5 rounded-full">+2</span>
+                                </div>
+                            </Card>
+                            <Card className="rounded-2xl p-4 bg-background border-border/40">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1 flex items-center gap-2">
+                                    Pendências {requestsCount > 0 && <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
+                                </div>
+                                <div className="text-2xl font-black text-amber-500">{requestsCount}</div>
+                            </Card>
+                        </div>
+
+                        {/* Projects List with Expansion Logic */}
+                        <Card className="flex-1 rounded-3xl border-border/40 bg-background/50 backdrop-blur-sm overflow-hidden flex flex-col">
+                            <div className="p-5 border-b border-border/40 flex justify-between items-center stick top-0 bg-background/80 backdrop-blur z-10">
+                                <h3 className="font-black text-sm uppercase tracking-widest flex items-center gap-2">
+                                    <Building2 size={16} className="text-primary" /> Obras em Gestão
+                                </h3>
+                                <Button variant="ghost" size="icon" className="h-8 w-8"><Search size={14} /></Button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                                {projects.map(project => (
+                                    <div
+                                        key={project.id}
+                                        onClick={() => setSelectedProject(project)}
+                                        className={cn(
+                                            "group p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden",
+                                            selectedProject?.id === project.id
+                                                ? "bg-primary/5 border-primary/40 shadow-md"
+                                                : "bg-background border-border/40 hover:border-primary/20 hover:shadow-lg"
+                                        )}
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-background/50 backdrop-blur">{project.status}</Badge>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Maximize2 size={14} />
+                                            </Button>
                                         </div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60 mb-1">{stat.label}</p>
-                                        <p className="text-3xl font-black tracking-tighter">{stat.value}</p>
-                                    </Card>
+                                        <h4 className="font-black text-sm tracking-tight mb-1">{project.name}</h4>
+                                        <p className="text-[10px] text-muted-foreground line-clamp-1 flex items-center gap-1">
+                                            <MapPin size={10} /> {project.address || "Sem endereço"}
+                                        </p>
+
+                                        {/* Mini progress bars for critical disciplines */}
+                                        <div className="mt-4 grid grid-cols-4 gap-1">
+                                            {['ARQ', 'EST', 'HID', 'ELE'].map((d, i) => (
+                                                <div key={d} className="h-1 rounded-full bg-muted overflow-hidden">
+                                                    <div className="h-full bg-primary/60" style={{ width: `${Math.random() * 100}%` }} />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
+                        </Card>
+                    </div>
 
-                            {/* Disciplines Matrix */}
-                            <div className="space-y-6">
-                                <div className="flex justify-between items-center px-2">
-                                    <div>
-                                        <h3 className="text-2xl font-black tracking-tight">Matriz de Disciplinas</h3>
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 opacity-60">Status de projeto e coordenação BIM</p>
+                    {/* CENTER/RIGHT: Context Aware Activity Center (8 cols) */}
+                    <div className="col-span-12 lg:col-span-8 flex flex-col gap-6 h-full overflow-hidden">
+
+                        {/* Context Header */}
+                        <div className="flex gap-4 items-center">
+                            {selectedProject ? (
+                                <div className="flex items-center justify-between w-full bg-background/50 border border-border/40 rounded-2xl p-4 backdrop-blur-md">
+                                    <div className="flex items-center gap-4">
+                                        <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl" onClick={() => setSelectedProject(null)}>
+                                            <ChevronRight className="rotate-180" size={18} />
+                                        </Button>
+                                        <div>
+                                            <h2 className="text-xl font-black tracking-tight flex items-center gap-2">
+                                                {selectedProject.name}
+                                                <Badge className="bg-primary text-white border-none">EM GESTÃO</Badge>
+                                            </h2>
+                                            <p className="text-xs text-muted-foreground mt-0.5">Painel de Controle da Obra • {project.constructionType} • {project.area}m²</p>
+                                        </div>
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        className="text-[10px] font-black uppercase tracking-widest gap-2"
-                                        onClick={() => openPlaceholder("Mapa Completo de Disciplinas", MapPin)}
-                                    >
-                                        Ver Mapa Completo <ArrowRight size={14} />
-                                    </Button>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {disciplines.map((d, i) => (
-                                        <motion.div
-                                            key={d.code}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: i * 0.05 }}
-                                        >
-                                            <Card
-                                                className={cn(
-                                                    "group glass-card border-l-4 hover:shadow-2xl hover:shadow-primary/5 transition-all cursor-pointer overflow-hidden p-0 rounded-[2.5rem]",
-                                                    d.color
-                                                )}
-                                            >
-                                                <CardContent className="p-8">
-                                                    <div className="flex items-center justify-between mb-6">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
-                                                                <d.icon size={24} />
-                                                            </div>
-                                                            <div>
-                                                                <Badge variant="outline" className="font-mono font-black border-primary/20 text-primary bg-primary/5 text-[10px]">{d.code}</Badge>
-                                                                <h3 className="font-black text-lg group-hover:text-primary transition-colors leading-tight mt-1">{d.label}</h3>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="space-y-4">
-                                                        <div className="flex justify-between items-end">
-                                                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Pipeline</span>
-                                                            <span className="text-[10px] font-black text-primary">{d.status} COMPLETADO</span>
-                                                        </div>
-                                                        <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden">
-                                                            <motion.div
-                                                                initial={{ width: 0 }}
-                                                                animate={{ width: d.status }}
-                                                                transition={{ duration: 1.5, ease: "circOut", delay: i * 0.1 }}
-                                                                className="h-full bg-primary shadow-[0_0_15px_rgba(var(--primary),0.5)]"
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="mt-8 flex items-center justify-between pt-6 border-t border-white/5">
-                                                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-black uppercase tracking-widest">
-                                                            <FileText size={14} strokeWidth={2.5} className="text-primary/60" /> {d.items} RTs Ativos
-                                                        </div>
-                                                        <div className="flex -space-x-3">
-                                                            {[1, 2, 3].map(j => (
-                                                                <div key={j} className="w-8 h-8 rounded-full bg-secondary border-4 border-background flex items-center justify-center shadow-lg overflow-hidden transition-transform hover:scale-110 hover:z-10">
-                                                                    <img src={`https://i.pravatar.cc/100?u=${d.code}${j}`} alt="avatar" className="w-full h-full object-cover grayscale hover:grayscale-0" />
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Approval Timeline Section */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                <Card className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl p-8 overflow-hidden relative">
-                                    <div className="flex justify-between items-center mb-8">
-                                        <h3 className="font-black text-xl flex items-center gap-3"><Clock size={24} className="text-primary" /> Roadmap de Aprovações</h3>
-                                        <Badge className="bg-primary/10 text-primary border-none text-[8px] font-black tracking-widest uppercase">REAL-TIME</Badge>
+                                    <div className="flex gap-2">
+                                        <Button variant="outline" className="h-9 rounded-xl text-[10px] font-black uppercase tracking-widest gap-2">
+                                            <FileText size={14} /> RDO
+                                        </Button>
+                                        <Button variant="outline" className="h-9 rounded-xl text-[10px] font-black uppercase tracking-widest gap-2">
+                                            <ShoppingCart size={14} /> Solicitações
+                                        </Button>
                                     </div>
-                                    <div className="space-y-6">
-                                        {[
-                                            { project: 'Edifício Sky - Estrutural', status: 'Em Análise', time: '2h ago', level: 'warning' },
-                                            { project: 'Residencial Park - Hidro', status: 'Aprovado', time: '5h ago', level: 'success' },
-                                            { project: 'Galpão Alpha - Elétrico', status: 'Revisão Necessária', time: '1d ago', level: 'destructive' },
-                                        ].map((item, idx) => (
-                                            <div key={idx} className="flex gap-4 items-start group">
-                                                <div className={cn(
-                                                    "w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-4 border-background shadow-md",
-                                                    item.level === 'success' ? "bg-emerald-500" : item.level === 'warning' ? "bg-amber-500" : "bg-red-500"
-                                                )}>
-                                                    <CheckCircle2 size={16} className="text-white" />
-                                                </div>
-                                                <div className="flex-1 pb-6 border-b border-white/5 last:border-0">
-                                                    <div className="flex justify-between items-start">
-                                                        <h4 className="font-black text-sm tracking-tight">{item.project}</h4>
-                                                        <span className="text-[9px] font-bold text-muted-foreground uppercase">{item.time}</span>
+                                </div>
+                            ) : (
+                                <div className="w-full p-4 rounded-2xl border border-dashed border-border/40 bg-muted/5 flex items-center justify-center text-muted-foreground text-sm font-medium">
+                                    Selecione uma obra ao lado para ver detalhes e gerenciar disciplinas
+                                </div>
+                            )}
+                        </div>
+
+                        {selectedProject ? (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full overflow-y-auto pr-2 pb-20">
+                                {/* Disciplines Matrix for Selected Project */}
+                                <div className="space-y-4">
+                                    <h3 className="font-black text-sm uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-transparent z-10 mb-2">
+                                        <Layers size={16} className="text-primary" /> Matriz de Disciplinas
+                                    </h3>
+                                    {STANDARD_DISCIPLINES.map((disc, idx) => (
+                                        <Card key={disc.code} className="group rounded-2xl border-border/40 hover:border-primary/20 transition-all overflow-hidden cursor-pointer bg-background">
+                                            <div className="flex items-stretch">
+                                                <div className={cn("w-2", disc.bg.replace('/10', ''))} />
+                                                <div className="p-4 flex-1 flex items-center justify-between">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", disc.bg, disc.color)}>
+                                                            <disc.icon size={20} />
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <h4 className="font-black text-sm">{disc.label}</h4>
+                                                                <Badge variant="outline" className="text-[9px] h-5 px-1.5 font-mono text-muted-foreground">{disc.code}</Badge>
+                                                            </div>
+                                                            <p className="text-[10px] text-muted-foreground mt-0.5">{disc.description}</p>
+                                                        </div>
                                                     </div>
-                                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 opacity-60">{item.status}</p>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="text-right hidden sm:block">
+                                                            <div className="text-[10px] font-black uppercase text-muted-foreground">Status</div>
+                                                            <div className="text-xs font-bold text-primary">EM ANDAMENTO</div>
+                                                        </div>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors">
+                                                            <ChevronRight size={16} />
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                </Card>
+                                            {/* Expandable Action Area (Visible on hover/click in real app, simplified here) */}
+                                        </Card>
+                                    ))}
+                                </div>
 
-                                <Card className="rounded-[2.5rem] border-primary/20 bg-primary/5 p-8 flex flex-col justify-center items-center text-center overflow-hidden relative">
-                                    <div className="absolute top-0 right-0 p-8 opacity-10">
-                                        <Zap size={200} />
+                                {/* Right Side: Activities & Requests */}
+                                <div className="space-y-6">
+                                    {/* Requests */}
+                                    <div>
+                                        <h3 className="font-black text-sm uppercase tracking-widest flex items-center gap-2 mb-4">
+                                            <AlertCircle size={16} className="text-amber-500" /> Solicitações Pendentes
+                                        </h3>
+                                        {requestsCount > 0 ? (
+                                            <EngenhariaRequests />
+                                        ) : (
+                                            <div className="p-8 rounded-2xl bg-muted/5 border border-dashed border-border/40 flex flex-col items-center justify-center text-center">
+                                                <CheckCircle2 size={32} className="text-emerald-500 mb-2 opacity-50" />
+                                                <p className="text-sm font-medium text-muted-foreground">Tudo em dia nesta obra</p>
+                                            </div>
+                                        )}
                                     </div>
-                                    <Badge className="bg-primary text-white border-none font-black text-[10px] tracking-widest uppercase mb-4">VERC INTELLIGENCE AI</Badge>
-                                    <h3 className="text-3xl font-black tracking-tight mb-4">Otimização de Fluxo</h3>
-                                    <p className="text-muted-foreground text-sm font-medium mb-8 max-w-sm">
-                                        Detectamos que as disciplinas de <span className="text-primary font-bold">Hidrossanitário (4.x)</span> estão 15% atrasadas em relação ao cronograma base.
-                                    </p>
-                                    <Button
-                                        className="rounded-2xl h-14 px-8 font-black uppercase text-xs tracking-widest bg-primary shadow-xl shadow-primary/20 gap-3"
-                                        onClick={() => openPlaceholder("Ação AI: Acionar Coordenador", Zap)}
-                                    >
-                                        <Zap size={18} /> Acionar Coordenador
-                                    </Button>
-                                </Card>
+
+                                    {/* Recent Activities / Timeline */}
+                                    <Card className="rounded-3xl border-border/40 p-6 bg-background">
+                                        <h3 className="font-black text-sm uppercase tracking-widest flex items-center gap-2 mb-6">
+                                            <Clock size={16} className="text-blue-500" /> Linha do Tempo
+                                        </h3>
+                                        <div className="space-y-6 relative pl-2">
+                                            <div className="absolute left-[3px] top-2 bottom-2 w-[2px] bg-border/40" />
+                                            {[
+                                                { title: 'Revisão de Projeto Elétrico', user: 'Eng. Carlos', time: 'Há 2 horas', type: 'REV' },
+                                                { title: 'Aprovação Orçamento Hidráulica', user: 'Fin. Ana', time: 'Ontem', type: 'APR' },
+                                                { title: 'RDO #45 Enviado', user: 'Mestre Silva', time: 'Ontem', type: 'RDO' }
+                                            ].map((log, i) => (
+                                                <div key={i} className="flex gap-4 relative">
+                                                    <div className="w-2 h-2 rounded-full bg-primary shrink-0 relative z-10 mt-1.5 ring-4 ring-background" />
+                                                    <div>
+                                                        <p className="text-sm font-bold text-foreground">{log.title}</p>
+                                                        <p className="text-[10px] uppercase font-bold text-muted-foreground mt-0.5">{log.user} • {log.time}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </Card>
+                                </div>
                             </div>
-                        </motion.div>
-                    ) : viewMode === 'site' ? (
-                        <motion.div
-                            key="site"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="space-y-8"
-                        >
-                            <SiteControlsView openPlaceholder={openPlaceholder} />
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key="atividades"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ duration: 0.4, ease: "circOut" }}
-                            className="h-full min-h-[600px]"
-                        >
-                            <ReusableKanbanBoard contextFilter="ENG" title="Atividades de Engenharia" />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                        ) : (
+                            // Empty State / Global Overview when no project selected
+                            <div className="h-full rounded-3xl border border-dashed border-border/40 bg-muted/5 flex flex-col items-center justify-center p-12 text-center">
+                                <Building2 size={64} className="text-muted-foreground/20 mb-6" />
+                                <h3 className="text-xl font-black text-muted-foreground/60">Visão Geral da Engenharia</h3>
+                                <p className="text-sm text-muted-foreground/40 max-w-md mt-2">
+                                    Selecione uma obra na lista lateral para visualizar a Matriz de Disciplinas, Solicitações e RDOs específicos.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                </div>
             </div>
+
+            {/* Nova Movimentação Modal */}
+            <Dialog open={movimentacaoModalOpen} onOpenChange={setMovimentacaoModalOpen}>
+                <DialogContent className="sm:max-w-[600px] rounded-[2rem] p-0 overflow-hidden bg-background">
+                    <div className="p-8 border-b border-border/10 bg-muted/5">
+                        <DialogHeader>
+                            <DialogTitle className="text-2xl font-black tracking-tight">Nova Movimentação</DialogTitle>
+                            <DialogDescription className="text-sm text-muted-foreground mt-1.5 font-medium">
+                                Selecione o tipo de registro que deseja realizar para a obra selecionada.
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
+                    <div className="p-8 grid grid-cols-2 gap-4">
+                        {quickActions.map((option) => (
+                            <button
+                                key={option.id}
+                                className="flex items-center gap-4 p-4 rounded-2xl border border-border/40 hover:border-primary/40 hover:bg-primary/5 transition-all group text-left"
+                                onClick={() => openPlaceholder(option.label, option.icon)}
+                            >
+                                <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center transition-colors shadow-sm", "bg-muted text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground")}>
+                                    <option.icon size={24} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-black uppercase tracking-tight text-foreground">{option.label}</p>
+                                    <p className="text-[10px] text-muted-foreground font-medium mt-0.5 group-hover:text-primary/80">Clique para iniciar</p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <PlaceholderModal
                 isOpen={modalConfig.isOpen}
@@ -333,65 +362,6 @@ export function EngenhariaDashboard({ onTabChange, onOpenWizard }: { onTabChange
                 title={modalConfig.title}
                 icon={modalConfig.icon}
             />
-        </div>
-    );
-}
-
-function SiteControlsView({ openPlaceholder }: any) {
-    return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-6">
-                <div className="flex items-center justify-between px-2">
-                    <h3 className="text-xl font-black tracking-tight">Diário de Obra (RDO)</h3>
-                    <Button variant="outline" className="rounded-xl h-9 text-[10px] font-black uppercase tracking-widest gap-2">
-                        <Plus size={14} /> Novo Apontamento
-                    </Button>
-                </div>
-                {[
-                    { date: 'Hoje', author: 'Eng. Carlos', text: 'Concretagem da laje L04 finalizada. Sem intercorrências.', status: 'ENVIADO' },
-                    { date: 'Ontem', author: 'Mestre Silva', text: 'Atraso na entrega de sacos de cimento. Cronograma ajustado.', status: 'REVISADO' },
-                ].map((log, i) => (
-                    <Card key={i} className="rounded-[2rem] border-border/40 bg-background/60 p-6 hover:shadow-lg transition-all">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><FileText size={20} /></div>
-                                <div>
-                                    <p className="font-black text-sm">{log.author}</p>
-                                    <p className="text-[10px] font-bold text-muted-foreground uppercase">{log.date}</p>
-                                </div>
-                            </div>
-                            <Badge className="bg-emerald-500/10 text-emerald-500 border-none text-[8px] font-black uppercase">{log.status}</Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground font-medium leading-relaxed">{log.text}</p>
-                    </Card>
-                ))}
-            </div>
-
-            <div className="space-y-6">
-                <h3 className="text-xl font-black tracking-tight ml-2">Ferramentas de Canteiro</h3>
-                <div className="grid grid-cols-2 gap-4">
-                    {[
-                        { label: 'Segurança (EPI)', icon: ShieldCheck, color: 'text-blue-500' },
-                        { label: 'Qualidade (FVS)', icon: ClipboardCheck, color: 'text-emerald-500' },
-                        { label: 'Ferramentaria', icon: Hammer, color: 'text-amber-500' },
-                        { label: 'Checklist Site', icon: ClipboardCheck, color: 'text-purple-500' },
-                    ].map((tool) => (
-                        <Card
-                            key={tool.label}
-                            className="rounded-[2rem] border-border/40 bg-background/60 p-6 hover:border-primary/20 transition-all cursor-pointer text-center group"
-                            onClick={() => openPlaceholder(tool.label, tool.icon)}
-                        >
-                            <tool.icon size={28} className={cn("mx-auto mb-4 group-hover:scale-110 transition-transform", tool.color)} />
-                            <p className="text-[10px] font-black uppercase tracking-widest">{tool.label}</p>
-                        </Card>
-                    ))}
-                </div>
-
-                <Card className="rounded-[2.5rem] border-dashed border-border/40 bg-muted/5 p-8 text-center mt-6">
-                    <Settings2 size={32} className="mx-auto mb-4 opacity-20" />
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">Configurações de Fluxo de Campo</p>
-                </Card>
-            </div>
         </div>
     );
 }

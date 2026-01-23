@@ -18,12 +18,13 @@ import { FrotaDashboard } from './components/dashboards/FrotaDashboard';
 import { ClientesDashboard } from './components/dashboards/ClientesDashboard';
 import { ComercialDashboard } from './components/dashboards/ComercialDashboard';
 import { ProjetosBoard } from './components/dashboards/ProjetosBoard';
+import { DesignDashboard } from './components/dashboards/DesignDashboard';
 import { EngineeringOverview } from './components/dashboards/EngineeringOverview';
 import { FinancialProposals } from './components/dashboards/FinancialProposals';
 import { PurchasesDashboard } from './components/dashboards/PurchasesDashboard';
 import { StockControl } from './components/dashboards/StockControl';
 import { CommandPalette } from './components/layout/CommandPalette';
-import { VercIntelligenceLoader } from './components/layout/VercIntelligenceLoader';
+import { CyberneticLoader } from './components/ui/cybernetic-loader';
 import { useAuth } from './hooks/useAuth';
 import { Login } from './pages/Login';
 import { DashboardTab } from './types';
@@ -35,7 +36,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { BrowserRouter } from "react-router-dom";
 import { ThemeToggleFloating } from './components/layout/ThemeToggleFloating';
-import { NewProjectWizard } from './components/projects/NewProjectWizard';
+import { UniversalEntryWizard } from './components/shared/UniversalEntryWizard';
+import { LeadWizard } from './components/shared/LeadWizard';
 import { toast } from 'sonner';
 import { Building2, Shield, Zap, Box, Truck, DollarSign, Users, PieChart } from 'lucide-react';
 
@@ -61,7 +63,7 @@ function AppContent() {
             exit={{ opacity: 0, transition: { duration: 0.8, ease: "easeInOut" } }}
             className="fixed inset-0 z-[99999]"
           >
-            <VercIntelligenceLoader onComplete={() => setAppReady(true)} />
+            <CyberneticLoader onComplete={() => setAppReady(true)} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -78,15 +80,13 @@ function AppContent() {
         />
 
         {/* Global Command Palette */}
-        {/* Global Command Palette */}
         <CommandPalette
           isOpen={showCommandPalette}
           onClose={() => setShowCommandPalette(false)}
           onSelect={(item) => {
-            // Simple mapping for now
             if (item.id === 'new-obra') setShowWizard(true);
             if (item.id === 'new-registro') setActiveTab('captura');
-            if (item.id === 'inbox') setActiveTab('triagem');
+            if (item.id === 'inbox') setActiveTab('triagem'); // Back to triagem
             setShowCommandPalette(false);
           }}
         />
@@ -103,16 +103,17 @@ function AppContent() {
               className="h-full w-full"
             >
               {activeTab === 'home' && <HomeDashboard onTabChange={setActiveTab} onOpenWizard={() => setShowWizard(true)} />}
-              {activeTab === 'comercial' && <ComercialDashboard onTabChange={setActiveTab} />}
-              {activeTab === 'obras' && <ObrasDashboard onTabChange={setActiveTab} onOpenWizard={() => setShowWizard(true)} />}
               {activeTab === 'captura' && <CaptureDashboard onTabChange={setActiveTab} />}
               {activeTab === 'triagem' && <TriagemDashboard onTabChange={setActiveTab} />}
+              {activeTab === 'comercial' && <ComercialDashboard onTabChange={setActiveTab} onOpenWizard={() => setShowWizard(true)} />}
+              {activeTab === 'obras' && <ObrasDashboard onTabChange={setActiveTab} onOpenWizard={() => setShowWizard(true)} />}
               {activeTab === 'projetos' && <ProjetosBoard />}
               {activeTab === 'engenharia' && <EngenhariaDashboard onTabChange={setActiveTab} onOpenWizard={() => setShowWizard(true)} />}
+              {activeTab === 'design' && <DesignDashboard onTabChange={setActiveTab} />}
               {activeTab === 'estoque' && <EstoqueDashboard onTabChange={setActiveTab} />}
-              {activeTab === 'frota' && <FrotaDashboard onTabChange={setActiveTab} />}
               {activeTab === 'financeiro' && <FinanceiroDashboard onTabChange={setActiveTab} />}
-              {activeTab === 'equipe' && <EquipeDashboard onTabChange={setActiveTab} />}
+              {activeTab === 'rh-sst' && <EquipeDashboard onTabChange={setActiveTab} />}
+              {activeTab === 'logistica' && <FrotaDashboard onTabChange={setActiveTab} />}
               {activeTab === 'config' && <SettingsDashboard onTabChange={setActiveTab} />}
             </motion.div>
           </AnimatePresence>
@@ -122,15 +123,12 @@ function AppContent() {
 
         <AnimatePresence>
           {showWizard && (
-            <NewProjectWizard
-              isOpen={showWizard}
-              onClose={() => setShowWizard(false)}
-              onComplete={(data) => {
-                console.log('Project Created:', data);
-                toast.success('Projeto criado e distribuído com sucesso!');
-                setShowWizard(false);
-              }}
-            />
+            <>
+              <LeadWizard
+                isOpen={showWizard}
+                onClose={() => setShowWizard(false)}
+              />
+            </>
           )}
         </AnimatePresence>
       </div>
