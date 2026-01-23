@@ -53,15 +53,13 @@ export function MobileDock({ activeTab, onTabChange, onOpenCommandPalette }: Mob
         { id: 'captura', icon: Camera, label: 'Captura' },
         { id: 'triagem', icon: ShieldCheck, label: 'Triagem' },
         { id: 'comercial', icon: Target, label: 'Comercial' },
-        { id: 'obras', icon: Building2, label: 'Obras' },
-        { id: 'projetos', icon: Layers, label: 'Projetos' },
-        { id: 'projetos', icon: Layers, label: 'Projetos' },
         { id: 'engenharia', icon: Hammer, label: 'Engenharia' },
-        { id: 'design', icon: Palette, label: 'Design' }, // New tab
-        { id: 'financeiro', icon: DollarSign, label: 'Financeiro' },
-        { id: 'estoque', icon: Box, label: 'Compras' }, // Compras & Estoque (label shortened for mobile)
-        { id: 'rh-sst', icon: Shield, label: 'RH / SST' },
+        { id: 'projetos', icon: Layers, label: 'Projetos' },
+        { id: 'design', icon: Palette, label: 'Design' },
+        { id: 'estoque', icon: Box, label: 'Compras' },
         { id: 'logistica', icon: Truck, label: 'Logística' },
+        { id: 'financeiro', icon: DollarSign, label: 'Financeiro' },
+        { id: 'rh-sst', icon: Shield, label: 'RH / SST' },
         { id: 'config', icon: Settings, label: 'Admin' },
     ];
 

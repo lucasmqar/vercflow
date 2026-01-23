@@ -598,15 +598,15 @@ function ProjectPortfolioView({ onSelect, openPlaceholder }: { onSelect: (name: 
                 </Card>
             ))}
 
+            {/* "New Project" card removed to enforce Commercial-only Work creation flow */}
             <Card
-                onClick={() => openPlaceholder("Registro de Nova Obra no Portfólio", Plus, "obra")}
-                className="rounded-[2.5rem] border-dashed border-border/40 bg-muted/5 flex flex-col items-center justify-center p-10 text-center hover:bg-muted/10 transition-colors cursor-pointer"
+                className="rounded-[2.5rem] border-dashed border-border/40 bg-muted/5 flex flex-col items-center justify-center p-10 text-center opacity-50 cursor-not-allowed"
             >
                 <div className="w-16 h-16 rounded-[2rem] bg-background border border-border/40 flex items-center justify-center text-muted-foreground/40 mb-6">
-                    <Plus size={32} />
+                    <Building2 size={32} />
                 </div>
-                <h3 className="font-black text-sm uppercase tracking-widest text-muted-foreground/60">Novo Projeto</h3>
-                <p className="text-[10px] font-medium text-muted-foreground/40 mt-2">Adicionar obra ao pipeline técnico</p>
+                <h3 className="font-black text-sm uppercase tracking-widest text-muted-foreground/60">Aguardando Novas Obras</h3>
+                <p className="text-[10px] font-medium text-muted-foreground/40 mt-2">Novos projetos aparecem aqui após aprovação comercial</p>
             </Card>
         </div>
     );

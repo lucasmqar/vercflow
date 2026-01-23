@@ -26,7 +26,8 @@ import {
     Wrench,
     Expand,
     MoreHorizontal,
-    Maximize2
+    Maximize2,
+    Users
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -175,9 +176,9 @@ export function EngenhariaDashboard({ onTabChange, onOpenWizard }: { onTabChange
                                                 <Maximize2 size={14} />
                                             </Button>
                                         </div>
-                                        <h4 className="font-black text-sm tracking-tight mb-1">{project.name}</h4>
+                                        <h4 className="font-black text-sm tracking-tight mb-1">{project.nome}</h4>
                                         <p className="text-[10px] text-muted-foreground line-clamp-1 flex items-center gap-1">
-                                            <MapPin size={10} /> {project.address || "Sem endereço"}
+                                            <MapPin size={10} /> {project.endereco || "Sem endereço"}
                                         </p>
 
                                         {/* Mini progress bars for critical disciplines */}
@@ -207,10 +208,10 @@ export function EngenhariaDashboard({ onTabChange, onOpenWizard }: { onTabChange
                                         </Button>
                                         <div>
                                             <h2 className="text-xl font-black tracking-tight flex items-center gap-2">
-                                                {selectedProject.name}
+                                                {selectedProject.nome}
                                                 <Badge className="bg-primary text-white border-none">EM GESTÃO</Badge>
                                             </h2>
-                                            <p className="text-xs text-muted-foreground mt-0.5">Painel de Controle da Obra • {project.constructionType} • {project.area}m²</p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">Painel de Controle da Obra • {selectedProject.tipoObra || selectedProject.constructionType} • {selectedProject.area || selectedProject.areaConstruida}m²</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
@@ -311,13 +312,105 @@ export function EngenhariaDashboard({ onTabChange, onOpenWizard }: { onTabChange
                                 </div>
                             </div>
                         ) : (
-                            // Empty State / Global Overview when no project selected
-                            <div className="h-full rounded-3xl border border-dashed border-border/40 bg-muted/5 flex flex-col items-center justify-center p-12 text-center">
-                                <Building2 size={64} className="text-muted-foreground/20 mb-6" />
-                                <h3 className="text-xl font-black text-muted-foreground/60">Visão Geral da Engenharia</h3>
-                                <p className="text-sm text-muted-foreground/40 max-w-md mt-2">
-                                    Selecione uma obra na lista lateral para visualizar a Matriz de Disciplinas, Solicitações e RDOs específicos.
-                                </p>
+                            // Global Overview / Department Control Room
+                            <div className="h-full space-y-6 overflow-y-auto pr-2">
+                                {/* Department KPIs */}
+                                <div className="grid grid-cols-4 gap-4">
+                                    {[
+                                        { label: 'Orçamentos p/ Análise', value: '3', icon: FileText, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+                                        { label: 'Requisições Abertas', value: '12', icon: ShoppingCart, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+                                        { label: 'Equipe em Campo', value: '45', icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+                                        { label: 'RDOs Pendentes', value: '2', icon: AlertTriangle, color: 'text-red-500', bg: 'bg-red-500/10' },
+                                    ].map((stat, i) => (
+                                        <Card key={i} className="p-4 bg-background border-border/40 flex items-center justify-between">
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{stat.label}</p>
+                                                <p className="text-2xl font-black mt-1">{stat.value}</p>
+                                            </div>
+                                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", stat.bg, stat.color)}>
+                                                <stat.icon size={20} />
+                                            </div>
+                                        </Card>
+                                    ))}
+                                </div>
+
+                                {/* Incoming Work: Budgets to Validate */}
+                                <Card className="p-0 overflow-hidden border-border/40 bg-background">
+                                    <div className="p-5 border-b border-border/40 flex justify-between items-center bg-muted/5">
+                                        <h3 className="font-black text-sm uppercase tracking-widest flex items-center gap-2">
+                                            <Zap size={16} className="text-amber-500" /> Entrada: Validações do Comercial
+                                        </h3>
+                                        <Badge variant="outline" className="border-amber-500/20 text-amber-600 bg-amber-500/5">3 Pendentes</Badge>
+                                    </div>
+                                    <div className="divide-y divide-border/40">
+                                        {[
+                                            { client: 'Novo Centro Médico', value: 'R$ 1.2M', date: 'Hoje', status: 'Aguardando Análise' },
+                                            { client: 'Residencial Vida Nova', value: 'R$ 450k', date: 'Ontem', status: 'Em Revisão' },
+                                            { client: 'Galpão Logístico Sul', value: 'R$ 3.5M', date: '2 dias', status: 'Urgente' },
+                                        ].map((item, idx) => (
+                                            <div key={idx} className="flex items-center justify-between p-4 hover:bg-muted/5 transition-colors group cursor-pointer" onClick={() => openPlaceholder(`Validar Orçamento: ${item.client}`, FileText)}>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 font-bold text-xs">
+                                                        {item.client.substring(0, 1)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-sm text-foreground">{item.client}</p>
+                                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Orçamento Base • {item.value}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <Badge variant="secondary" className="text-[9px] font-bold">{item.date}</Badge>
+                                                    <Button size="sm" variant="ghost" className="h-8 text-[10px] font-black uppercase text-primary group-hover:bg-primary/10">
+                                                        Validar Escopo <ChevronRight size={14} className="ml-1" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </Card>
+
+                                <div className="grid grid-cols-2 gap-6">
+                                    {/* Outgoing: Requests to Purchasing */}
+                                    <Card className="p-0 overflow-hidden border-border/40 bg-background">
+                                        <div className="p-5 border-b border-border/40 flex justify-between items-center bg-muted/5">
+                                            <h3 className="font-black text-sm uppercase tracking-widest flex items-center gap-2">
+                                                <ShoppingCart size={16} className="text-blue-500" /> Saída: Suprimentos
+                                            </h3>
+                                        </div>
+                                        <div className="p-4 space-y-3">
+                                            {[
+                                                { item: 'Cimento CP-II (500 sc)', obra: 'Residencial Sky', status: 'Em Cotação' },
+                                                { item: 'Aço CA-50 10mm', obra: 'Galpão Alpha', status: 'Autorizado' },
+                                            ].map((req, i) => (
+                                                <div key={i} className="flex justify-between items-center text-xs border-b border-border/20 last:border-0 pb-2 last:pb-0">
+                                                    <div>
+                                                        <p className="font-bold">{req.item}</p>
+                                                        <p className="text-[10px] text-muted-foreground">{req.obra}</p>
+                                                    </div>
+                                                    <Badge variant="outline" className="text-[9px]">{req.status}</Badge>
+                                                </div>
+                                            ))}
+                                            <Button variant="outline" size="sm" className="w-full text-[10px] font-black uppercase h-8 mt-2">Ver Todas</Button>
+                                        </div>
+                                    </Card>
+
+                                    {/* Critical Alerts */}
+                                    <Card className="p-0 overflow-hidden border-red-500/20 bg-red-500/5">
+                                        <div className="p-5 border-b border-red-500/10 flex justify-between items-center">
+                                            <h3 className="font-black text-sm uppercase tracking-widest flex items-center gap-2 text-red-600">
+                                                <AlertTriangle size={16} /> Bloqueios de Segurança
+                                            </h3>
+                                        </div>
+                                        <div className="p-4 text-center">
+                                            <p className="text-2xl font-black text-red-600 mb-1">0</p>
+                                            <p className="text-xs text-muted-foreground font-medium">Nenhuma obra bloqueada pelo SST</p>
+                                            <div className="mt-4 flex gap-2 justify-center">
+                                                <CheckCircle2 size={16} className="text-emerald-500" />
+                                                <span className="text-[10px] font-bold text-emerald-600 uppercase">Compliance 100%</span>
+                                            </div>
+                                        </div>
+                                    </Card>
+                                </div>
                             </div>
                         )}
                     </div>

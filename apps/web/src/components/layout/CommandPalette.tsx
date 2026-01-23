@@ -35,7 +35,7 @@ const quickActions: SearchResult[] = [
   { id: 'new-registro', type: 'action', title: 'Novo Registro', subtitle: 'Capturar ocorrência ou inspeção', icon: PlusCircle },
   { id: 'new-sketch', type: 'action', title: 'Novo Esboço', subtitle: 'Abrir canvas de desenho', icon: PenTool },
   { id: 'inbox', type: 'action', title: 'Ir para Inbox', subtitle: 'Registros aguardando triagem', icon: Inbox },
-  { id: 'new-obra', type: 'action', title: 'Nova Obra', subtitle: 'Cadastrar novo empreendimento', icon: Building },
+  { id: 'new-obra', type: 'action', title: 'Novo Lead (Comercial)', subtitle: 'Iniciar nova oportunidade comercial', icon: Building },
 ];
 
 export function CommandPalette({ isOpen, onClose, onSelect }: CommandPaletteProps) {

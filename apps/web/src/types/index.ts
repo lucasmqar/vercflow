@@ -1,14 +1,47 @@
 // VERCFLOW Core Types - Unified System
 
 export type Role =
-  | 'ADMIN'
+  // Nível 0 - Diretoria
   | 'CEO'
-  | 'GESTOR'
-  | 'TRIAGISTA'
-  | 'OPERACIONAL'
-  | 'PROFISSIONAL_INTERNO'
-  | 'PROFISSIONAL_EXTERNO'
-  | 'CLIENTE_VIEW';
+  | 'DIRETOR'
+
+  // Nível 1 - Comercial
+  | 'GERENTE_COMERCIAL'
+  | 'CONSULTOR_COMERCIAL'
+
+  // Nível 2 - Engenharia (Core)
+  | 'COORD_ENGENHARIA'
+  | 'ENGENHEIRO_OBRA'
+  | 'MESTRE_OBRA'
+
+  // Nível 3 - Projetos
+  | 'COORD_PROJETOS'
+  | 'ARQUITETO'
+  | 'PROJETISTA'
+
+  // Nível 3 - Apoio (Financeiro, Compras, RH, Logística)
+  | 'GERENTE_FINANCEIRO'
+  | 'GERENTE_COMPRAS'
+  | 'COORD_RH'
+  | 'COORD_LOGISTICA'
+
+  // Nível 4 - Campo/Externo
+  | 'ENCARREGADO'
+  | 'PARCEIRO_EXTERNO'
+  | 'CLIENTE_VIEW'
+  | 'ADMIN'; // System Admin
+
+export type Department =
+  | 'DIRETORIA'
+  | 'COMERCIAL'
+  | 'ENGENHARIA'
+  | 'PROJETOS'
+  | 'FINANCEIRO'
+  | 'COMPRAS'
+  | 'RH_SST'
+  | 'LOGISTICA'
+  | 'DESIGN'
+  | 'EXTERNO';
 
 export type RecordStatus =
   | 'REGISTRO'
@@ -36,6 +69,7 @@ export interface User {
   nome: string;
   email: string;
   role: Role;
+  department?: Department;
   ativo: boolean;
   avatar?: string;
 }
