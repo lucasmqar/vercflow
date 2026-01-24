@@ -52,6 +52,7 @@ import HeaderAnimated from '@/components/common/HeaderAnimated';
 import { useAuth } from '@/hooks/useAuth';
 import { getApiUrl } from '@/lib/api';
 import { PlaceholderModal } from '@/components/shared/PlaceholderModal';
+import { useAppFlow } from '@/store/useAppFlow';
 
 interface HomeDashboardProps {
     onTabChange: (tab: DashboardTab) => void;
@@ -61,6 +62,7 @@ interface HomeDashboardProps {
 export function HomeDashboard({ onTabChange, onOpenWizard }: HomeDashboardProps) {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { setSelectedProject } = useAppFlow();
     const [view, setView] = useState<'geral' | 'insights'>('geral');
     const [dashboardData, setDashboardData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -102,10 +104,10 @@ export function HomeDashboard({ onTabChange, onOpenWizard }: HomeDashboardProps)
                 { icon: DollarSign, label: 'Relatório Financeiro', tab: 'financeiro' as DashboardTab },
                 { icon: Users, label: 'Gestão de Clientes', tab: 'comercial' as DashboardTab }
             ];
-        } else if (user?.role === 'GESTOR') {
+        } else if (user?.role === 'DIRETOR') { // Changed GESTOR to DIRETOR (valid role)
             return [
                 { icon: FolderPlus, label: 'Criar Obra', action: onOpenWizard },
-                { icon: Users, label: 'Alocar Equipe', tab: 'equipe' as DashboardTab },
+                { icon: Users, label: 'Alocar Equipe', tab: 'comercial' as DashboardTab }, // Changed 'equipe' to 'comercial' (valid tab)
                 { icon: CheckSquare, label: 'Ver Triagem', tab: 'triagem' as DashboardTab }
             ];
         } else {
@@ -259,8 +261,12 @@ export function HomeDashboard({ onTabChange, onOpenWizard }: HomeDashboardProps)
                                             responsavel={obra.mestreObra?.nome || 'Engenheiro'}
                                             documentsVencidos={0}
                                             budgetStatus="ok"
+                                            budgetStatus="ok"
                                             teamAllocated={3}
-                                            onClick={() => navigate(`/obras/${obra.id}`)}
+                                            onClick={() => {
+                                                setSelectedProject(obra.id);
+                                                onTabChange('engenharia'); // Redirect to Engineering Control Room
+                                            }}
                                         />
                                     ))}
                                 </div>

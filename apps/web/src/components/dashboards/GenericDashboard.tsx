@@ -1,17 +1,15 @@
-import React from 'react';
-import HeaderAnimated from '@/components/common/HeaderAnimated';
-import { Badge } from '@/components/ui/badge';
-import { motion } from 'framer-motion';
-import { Construction, ArrowRight } from 'lucide-react';
+"use client"
+
+import React, { useState } from 'react';
+import {
+    LayoutDashboard,
+    Truck,
+    Map,
+    PackageCheck,
+    Calendar,
+    MapPin
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-interface GenericDashboardProps {
-    title: string;
-    description?: string;
-    icon?: React.ElementType;
-    status?: 'active' | 'development' | 'maintenance';
-}
-
 export function GenericDashboard({
     title,
     description = "Módulo Integrado ao Ecossistema VERCFLOW",

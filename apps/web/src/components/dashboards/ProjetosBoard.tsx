@@ -39,7 +39,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { ProjectDisciplineDetail } from './ProjectDisciplineDetail';
 import HeaderAnimated from '@/components/common/HeaderAnimated';
 import { PlaceholderModal } from '@/components/shared/PlaceholderModal';
 
@@ -268,15 +267,6 @@ export function ProjetosBoard() {
                 )}
             </AnimatePresence>
 
-            <AnimatePresence>
-                {isDetailOpen && (
-                    <ProjectDisciplineDetail
-                        isOpen={isDetailOpen}
-                        onClose={() => setIsDetailOpen(false)}
-                        discipline={selectedDiscipline}
-                    />
-                )}
-            </AnimatePresence>
 
             <PlaceholderModal
                 isOpen={modalConfig.isOpen}

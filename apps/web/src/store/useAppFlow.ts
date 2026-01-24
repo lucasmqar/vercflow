@@ -34,6 +34,10 @@ interface AppFlowState {
     updateClient: (id: string, data: Partial<Client>) => void;
     getClient: (id: string) => Client | undefined;
 
+    // Global Project Context
+    selectedProjectId: string | null;
+    setSelectedProject: (id: string | null) => void;
+
     // Lead Management (ALWAYS the starting point)
     addLead: (lead: Omit<Lead, 'id' | 'criadoEm'>) => string;
     updateLeadStatus: (id: string, status: Lead['status']) => void;
@@ -85,6 +89,10 @@ export const useAppFlow = create<AppFlowState>()(
             })),
 
             getClient: (id) => get().clients.find(c => c.id === id),
+
+            // GLOBAL PROJECT CONTEXT
+            selectedProjectId: null,
+            setSelectedProject: (id) => set({ selectedProjectId: id }),
 
             // LEAD MANAGEMENT
             addLead: (leadData) => {
