@@ -7,6 +7,7 @@ import { CaptureDashboard } from './components/dashboards/CaptureDashboard';
 import { SettingsDashboard } from './components/dashboards/SettingsDashboard';
 import { GenericDashboard } from './components/dashboards/GenericDashboard';
 import { EquipeDashboard } from './components/dashboards/EquipeDashboard';
+import { RHDashboard } from './components/dashboards/RHDashboard';
 import { FinanceiroDashboard } from './components/dashboards/FinanceiroDashboard';
 import { ComprasDashboard } from './components/dashboards/ComprasDashboard';
 import { ExecutivoDashboard } from './components/dashboards/ExecutivoDashboard';
@@ -112,7 +113,7 @@ function AppContent() {
               {activeTab === 'design' && <DesignDashboard onTabChange={setActiveTab} />}
               {activeTab === 'estoque' && <EstoqueDashboard onTabChange={setActiveTab} />}
               {activeTab === 'financeiro' && <FinanceiroDashboard onTabChange={setActiveTab} />}
-              {activeTab === 'rh-sst' && <EquipeDashboard onTabChange={setActiveTab} />}
+              {activeTab === 'rh-sst' && <RHDashboard onTabChange={setActiveTab} />}
               {activeTab === 'logistica' && <FrotaDashboard onTabChange={setActiveTab} />}
               {activeTab === 'config' && <SettingsDashboard onTabChange={setActiveTab} />}
             </motion.div>

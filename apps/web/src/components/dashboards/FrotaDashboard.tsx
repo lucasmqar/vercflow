@@ -2,160 +2,116 @@
 
 import React, { useState } from 'react';
 import {
+    LayoutDashboard,
     Truck,
     Wrench,
+    Users,
     Fuel,
-    Calendar,
-    AlertTriangle,
-    Search,
-    Plus,
     MapPin,
-    ArrowUpRight,
-    Activity,
-    History,
-    Filter,
-    Gauge,
-    Droplets,
-    Zap,
-    Scale
+    CalendarClock,
+    Activity
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import HeaderAnimated from '@/components/common/HeaderAnimated';
-import { DashboardTab } from '@/types';
+import { Card } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Progress } from '@/components/ui/progress';
-import { ReusableKanbanBoard } from '@/components/tasks/ReusableKanbanBoard';
-import { PlaceholderModal } from '@/components/shared/PlaceholderModal';
+import { DashboardTab } from '@/types';
+import HeaderAnimated from '@/components/common/HeaderAnimated';
 
-export function FrotaDashboard({ onTabChange, onOpenWizard }: { onTabChange: (tab: DashboardTab) => void, onOpenWizard?: () => void }) {
-    const [moduleView, setModuleView] = useState<'geral' | 'atividades'>('geral');
-    const [activeClassification, setActiveClassification] = useState<'all' | 'leve' | 'pesado' | 'maquina'>('all');
-    const [activeTab, setActiveTab] = useState('veiculos');
-    const [modalConfig, setModalConfig] = useState<{ isOpen: boolean; title: string; icon?: any; type?: any }>({
-        isOpen: false,
-        title: "",
-        type: "none"
-    });
+// Placeholder components for sections
+const PlaceholderSection = ({ title, icon: Icon }: any) => (
+    <div className="flex flex-col items-center justify-center h-full text-muted-foreground animate-in fade-in zoom-in duration-500">
+        <div className="w-20 h-20 bg-muted/30 rounded-[2rem] flex items-center justify-center mb-6">
+            <Icon size={40} className="opacity-50" />
+        </div>
+        <h2 className="text-xl font-black tracking-tight mb-2">Seção {title}</h2>
+        <p className="max-w-[300px] text-center text-sm font-medium opacity-60">
+            Gestão de frotas em desenvolvimento.
+        </p>
+    </div>
+);
 
-    const openPlaceholder = (title: string, icon?: any, type: any = "none") => {
-        setModalConfig({ isOpen: true, title, icon, type });
-    };
+export function FrotaDashboard({ onTabChange }: { onTabChange: (tab: DashboardTab) => void }) {
+    const [currentSection, setCurrentSection] = useState<'overview' | 'vehicles' | 'maintenance' | 'drivers' | 'fuel'>('overview');
 
-    // Mock Vehicles
-    const veiculos = [
-        { id: 1, placa: 'ABC-1234', modelo: 'Fiat Strada', tipo: 'Utilitário', class: 'leve', status: 'EM USO', obra: 'Ed. Sky', revisao: 'Em dia', km: 12450, combustivel: 75, motorista: 'João Silva' },
-        { id: 2, placa: 'DEF-5678', modelo: 'Caminhão Munck', tipo: 'Caminhão', class: 'pesado', status: 'DISPONIVEL', obra: 'Pátio', revisao: 'Vence em 5 dias', km: 45800, combustivel: 45, motorista: '-' },
-        { id: 3, placa: 'GHI-9012', modelo: 'VW Saveiro', tipo: 'Utilitário', class: 'leve', status: 'MANUTENCAO', obra: 'Oficina', revisao: 'Atrasada', km: 89300, combustivel: 10, motorista: '-' },
-        { id: 4, placa: 'JKL-3456', modelo: 'Escavadeira Volvo', tipo: 'Maquinário', class: 'maquina', status: 'EM USO', obra: 'Res. Orion', revisao: 'Em dia', horas: 1200, combustivel: 60, motorista: 'Carlos S.' },
-        { id: 5, placa: 'MNO-7890', modelo: 'Gerador 50kVA', tipo: 'Equipamento', class: 'maquina', status: 'DISPONIVEL', obra: 'Ed. Infinity', revisao: 'Pendente', horas: 450, combustivel: 95, motorista: '-' },
+    const navItems = [
+        { id: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
+        { id: 'vehicles', label: 'Veículos', icon: Truck },
+        { id: 'maintenance', label: 'Manutenção', icon: Wrench },
+        { id: 'drivers', label: 'Motoristas', icon: Users },
+        { id: 'fuel', label: 'Combustível', icon: Fuel },
     ];
 
-    const filteredVeiculos = veiculos.filter(v => activeClassification === 'all' || v.class === activeClassification);
-
     return (
-        <div className="p-4 lg:p-8 space-y-8 h-full overflow-y-auto font-sans bg-secondary/10 pb-24">
-            {/* Header */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-                <div>
-                    <HeaderAnimated title="Telemetria & Frota" />
-                    <p className="text-muted-foreground font-medium mt-1">
-                        Monitoramento de ativos móveis, máquinas pesadas e custos operacionais.
-                    </p>
-                </div>
-                <div className="flex gap-3">
-                    <div className="flex p-1 bg-muted/20 rounded-xl border border-border/40 shrink-0">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setModuleView('geral')}
-                            className={cn(
-                                "rounded-lg text-[10px] font-black uppercase tracking-widest px-4 h-9",
-                                moduleView === 'geral' ? "bg-background shadow-sm text-primary" : "text-muted-foreground"
-                            )}
-                        >
-                            Overview
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setModuleView('atividades')}
-                            className={cn(
-                                "rounded-lg text-[10px] font-black uppercase tracking-widest px-4 h-9",
-                                moduleView === 'atividades' ? "bg-background shadow-sm text-primary" : "text-muted-foreground"
-                            )}
-                        >
-                            Logística (Kanban)
-                        </Button>
+        <div className="flex flex-col h-full bg-gradient-to-br from-background via-background to-secondary/5 overflow-hidden font-sans">
+            <div className="flex h-full">
+                <div className="w-20 lg:w-64 border-r border-border/40 flex flex-col items-center lg:items-stretch py-8 bg-background/50 backdrop-blur-sm shrink-0 transition-all duration-300">
+                    <div className="px-6 mb-8 hidden lg:block">
+                        <HeaderAnimated title="Frotas" />
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-black opacity-60 mt-1">
+                            Fleet Management
+                        </p>
                     </div>
-                    <Button
-                        className="rounded-xl h-11 px-6 font-black uppercase tracking-widest gap-2 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
-                        onClick={() => openPlaceholder("Adicionar Novo Ativo", Plus, "vehicle")}
-                    >
-                        <Plus size={18} /> Novo Ativo
-                    </Button>
+
+                    <div className="flex flex-col gap-2 w-full px-4 flex-1 overflow-y-auto">
+                        {navItems.map((item) => {
+                            const isActive = currentSection === item.id;
+                            return (
+                                <Button
+                                    key={item.id}
+                                    variant={isActive ? "secondary" : "ghost"}
+                                    onClick={() => setCurrentSection(item.id as any)}
+                                    className={cn(
+                                        "w-full justify-start h-12 rounded-xl transition-all duration-200",
+                                        isActive
+                                            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                                            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                                        "lg:px-4 px-0 lg:justify-start justify-center"
+                                    )}
+                                >
+                                    <item.icon size={20} className={cn("shrink-0", isActive ? "text-primary-foreground" : "text-muted-foreground", "lg:mr-3")} />
+                                    <span className="hidden lg:block font-bold text-xs uppercase tracking-wide truncate">{item.label}</span>
+                                </Button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="p-4 mt-auto">
+                        <Card className="p-4 bg-gradient-to-br from-slate-500/10 to-slate-500/5 border-slate-500/10 rounded-2xl hidden lg:block">
+                            <p className="text-[10px] font-black uppercase text-slate-600 mb-1">Veículos Ativos</p>
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-slate-500 animate-pulse" />
+                                <span className="text-xs font-bold text-foreground">8 em Rota</span>
+                            </div>
+                        </Card>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-hidden flex flex-col bg-muted/5">
+                    <div className="h-20 border-b border-border/40 flex items-center justify-between px-8 bg-background/50 backdrop-blur-sm shrink-0 lg:hidden">
+                        <HeaderAnimated title="Frotas" />
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 lg:p-10 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={currentSection}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                                className="max-w-[1920px] mx-auto h-full"
+                            >
+                                <PlaceholderSection
+                                    title={navItems.find(i => i.id === currentSection)?.label}
+                                    icon={navItems.find(i => i.id === currentSection)?.icon}
+                                />
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
                 </div>
             </div>
-
-            <AnimatePresence mode="wait">
-                {moduleView === 'geral' ? (
-                    <motion.div key="geral" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="space-y-8">
-                        {/* Fleet KPIs */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <FleetKPI title="Ativos Totais" value="42" icon={Truck} sub="Móveis e Máquinas" />
-                            <FleetKPI title="Disponibilidade" value="89%" icon={Activity} sub="Taxa de Utilização" />
-                            <FleetKPI title="Manutenção" value="4" icon={Wrench} sub="Parados em Oficina" color="text-red-500" />
-                            <FleetKPI title="Consumo Médio" value="R$ 4.2k" icon={Fuel} sub="Combustível / Semana" />
-                        </div>
-
-                        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                            <div className="flex items-center justify-between border-b border-border/40 pb-2 overflow-x-auto no-scrollbar">
-                                <TabsList className="bg-transparent h-auto p-0 gap-8">
-                                    <TabItem value="veiculos" icon={Truck} label="Ativos" isActive={activeTab === 'veiculos'} />
-                                    <TabItem value="manutencao" icon={Wrench} label="Agenda Preventiva" isActive={activeTab === 'manutencao'} />
-                                    <TabItem value="abastecimento" icon={Fuel} label="Relatórios Consumo" isActive={activeTab === 'abastecimento'} />
-                                    <TabItem value="tracking" icon={MapPin} label="Live Tracking" isActive={activeTab === 'tracking'} />
-                                </TabsList>
-                            </div>
-
-                            <TabsContent value="veiculos" className="space-y-6">
-                                <div className="flex gap-4 p-2 bg-background/40 backdrop-blur-md rounded-3xl border border-white/5 w-fit">
-                                    <ClassificationFilter active={activeClassification === 'all'} onClick={() => setActiveClassification('all')} label="Todos" count={veiculos.length} />
-                                    <ClassificationFilter active={activeClassification === 'leve'} onClick={() => setActiveClassification('leve')} label="Leves" icon={Truck} color="text-blue-500" />
-                                    <ClassificationFilter active={activeClassification === 'pesado'} onClick={() => setActiveClassification('pesado')} label="Pesados" icon={Truck} color="text-amber-500" />
-                                    <ClassificationFilter active={activeClassification === 'maquina'} onClick={() => setActiveClassification('maquina')} label="Máquinas" icon={Activity} color="text-rose-500" />
-                                </div>
-                            <span>Energia / Tanque</span>
-                            <span className={v.combustivel < 20 ? "text-red-500" : "text-emerald-500"}>{v.combustivel}%</span>
-                        </div>
-                        <Progress value={v.combustivel} className="h-1.5" />
-                    </div>
-                </div>
-
-                <Button variant="ghost" className="w-full mt-6 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all">
-                    Ver Telemetria <ArrowUpRight size={14} className="ml-2" />
-                </Button>
-            </CardContent>
-        </Card>
-    );
-}
-
-function ClassificationFilter({ active, onClick, label, icon: Icon, color, count }: any) {
-    return (
-        <button
-            onClick={onClick}
-            className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-2xl transition-all text-[10px] font-black uppercase tracking-widest",
-                active ? "bg-white/10 text-white shadow-lg" : "text-muted-foreground hover:text-foreground"
-            )}
-        >
-            {Icon && <Icon size={14} className={active ? color : ""} />}
-            {label}
-            {count !== undefined && <span className="opacity-40 ml-1">{count}</span>}
-        </button>
+        </div>
     );
 }
 

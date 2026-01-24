@@ -31,7 +31,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types';
 import HeaderAnimated from '@/components/common/HeaderAnimated';
@@ -42,9 +41,9 @@ interface ObraDetailPageProps {
 }
 
 export function ObraDetailPage({ obra, onBack }: ObraDetailPageProps) {
-    const [activeTab, setActiveTab] = useState('overview');
+    const [currentSection, setCurrentSection] = useState<string>('overview');
 
-    const tabs = [
+    const navItems = [
         { id: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
         { id: 'engineering', label: 'Engenharia', icon: Hammer },
         { id: 'projects', label: 'Projetos', icon: Layers },
@@ -58,105 +57,120 @@ export function ObraDetailPage({ obra, onBack }: ObraDetailPageProps) {
     ];
 
     return (
-        <div className="flex flex-col h-full bg-secondary/10 overflow-hidden">
-            {/* Unified Fixed Header */}
-            <div className="bg-background/60 backdrop-blur-3xl border-b border-border/40 p-6 lg:px-10 flex flex-col gap-6 shrink-0 relative z-20">
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-                    <div className="flex items-center gap-6">
+        <div className="flex flex-col h-full bg-gradient-to-br from-background via-background to-secondary/5 overflow-hidden font-sans">
+            {/* Main Layout */}
+            <div className="flex h-full">
+                {/* Sidebar Navigation */}
+                <div className="w-20 lg:w-64 border-r border-border/40 flex flex-col items-center lg:items-stretch py-6 bg-background/50 backdrop-blur-sm shrink-0 transition-all duration-300">
+                    <div className="px-6 mb-6 hidden lg:block">
                         <Button
                             variant="ghost"
-                            size="icon"
+                            size="sm"
                             onClick={onBack}
-                            className="w-12 h-12 rounded-[1.25rem] bg-muted/20 border border-white/5 hover:bg-white/10"
+                            className="text-muted-foreground hover:text-foreground mb-4 pl-0 gap-2"
                         >
-                            <ArrowLeft size={24} />
+                            <ArrowLeft size={16} /> Voltar
                         </Button>
-                        <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-4">
-                                <h2 className="text-3xl font-black tracking-tighter uppercase">{obra.nome}</h2>
-                                <Badge className="bg-primary/10 text-primary border-none font-black text-[10px] items-center gap-2 px-3 h-7 flex">
-                                    {obra.status}
-                                </Badge>
-                            </div>
-                            <div className="flex flex-wrap gap-5">
-                                <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
-                                    <MapPin size={14} className="text-primary" /> {obra.endereco || 'Local não definido'}
-                                </span>
-                                <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
-                                    <Building2 size={14} className="text-primary" /> {obra.categoria || 'Residencial'}
-                                </span>
-                                <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
-                                    <User size={14} className="text-primary" /> Cliente: {obra.client?.nome || 'Não definido'}
-                                </span>
-                            </div>
-                        </div>
+                        <h2 className="text-xl font-black tracking-tighter uppercase leading-none mb-1">{obra.nome.substring(0, 20)}{obra.nome.length > 20 && '...'}</h2>
+                        <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] uppercase tracking-widest px-2 py-0.5 mt-2">
+                            {obra.status}
+                        </Badge>
                     </div>
 
-                    <div className="flex gap-3">
-                        <Button variant="outline" className="h-10 rounded-xl px-4 font-black uppercase tracking-widest text-[9px] gap-2 border-white/10 hover:bg-white/5">
-                            <Briefcase size={14} /> Ver Comercial
-                        </Button>
-                        <Button variant="outline" className="h-10 rounded-xl px-4 font-black uppercase tracking-widest text-[9px] gap-2 border-white/10 hover:bg-white/5">
-                            <BarChart3 size={14} /> Centro de Custo
-                        </Button>
-                    </div>
-                </div>
-
-                {/* Sub-Navigation Tabs */}
-                <div className="flex overflow-x-auto no-scrollbar pt-2">
-                    <div className="flex p-1.5 bg-muted/20 rounded-[28px] border border-border/40 shrink-0 backdrop-blur-xl gap-2 h-14 items-center px-2">
-                        {tabs.map((tab) => {
-                            const isActive = activeTab === tab.id;
-                            const Icon = tab.icon;
+                    <div className="flex flex-col gap-1 w-full px-3 flex-1 overflow-y-auto no-scrollbar">
+                        {navItems.map((item) => {
+                            const isActive = currentSection === item.id;
                             return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
+                                <Button
+                                    key={item.id}
+                                    variant={isActive ? "secondary" : "ghost"}
+                                    onClick={() => setCurrentSection(item.id)}
                                     className={cn(
-                                        "flex items-center gap-2.5 px-5 h-10 rounded-[20px] transition-all duration-300 whitespace-nowrap",
+                                        "w-full justify-start h-11 rounded-xl transition-all duration-200 mb-1",
                                         isActive
-                                            ? "bg-background shadow-lg text-primary scale-105"
-                                            : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                                            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                                            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                                        "lg:px-4 px-0 lg:justify-start justify-center"
                                     )}
                                 >
-                                    <Icon size={16} className={cn(isActive && "animate-pulse")} />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.15em]">{tab.label}</span>
-                                </button>
+                                    <item.icon size={18} className={cn("shrink-0", isActive ? "text-primary-foreground" : "text-muted-foreground", "lg:mr-3")} />
+                                    <span className="hidden lg:block font-bold text-xs uppercase tracking-wide truncate">{item.label}</span>
+                                </Button>
                             );
                         })}
                     </div>
-                </div>
-            </div>
 
-            {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-10">
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={activeTab}
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -15 }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
-                        className="max-w-[1600px] mx-auto w-full"
-                    >
-                        {activeTab === 'overview' && <OverviewTab obra={obra} />}
-                        {activeTab === 'engineering' && <EngineeringTab obra={obra} />}
-                        {activeTab === 'projects' && <ProjectsTab obra={obra} />}
-                        {activeTab === 'people' && <PeopleTab obra={obra} />}
-                        {activeTab === 'purchases' && <PurchasesTab obra={obra} />}
-                        {activeTab === 'financial' && <FinancialTab obra={obra} />}
-                        {activeTab === 'logistics' && <LogisticsTab obra={obra} />}
-                        {activeTab === 'documents' && <DocumentsTab obra={obra} />}
-                        {activeTab === 'field' && <FieldDiaryTab obra={obra} />}
-                        {activeTab === 'settings' && <SettingsTab obra={obra} />}
-                    </motion.div>
-                </AnimatePresence>
+                    <div className="p-4 mt-auto">
+                        <Card className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/10 rounded-2xl hidden lg:block">
+                            <p className="text-[9px] font-black uppercase text-primary mb-1">Centro de Custo</p>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-foreground overflow-ellipsis overflow-hidden whitespace-nowrap">CC-{obra.codigoInterno || '000'}</span>
+                            </div>
+                        </Card>
+                    </div>
+                </div>
+
+                {/* Main Content Area */}
+                <div className="flex-1 overflow-hidden flex flex-col bg-muted/5">
+                    {/* Mobile Header */}
+                    <div className="h-16 border-b border-border/40 flex items-center justify-between px-4 bg-background/50 backdrop-blur-sm shrink-0 lg:hidden">
+                        <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft size={20} /></Button>
+                        <span className="font-bold text-sm truncate">{obra.nome}</span>
+                        <div className="w-10" />
+                    </div>
+
+                    {/* Scrollable Area */}
+                    <div className="flex-1 overflow-y-auto p-4 lg:p-10 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={currentSection}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                                className="max-w-[1600px] mx-auto w-full"
+                            >
+                                {/* Header Info Block for Main View */}
+                                <div className="mb-8 flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+                                    <div className="space-y-1">
+                                        <h1 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                                            {navItems.find(i => i.id === currentSection)?.label}
+                                            <span className="text-muted-foreground/30 font-light text-xl">|</span>
+                                            <span className="text-base text-muted-foreground font-medium">{obra.endereco || 'Local não informado'}</span>
+                                        </h1>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button variant="outline" size="sm" className="rounded-xl font-bold uppercase text-[10px] tracking-widest">
+                                            <FileText size={14} className="mr-2" /> Relatório
+                                        </Button>
+                                        {currentSection === 'engineering' && (
+                                            <Button size="sm" className="rounded-xl font-bold uppercase text-[10px] tracking-widest bg-primary text-primary-foreground">
+                                                <Activity size={14} className="mr-2" /> Diário de Obra
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {currentSection === 'overview' && <OverviewTab obra={obra} />}
+                                {currentSection === 'engineering' && <EngineeringTab obra={obra} />}
+                                {currentSection === 'projects' && <ProjectsTab obra={obra} />}
+                                {currentSection === 'people' && <PeopleTab obra={obra} />}
+                                {currentSection === 'purchases' && <PurchasesTab obra={obra} />}
+                                {currentSection === 'financial' && <FinancialTab obra={obra} />}
+                                {currentSection === 'logistics' && <LogisticsTab obra={obra} />}
+                                {currentSection === 'documents' && <DocumentsTab obra={obra} />}
+                                {currentSection === 'field' && <FieldDiaryTab obra={obra} />}
+                                {currentSection === 'settings' && <SettingsTab obra={obra} />}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+                </div>
             </div>
         </div>
     );
 }
 
-// Sub-components (Tabs)
+// Sub-components (Tabs) - Retained Logic, Updated Styles for new container context
 function OverviewTab({ obra }: { obra: Project }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -165,7 +179,7 @@ function OverviewTab({ obra }: { obra: Project }) {
             <StatCard label="Orçamento Consumido" value="R$ 0" icon={DollarSign} color="text-emerald-500" />
             <StatCard label="Segurança (EPI/NR)" value="OK" icon={ShieldCheck} color="text-blue-500" />
 
-            <Card className="lg:col-span-3 rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-xl p-8 min-h-[400px]">
+            <Card className="lg:col-span-3 rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl p-8 min-h-[400px]">
                 <h3 className="text-xl font-black uppercase tracking-widest mb-8 border-b border-white/5 pb-4">Linha do Tempo</h3>
                 <div className="relative pl-12 space-y-12 before:absolute before:left-5 before:top-2 before:bottom-2 before:w-px before:bg-white/10">
                     <TimelineItem label="Lead Criado" date="Jan 20, 2026" status="complete" />
@@ -188,7 +202,7 @@ function EngineeringTab({ obra }: { obra: Project }) {
     return (
         <div className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2 rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-xl p-8">
+                <Card className="lg:col-span-2 rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl p-8">
                     <h3 className="text-xl font-black uppercase mb-6">Fases da Obra</h3>
                     <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
                         {['Pré-Obra', 'Mobilização', 'Estrutura', 'Alvenaria', 'Instalações', 'Acabamento'].map((fase, i) => (
@@ -200,7 +214,7 @@ function EngineeringTab({ obra }: { obra: Project }) {
                         ))}
                     </div>
                 </Card>
-                <Card className="rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-xl p-8">
+                <Card className="rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl p-8">
                     <h3 className="text-xl font-black uppercase mb-6 text-primary">Solicitações abertas</h3>
                     <div className="space-y-4">
                         <SmallRequestCard to=" RH / SST" title="Alocar Mestre de Obra" priority="ALTA" />
@@ -215,7 +229,7 @@ function EngineeringTab({ obra }: { obra: Project }) {
 function ProjectsTab({ obra }: { obra: Project }) {
     return (
         <div className="space-y-8">
-            <Card className="rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-xl p-8">
+            <Card className="rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl p-8">
                 <div className="flex justify-between items-center mb-8 pb-4 border-b border-white/5">
                     <h3 className="text-xl font-black uppercase">Board de Disciplinas</h3>
                     <Button variant="outline" className="h-10 rounded-xl font-black uppercase tracking-widest text-[9px]">
@@ -237,7 +251,7 @@ function ProjectsTab({ obra }: { obra: Project }) {
 function PeopleTab({ obra }: { obra: Project }) {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <Card className="lg:col-span-8 rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-xl p-8">
+            <Card className="lg:col-span-8 rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl p-8">
                 <h3 className="text-xl font-black uppercase mb-8">Pessoas na Obra</h3>
                 <div className="space-y-6">
                     {/* Empty State */}
@@ -292,7 +306,7 @@ function SettingsTab({ obra }: { obra: Project }) {
 // UI Helpers
 function StatCard({ label, value, icon: Icon, color }: any) {
     return (
-        <Card className="rounded-3xl border-white/5 bg-background/40 backdrop-blur-xl p-8 flex flex-col gap-4">
+        <Card className="rounded-3xl border-white/5 bg-background/60 backdrop-blur-xl p-8 flex flex-col gap-4">
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60 flex items-center gap-2">
                 <Icon size={14} className={color} /> {label}
             </span>
@@ -319,7 +333,7 @@ function TimelineItem({ label, date, status }: any) {
 
 function ModuleSummaryCard({ title, desc, items }: any) {
     return (
-        <Card className="rounded-[2rem] border-white/5 bg-background/40 backdrop-blur-xl p-6">
+        <Card className="rounded-[2rem] border-white/5 bg-background/60 backdrop-blur-xl p-6">
             <h4 className="text-xs font-black uppercase tracking-widest mb-1 text-primary">{title}</h4>
             <p className="text-[10px] text-muted-foreground font-bold mb-4 uppercase">{desc}</p>
             <div className="space-y-2">

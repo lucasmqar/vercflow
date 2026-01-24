@@ -1,26 +1,17 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-    Box,
-    ShoppingCart,
-    ArrowRightLeft,
-    AlertTriangle,
+    LayoutDashboard,
     Package,
-    Truck,
-    Search,
-    Plus,
-    ArrowRight,
-    CheckCircle2,
-    FileText,
-    TrendingDown,
-    Filter,
-    QrCode,
-    History
+    ArrowUpRight,
+    AlertTriangle,
+    History,
+    Search
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { DashboardTab } from '@/types';
 import HeaderAnimated from '@/components/common/HeaderAnimated';
@@ -39,133 +30,87 @@ const PlaceholderSection = ({ title, icon: Icon }: any) => (
 );
 
 export function EstoqueDashboard({ onTabChange }: { onTabChange: (tab: DashboardTab) => void }) {
-                                </div >
-                            </div >
-        <div className="grid gap-4">
-            {[
-                { id: 'OC-902', supplier: 'Açolab S.A', value: 'R$ 45.200', status: 'COTACAO', date: '22/05' },
-                { id: 'OC-903', supplier: 'Cimento Forte', value: 'R$ 12.800', status: 'APROVADO', date: '23/05' },
-                { id: 'OC-904', supplier: 'HidroCenter', value: 'R$ 8.450', status: 'EM TRANSITO', date: '21/05' },
-            ].map((oc) => (
-                <Card key={oc.id} className="rounded-[2rem] border-border/40 bg-background/60 p-6 hover:border-primary/20 transition-all cursor-pointer group">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-6">
-                            <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors"><Receipt size={24} /></div>
-                            <div>
-                                <p className="font-black text-sm tracking-tight">{oc.id} · {oc.supplier}</p>
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase">{oc.date} · {oc.value}</p>
-                            </div>
-                        </div>
-                        <Badge className={cn("text-[9px] font-black uppercase tracking-widest", oc.status === 'COTACAO' ? "bg-amber-500/10 text-amber-500" : "bg-emerald-500/10 text-emerald-500")}>
-                            {oc.status}
-                        </Badge>
+    const [currentSection, setCurrentSection] = useState<'overview' | 'inventory' | 'movements' | 'lowstock' | 'history'>('overview');
+
+    const navItems = [
+        { id: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
+        { id: 'inventory', label: 'Itens em Estoque', icon: Package },
+        { id: 'movements', label: 'Movimentações', icon: ArrowUpRight },
+        { id: 'lowstock', label: 'Estoque Baixo', icon: AlertTriangle },
+        { id: 'history', label: 'Histórico', icon: History },
+    ];
+
+    return (
+        <div className="flex flex-col h-full bg-gradient-to-br from-background via-background to-secondary/5 overflow-hidden font-sans">
+            <div className="flex h-full">
+                <div className="w-20 lg:w-64 border-r border-border/40 flex flex-col items-center lg:items-stretch py-8 bg-background/50 backdrop-blur-sm shrink-0 transition-all duration-300">
+                    <div className="px-6 mb-8 hidden lg:block">
+                        <HeaderAnimated title="Estoque" />
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-black opacity-60 mt-1">
+                            Inventory Management
+                        </p>
                     </div>
-                </Card>
-            ))}
-        </div>
-                        </motion.div >
-                    </TabsContent >
 
-                    <TabsContent value="almoxarifado" className="mt-0 outline-none">
-                        <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-6">
-                            <div className="relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40" size={18} />
-                                <Input placeholder="Buscar insumo no inventário..." className="pl-12 h-14 rounded-2xl border-border/40 bg-background/50 text-sm font-medium shadow-inner" />
+                    <div className="flex flex-col gap-2 w-full px-4 flex-1 overflow-y-auto">
+                        {navItems.map((item) => {
+                            const isActive = currentSection === item.id;
+                            return (
+                                <Button
+                                    key={item.id}
+                                    variant={isActive ? "secondary" : "ghost"}
+                                    onClick={() => setCurrentSection(item.id as any)}
+                                    className={cn(
+                                        "w-full justify-start h-12 rounded-xl transition-all duration-200",
+                                        isActive
+                                            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                                            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                                        "lg:px-4 px-0 lg:justify-start justify-center"
+                                    )}
+                                >
+                                    <item.icon size={20} className={cn("shrink-0", isActive ? "text-primary-foreground" : "text-muted-foreground", "lg:mr-3")} />
+                                    <span className="hidden lg:block font-bold text-xs uppercase tracking-wide truncate">{item.label}</span>
+                                </Button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="p-4 mt-auto">
+                        <Card className="p-4 bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/10 rounded-2xl hidden lg:block">
+                            <p className="text-[10px] font-black uppercase text-blue-600 mb-1">Total de Itens</p>
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                <span className="text-xs font-bold text-foreground">1,240 SKUs</span>
                             </div>
-                            <Card className="rounded-[2.5rem] border-border/40 bg-background/60 overflow-hidden shadow-sm">
-                                <table className="w-full border-collapse">
-                                    <thead>
-                                        <tr className="border-b border-border/40 bg-muted/30">
-                                            <th className="p-6 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 text-left">Insumo</th>
-                                            <th className="p-6 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 text-left">Qtd Atual</th>
-                                            <th className="p-6 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 text-left">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border/20">
-                                        {[
-                                            { name: 'Cimento CP II - 50kg', qtd: 142, status: 'OK' },
-                                            { name: 'Tubo PVC 100mm', qtd: 12, status: 'BAIXO' },
-                                            { name: 'Argamassa ACIII', qtd: 0, status: 'CRITICO' },
-                                        ].map((item, idx) => (
-                                            <tr key={idx} className="hover:bg-white/5 transition-colors">
-                                                <td className="p-6 text-sm font-black">{item.name}</td>
-                                                <td className="p-6 text-sm font-mono font-black">{item.qtd} un</td>
-                                                <td className="p-6">
-                                                    <Badge variant="outline" className={cn("text-[8px] font-black uppercase px-2", item.status === 'OK' ? "bg-emerald-500/10 text-emerald-500 border-none" : "bg-red-500/10 text-red-500 border-none")}>
-                                                        {item.status}
-                                                    </Badge>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </Card>
-                        </motion.div>
-                    </TabsContent>
-
-                    <TabsContent value="logistica" className="mt-0 outline-none">
-                        <div className="text-center py-20 opacity-40">
-                            <Truck size={48} className="mx-auto mb-4" />
-                            <h3 className="font-black text-sm uppercase tracking-widest">Painel de Movimentações em Breve</h3>
-                        </div>
-                    </TabsContent>
-                </AnimatePresence >
-            </Tabs >
-
-        <PlaceholderModal
-            isOpen={modalConfig.isOpen}
-            onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
-            title={modalConfig.title}
-            icon={modalConfig.icon}
-            type={(modalConfig as any).type}
-        />
-        </div >
-    );
-}
-
-// Helpers
-function TabItem({ value, icon: Icon, label, isActive }: any) {
-    return (
-        <TabsTrigger
-            value={value}
-            className={cn(
-                "relative bg-transparent h-14 rounded-none px-0 gap-3 text-[10px] font-black uppercase tracking-widest transition-all border-none data-[state=active]:bg-transparent data-[state=active]:text-primary",
-                isActive ? "text-primary" : "text-muted-foreground hover:text-white/60"
-            )}
-        >
-            <Icon size={18} /> {label}
-            {isActive && <motion.div layoutId="active-tab-estoque" className="absolute -bottom-[9px] left-0 right-0 h-1 bg-primary rounded-t-full" />}
-        </TabsTrigger>
-    );
-}
-
-function SummaryCard({ title, value, sub, icon: Icon, type }: any) {
-    const colors = {
-        success: "text-emerald-500 bg-emerald-500/10",
-        warning: "text-amber-500 bg-amber-500/10",
-        danger: "text-red-500 bg-red-500/10",
-        neutral: "text-blue-500 bg-blue-500/10"
-    };
-    return (
-        <Card className="rounded-[2.5rem] border-white/5 bg-background/60 p-8 flex flex-col justify-between h-44 shadow-sm group">
-            <div className="flex justify-between items-start">
-                <div className={cn("p-4 rounded-3xl", colors[type as keyof typeof colors])}>
-                    <Icon size={28} strokeWidth={2.5} />
+                        </Card>
+                    </div>
                 </div>
-                <Badge variant="secondary" className="text-[9px] font-black uppercase px-3 bg-muted/30">{sub}</Badge>
-            </div>
-            <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60 mb-1">{title}</p>
-                <h3 className="text-3xl font-black tracking-tighter group-hover:text-primary transition-colors">{value}</h3>
-            </div>
-        </Card>
-    );
-}
 
-function Layers({ size, className }: any) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></svg>
-    )
+                <div className="flex-1 overflow-hidden flex flex-col bg-muted/5">
+                    <div className="h-20 border-b border-border/40 flex items-center justify-between px-8 bg-background/50 backdrop-blur-sm shrink-0 lg:hidden">
+                        <HeaderAnimated title="Estoque" />
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 lg:p-10 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={currentSection}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                                className="max-w-[1920px] mx-auto h-full"
+                            >
+                                <PlaceholderSection
+                                    title={navItems.find(i => i.id === currentSection)?.label}
+                                    icon={navItems.find(i => i.id === currentSection)?.icon}
+                                />
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 export default EstoqueDashboard;
