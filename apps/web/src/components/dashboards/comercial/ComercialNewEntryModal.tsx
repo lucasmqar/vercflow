@@ -15,7 +15,8 @@ import {
     User,
     Briefcase,
     FileEdit,
-    CheckCircle2
+    CheckCircle2,
+    Zap
 } from 'lucide-react';
 import { useAppFlow } from '@/store/useAppFlow';
 import { toast } from 'sonner';
@@ -98,7 +99,7 @@ export function ComercialNewEntryModal({ isOpen, onClose, onSuccess }: Comercial
                 const client = clients.find(c => c.id === formData.clientId);
                 if (client) {
                     addLead({
-                        nomeValidacao: client.razaoSocial || client.nomeFantasia,
+                        nomeValidacao: client.nome || client.razaoSocial || client.nomeFantasia, // Party aware
                         clientId: client.id,
                         nomeObra: formData.workName,
                         status: 'QUALIFICADO', // Skip to qualified since client exists
@@ -136,7 +137,7 @@ export function ComercialNewEntryModal({ isOpen, onClose, onSuccess }: Comercial
                 <div className="p-8 border-b border-border/40 bg-muted/20">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
-                            <Zap className="text-primary fill-primary/20" />
+                            <Zap className="text-primary" />
                             {step === 1 ? "Nova Entrada Comercial" :
                                 entryType === 'LEAD' ? "Cadastro de Novo Lead" :
                                     entryType === 'WORK' ? "Nova Obra (Cliente Base)" :

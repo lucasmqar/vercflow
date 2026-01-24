@@ -22,8 +22,6 @@ import { ProjetosBoard } from './components/dashboards/ProjetosBoard';
 import { DesignDashboard } from './components/dashboards/DesignDashboard';
 import { EngineeringOverview } from './components/dashboards/EngineeringOverview';
 import { FinancialProposals } from './components/dashboards/FinancialProposals';
-import { PurchasesDashboard } from './components/dashboards/PurchasesDashboard';
-import { StockControl } from './components/dashboards/StockControl';
 import { CommandPalette } from './components/layout/CommandPalette';
 import { CyberneticLoader } from './components/ui/cybernetic-loader';
 import { useAuth } from './hooks/useAuth';
@@ -139,6 +137,7 @@ function AppContent() {
                   {activeTab === 'projetos' && <ProjetosBoard />}
                   {activeTab === 'engenharia' && <EngenhariaDashboard onTabChange={setActiveTab} onOpenWizard={() => setShowWizard(true)} />}
                   {activeTab === 'design' && <DesignDashboard onTabChange={setActiveTab} />}
+                  {activeTab === 'compras' && <ComprasDashboard onTabChange={setActiveTab} />}
                   {activeTab === 'estoque' && <EstoqueDashboard onTabChange={setActiveTab} />}
                   {activeTab === 'financeiro' && <FinanceiroDashboard onTabChange={setActiveTab} />}
                   {activeTab === 'rh-sst' && <RHDashboard onTabChange={setActiveTab} />}

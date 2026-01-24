@@ -27,7 +27,8 @@ import {
     Camera,
     ShieldCheck,
     Palette,
-    Bell
+    Bell,
+    ShoppingCart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -61,6 +62,7 @@ export function MobileDock({ activeTab, onTabChange, onOpenCommandPalette }: Mob
         { id: 'engenharia', label: 'Engenharia', icon: Hammer },
         { id: 'rh-sst', label: 'RH & SST', icon: ShieldCheck },
         { id: 'logistica', label: 'Logística', icon: Truck },
+        { id: 'compras', label: 'Compras', icon: ShoppingCart }, // Added logic
         { id: 'estoque', label: 'Estoque', icon: Box },
         { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
         { id: 'notifications', label: 'Mensagens', icon: Bell },

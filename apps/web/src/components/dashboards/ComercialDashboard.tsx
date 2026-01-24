@@ -8,7 +8,9 @@ import {
     TrendingUp,
     Briefcase,
     Bell,
-    Plus
+    Plus,
+    Map as MapIcon,
+    Kanban,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -18,6 +20,7 @@ import { DashboardTab } from '@/types';
 import HeaderAnimated from '@/components/common/HeaderAnimated';
 import { useAppFlow } from '@/store/useAppFlow';
 import { toast } from 'sonner';
+import { UnifiedEntryWizard } from '@/components/shared/UnifiedEntryWizard';
 
 // Sub-components
 import { ComercialOverview } from './comercial/ComercialOverview';
@@ -29,8 +32,6 @@ import { ClientProfilePage } from './comercial/ClientProfilePage';
 import { ComercialPipeline } from './comercial/ComercialPipeline';
 import { ComercialMap } from './comercial/ComercialMap';
 import { ComercialActivities } from './comercial/ComercialActivities';
-import { ComercialNewEntryModal } from './comercial/ComercialNewEntryModal';
-import { Map as MapIcon, Kanban } from 'lucide-react';
 
 export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange: (tab: DashboardTab) => void, onOpenWizard?: () => void }) {
     // Navigation State
@@ -272,9 +273,12 @@ export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange:
                 </div>
             </div>
 
-            <ComercialNewEntryModal
+            <UnifiedEntryWizard
                 isOpen={isEntryModalOpen}
                 onClose={() => setIsEntryModalOpen(false)}
+                onSuccess={() => {
+                    setIsEntryModalOpen(false);
+                }}
             />
         </div>
     );

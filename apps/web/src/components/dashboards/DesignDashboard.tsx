@@ -10,7 +10,7 @@ import HeaderAnimated from '@/components/common/HeaderAnimated';
 import {
     Palette, Layers, Image, LayoutDashboard,
     Users, Grid, LayoutTemplate, Zap, CheckSquare, Camera,
-    ClipboardList
+    ClipboardList, ShoppingCart
 } from 'lucide-react';
 import { useAppFlow } from '@/store/useAppFlow';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +41,7 @@ export function DesignDashboard({ onTabChange }: { onTabChange: (tab: DashboardT
         { id: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
         { id: 'activities', label: 'Solicitações (Triagem)', icon: Zap, badge: requestsCount },
         { id: 'projects', label: 'Projetos', icon: Layers },
+        { id: 'budgets', label: 'Orçamentos & Requisições', icon: ShoppingCart }, // Added as requested
         { id: 'records', label: 'Registros de Campo', icon: Camera },
         { id: 'specs', label: 'Especificações', icon: Palette },
         { id: 'moodboards', label: 'Moodboards', icon: LayoutTemplate },

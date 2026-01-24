@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Lead, Budget, Proposal, Project, Client, BudgetRevision } from '@/types';
+import { Lead, Budget, Proposal, Project, Client, BudgetRevision, DiarioObra } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 // New Types for Interdepartmental Communication
@@ -17,6 +17,7 @@ export interface DepartmentRequest {
     status: 'PENDENTE' | 'EM_ANALISE' | 'APROVADO' | 'REJEITADO' | 'CONCLUIDO';
     createdAt: string;
     resolvedAt?: string;
+    metadata?: any; // Flexible field for process specifics (e.g., quotes, values, sub-ids)
 }
 
 interface AppFlowState {
@@ -62,6 +63,19 @@ interface AppFlowState {
     updateRequestStatus: (id: string, status: DepartmentRequest['status']) => void;
     updateRequest: (id: string, data: Partial<DepartmentRequest>) => void;
     getRequestsForDepartment: (department: DepartmentRequest['toDepartment']) => DepartmentRequest[];
+
+    // Discipline Management
+    disciplines: any[]; // Using any for flexibility or Discipline[] if imported
+    addDiscipline: (data: any) => string;
+    getDisciplinesByProject: (projectId: string) => any[];
+
+    // Diario de Obra (RDO) Management
+    diariosObra: DiarioObra[];
+    createDiarioObra: (data: Omit<DiarioObra, 'id' | 'criadoEm'>) => string;
+    updateDiarioObra: (id: string, data: Partial<DiarioObra>) => void;
+    updateDiarioObraStatus: (id: string, status: DiarioObra['status']) => void;
+    getDiariosByProject: (projectId: string) => DiarioObra[];
+    getDiariosByDateRange: (startDate: string, endDate: string) => DiarioObra[];
 }
 
 export const useAppFlow = create<AppFlowState>()(
@@ -73,14 +87,25 @@ export const useAppFlow = create<AppFlowState>()(
             proposals: [],
             projects: [],
             requests: [],
+            disciplines: [],
+            diariosObra: [],
 
-            // CLIENT MANAGEMENT
+            // CLIENT MANAGEMENT (Party Implementation)
             addClient: (clientData) => {
                 const id = uuidv4();
+                // Party Contract Enforcement
+                const nomeUnificado = clientData.nome || clientData.razaoSocial || clientData.nomeFantasia || 'Cliente Sem Nome';
+
                 set((state) => ({
                     clients: [...state.clients, {
                         ...clientData,
                         id,
+                        // Party Defaults
+                        nome: nomeUnificado,
+                        ativo: true,
+                        contatos: clientData.contatos || '[]',
+                        // Legacy/Specifics
+                        razaoSocial: clientData.razaoSocial || nomeUnificado,
                         criadoEm: new Date().toISOString()
                     }]
                 }));
@@ -237,7 +262,7 @@ export const useAppFlow = create<AppFlowState>()(
                     status: 'PLANEJAMENTO', // Starts in PLANEJAMENTO, not ATIVA
                     orcamentoId: budget.id,
                     propostaId: proposalId,
-                    categoria: lead?.tipoObra as any,
+                    // categoria removed - using classificacao
                     endereco: lead?.localizacao,
                     classificacao: lead?.classificacao, // Carry over classification
                     attachments: lead?.attachments, // Carry over attachments
@@ -296,6 +321,60 @@ export const useAppFlow = create<AppFlowState>()(
 
             getRequestsForDepartment: (department) => {
                 return get().requests.filter(r => r.toDepartment === department);
+            },
+
+            // DISCIPLINE MANAGEMENT
+            addDiscipline: (data) => {
+                const id = uuidv4();
+                set((state) => ({
+                    disciplines: [...(state.disciplines || []), {
+                        ...data,
+                        id,
+                        status: data.status || 'NAO_INICIADO',
+                        progress: data.progress || 0
+                    }]
+                }));
+                return id;
+            },
+            getDisciplinesByProject: (projectId) => {
+                const list = get().disciplines || [];
+                return list.filter(d => d.projectId === projectId);
+            },
+
+            // DIARIO DE OBRA (RDO) MANAGEMENT
+            createDiarioObra: (data) => {
+                const id = uuidv4();
+                set((state) => ({
+                    diariosObra: [...state.diariosObra, {
+                        ...data,
+                        id,
+                        criadoEm: new Date().toISOString()
+                    }]
+                }));
+                return id;
+            },
+
+            updateDiarioObra: (id, data) => set((state) => ({
+                diariosObra: state.diariosObra.map(d => d.id === id ? { ...d, ...data } : d)
+            })),
+
+            updateDiarioObraStatus: (id, status) => set((state) => ({
+                diariosObra: state.diariosObra.map(d => d.id === id ? {
+                    ...d,
+                    status,
+                    aprovadoEm: status === 'APROVADO' ? new Date().toISOString() : d.aprovadoEm
+                } : d)
+            })),
+
+            getDiariosByProject: (projectId) => {
+                return get().diariosObra.filter(d => d.projectId === projectId);
+            },
+
+            getDiariosByDateRange: (startDate, endDate) => {
+                return get().diariosObra.filter(d => {
+                    const dataRDO = new Date(d.data);
+                    return dataRDO >= new Date(startDate) && dataRDO <= new Date(endDate);
+                });
             }
         }),
         {

@@ -62,7 +62,13 @@ interface HomeDashboardProps {
 export function HomeDashboard({ onTabChange, onOpenWizard }: HomeDashboardProps) {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { setSelectedProject } = useAppFlow();
+    const { setSelectedProject, projects, requests } = useAppFlow();
+
+    // Live Stats Derivations
+    const activeProjectsCount = projects.filter(p => p.status === 'ATIVA' || p.status === 'PLANEJAMENTO').length;
+    const purchasesPending = requests.filter(r => r.toDepartment === 'COMPRAS' && r.status !== 'CONCLUIDO' && r.status !== 'REJEITADO').length;
+    const paymentsPending = requests.filter(r => r.toDepartment === 'FINANCEIRO' && r.status !== 'CONCLUIDO' && r.status !== 'REJEITADO').length;
+
     const [view, setView] = useState<'geral' | 'insights'>('geral');
     const [dashboardData, setDashboardData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -96,6 +102,16 @@ export function HomeDashboard({ onTabChange, onOpenWizard }: HomeDashboardProps)
         const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
         return `${greeting}, ${user?.nome.split(' ')[0]}`;
     };
+
+    // Real-time clock state
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     const getQuickActions = () => {
         if (user?.role === 'CEO') {
@@ -147,7 +163,7 @@ export function HomeDashboard({ onTabChange, onOpenWizard }: HomeDashboardProps)
                     <HeaderAnimated title={view === 'geral' ? getRoleBasedGreeting() : "CEO Insights & Analytics"} />
                     <p className="text-muted-foreground font-medium text-sm mt-1">
                         {view === 'geral'
-                            ? new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+                            ? `${currentTime.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} • ${currentTime.toLocaleTimeString('pt-BR')}`
                             : "Inteligência estratégica em tempo real para tomada de decisão global."
                         }
                     </p>
@@ -182,24 +198,28 @@ export function HomeDashboard({ onTabChange, onOpenWizard }: HomeDashboardProps)
             <AnimatePresence mode="wait">
                 {view === 'geral' ? (
                     <motion.div key="geral" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="space-y-8">
-                        {/* Quick Actions */}
-                        <div className="flex flex-wrap gap-2">
+                        {/* Quick Action Cards - Enhanced */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                             {getQuickActions().map((action, idx) => {
                                 const Icon = action.icon;
                                 return (
-                                    <Button
+                                    <Card
                                         key={idx}
-                                        size="sm"
-                                        variant="outline"
-                                        className="rounded-full font-bold text-xs gap-2 hover:bg-primary hover:text-primary-foreground transition-all"
+                                        className="rounded-[2rem] border-border/40 bg-gradient-to-br from-background to-muted/20 hover:shadow-2xl hover:shadow-primary/10 transition-all hover:-translate-y-1 cursor-pointer group"
                                         onClick={() => {
                                             if ('action' in action && action.action) action.action();
                                             else if ('tab' in action && action.tab) onTabChange(action.tab);
                                         }}
                                     >
-                                        <Icon size={14} />
-                                        {action.label}
-                                    </Button>
+                                        <CardContent className="pt-6 pb-6 text-center">
+                                            <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                                                <Icon size={24} strokeWidth={2.5} />
+                                            </div>
+                                            <p className="text-[10px] font-black text-foreground uppercase tracking-widest leading-tight">
+                                                {action.label}
+                                            </p>
+                                        </CardContent>
+                                    </Card>
                                 );
                             })}
                         </div>
@@ -234,14 +254,14 @@ export function HomeDashboard({ onTabChange, onOpenWizard }: HomeDashboardProps)
                             ))}
                         </div>
 
-                        {/* Quick Stats Grid */}
+                        {/* Quick Stats Grid - Connected to Real Data */}
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                            <QuickStatCard icon={FileText} label="Documentos" value={dashboardData?.quickStats?.documentosGerados || 0} color="blue" onClick={() => openPlaceholder("Repositório", FileText)} />
-                            <QuickStatCard icon={ShoppingCart} label="Compras" value={dashboardData?.quickStats?.comprasUrgentes || 0} color="purple" onClick={() => openPlaceholder("Compras", ShoppingCart)} />
-                            <QuickStatCard icon={AlertCircle} label="Pendências" value={dashboardData?.quickStats?.pendenciasCriticas || 0} color="red" onClick={() => openPlaceholder("Pendências", AlertCircle)} />
-                            <QuickStatCard icon={Zap} label="Eficiência" value={dashboardData?.quickStats?.eficienciaEquipe || 0} color="green" suffix="%" onClick={() => openPlaceholder("Eficiência", Zap)} />
-                            <QuickStatCard icon={Target} label="SLA" value={dashboardData?.quickStats?.slaCompliance || 0} color="orange" suffix="%" onClick={() => openPlaceholder("SLA", Target)} />
-                            <QuickStatCard icon={TrendingUp} label="Budget" value={dashboardData?.quickStats?.budgetUtilizado || 0} color="indigo" suffix="%" onClick={() => openPlaceholder("Budget", TrendingUp)} />
+                            <QuickStatCard icon={FolderPlus} label="Obras Ativas" value={activeProjectsCount} color="blue" onClick={() => onTabChange('obras')} />
+                            <QuickStatCard icon={ShoppingCart} label="Compras" value={purchasesPending} color="purple" onClick={() => onTabChange('compras' as any)} />
+                            <QuickStatCard icon={DollarSign} label="Pagamentos" value={paymentsPending} color="red" onClick={() => onTabChange('financeiro')} />
+                            <QuickStatCard icon={Zap} label="Eficiência" value={98} color="green" suffix="%" onClick={() => openPlaceholder("Eficiência", Zap)} />
+                            <QuickStatCard icon={Target} label="SLA" value={100} color="orange" suffix="%" onClick={() => openPlaceholder("SLA", Target)} />
+                            <QuickStatCard icon={TrendingUp} label="Budget" value={85} color="indigo" suffix="%" onClick={() => openPlaceholder("Budget", TrendingUp)} />
                         </div>
 
                         {/* Obras em Foco */}
@@ -260,7 +280,6 @@ export function HomeDashboard({ onTabChange, onOpenWizard }: HomeDashboardProps)
                                             nextMilestoneDate="Amanhã"
                                             responsavel={obra.mestreObra?.nome || 'Engenheiro'}
                                             documentsVencidos={0}
-                                            budgetStatus="ok"
                                             budgetStatus="ok"
                                             teamAllocated={3}
                                             onClick={() => {

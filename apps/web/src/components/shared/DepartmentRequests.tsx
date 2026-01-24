@@ -8,7 +8,7 @@ import {
     CheckCircle2, XCircle, Clock, FileText, Zap,
     ArrowRight, ChevronRight, Edit3, Trash2,
     PlayCircle, CheckCircle, Info, Maximize2,
-    Layout
+    Layout, DollarSign
 } from 'lucide-react';
 import { useAppFlow, DepartmentRequest } from '@/store/useAppFlow';
 import { useRegistros } from '@/hooks/useRegistros';
@@ -236,7 +236,7 @@ export function DepartmentRequests({ department }: DepartmentRequestsProps) {
                             <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                                     {/* Main Info */}
-                                    <div className="lg:col-span-12 space-y-8">
+                                    <div className="lg:col-span-8 space-y-8">
                                         {editMode ? (
                                             <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                                                 <div className="space-y-2">
@@ -299,6 +299,75 @@ export function DepartmentRequests({ department }: DepartmentRequestsProps) {
                                             </div>
                                         )}
                                     </div>
+
+                                    {/* Sidebar actions / Metadata (Purchasing & Finance) */}
+                                    <div className="lg:col-span-4 space-y-6">
+                                        {/* Purchase Metadata Input */}
+                                        {selectedReq.type === 'MATERIAL_PURCHASE' && department === 'COMPRAS' && (
+                                            <div className="bg-primary/5 rounded-[2rem] p-6 border border-primary/10 space-y-4">
+                                                <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-primary">
+                                                    <Zap size={14} /> Dados da Compra
+                                                </h3>
+
+                                                <div className="space-y-3">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Fornecedor</label>
+                                                        <Input
+                                                            placeholder="Nome do Fornecedor"
+                                                            className="bg-white/50 h-9 text-xs"
+                                                            value={selectedReq.metadata?.supplier || ''}
+                                                            onChange={(e) => updateRequest(selectedReq.id, { metadata: { ...selectedReq.metadata, supplier: e.target.value } })}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Valor Negociado (R$)</label>
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="0.00"
+                                                            className="bg-white/50 h-9 text-xs"
+                                                            value={selectedReq.metadata?.cost || ''}
+                                                            onChange={(e) => updateRequest(selectedReq.id, { metadata: { ...selectedReq.metadata, cost: parseFloat(e.target.value) } })}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Previsão Entrega</label>
+                                                        <Input
+                                                            type="date"
+                                                            className="bg-white/50 h-9 text-xs"
+                                                            value={selectedReq.metadata?.deliveryDate || ''}
+                                                            onChange={(e) => updateRequest(selectedReq.id, { metadata: { ...selectedReq.metadata, deliveryDate: e.target.value } })}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Financial Approval Panel */}
+                                        {selectedReq.type === 'PAYMENT_AUTHORIZATION' && department === 'FINANCEIRO' && selectedReq.metadata && (
+                                            <div className="bg-emerald-500/5 rounded-[2rem] p-6 border border-emerald-500/10 space-y-4">
+                                                <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-emerald-600">
+                                                    <DollarSign size={14} /> Detalhes do Pagamento
+                                                </h3>
+
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Valor a Pagar</p>
+                                                        <p className="text-3xl font-black text-emerald-600 tracking-tighter">
+                                                            R$ {selectedReq.metadata.amount?.toFixed(2)}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Beneficiário</p>
+                                                        <p className="text-sm font-bold text-foreground">{selectedReq.metadata.supplier}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Vencimento</p>
+                                                        <p className="text-sm font-bold text-foreground">{selectedReq.metadata.dueDate || 'Imediato'}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -317,7 +386,35 @@ export function DepartmentRequests({ department }: DepartmentRequestsProps) {
                                         Descartar
                                     </Button>
                                     <Button
-                                        onClick={handleComplete}
+                                        onClick={() => {
+                                            // Special Logic for Purchasing Completion
+                                            if (department === 'COMPRAS' && selectedReq.type === 'MATERIAL_PURCHASE') {
+                                                if (!selectedReq.metadata?.cost || !selectedReq.metadata?.supplier) {
+                                                    toast.error("Preencha Fornecedor e Valor antes de concluir.");
+                                                    return;
+                                                }
+                                                // Create Financial Request automatically
+                                                const { createRequest } = useAppFlow.getState();
+                                                createRequest({
+                                                    title: `PGTO: ${selectedReq.title}`, // Payment for X
+                                                    description: `Pagamento autorizado para ${selectedReq.metadata.supplier}. Ref: Requisição de Compra.`,
+                                                    priority: 'ALTA',
+                                                    fromDepartment: 'COMPRAS',
+                                                    toDepartment: 'FINANCEIRO',
+                                                    type: 'PAYMENT_AUTHORIZATION',
+                                                    projectId: selectedReq.projectId,
+                                                    recordId: selectedReq.id, // Link back to Purchase Request
+                                                    status: 'PENDENTE',
+                                                    metadata: {
+                                                        amount: selectedReq.metadata.cost,
+                                                        supplier: selectedReq.metadata.supplier,
+                                                        dueDate: selectedReq.metadata.deliveryDate
+                                                    }
+                                                } as any);
+                                                toast.success("Enviado para o Financeiro!");
+                                            }
+                                            handleComplete();
+                                        }}
                                         className="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-[10px] tracking-widest h-12 shadow-lg shadow-emerald-500/20"
                                     >
                                         Efetivar / Concluir

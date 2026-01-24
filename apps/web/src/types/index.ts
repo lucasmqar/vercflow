@@ -72,26 +72,36 @@ export interface User {
   avatar?: string;
 }
 
-export interface Client {
+export interface Party {
   id: string;
-  nome: string;
-  razaoSocial?: string;
-  nomeFantasia?: string;
-  tipo: string;
-  documento?: string;
-  cnpj?: string;
+  nome: string; // Razão Social ou Nome Completo
+  nomeFantasia?: string; // Apelido ou Nome Comercial
+  documento?: string; // CPF ou CNPJ unificado
+  tipo: string; // PF (Pessoa Física) ou PJ (Pessoa Jurídica)
+  contatos?: string; // JSON de contatos
+  endereco?: string; // Endereço principal unificado
+  ativo: boolean;
+  criadoEm: string;
+}
+
+export interface Client extends Party {
+  // Campos específicos de Cliente (CRM) e legados mantidos para compatibilidade
   rgIe?: string;
-  contatos?: string;
-  email?: string;
-  enderecoCompleto?: string;
-  representacao?: string;
+  enderecoCompleto?: string; // @deprecated: Use 'endereco' from Party
+  representacao?: string; // @deprecated
+
+  // Sales specific
   configOrgaos?: string;
   logo?: string;
   nps?: number;
   saude?: 'Excelente' | 'Bom' | 'Alerta' | 'Novo';
   valorTotal?: number;
   contratos?: number;
-  criadoEm: string;
+
+  // Compatibilidade com UI atual que usa campos soltos
+  razaoSocial?: string;
+  cnpj?: string;
+  email?: string;
 }
 
 export interface Attachment {
@@ -104,9 +114,11 @@ export interface Attachment {
 }
 
 export interface WorkClassification {
-  zona: 'URBANA' | 'RURAL' | 'MISTA_EXPANSAO';
-  subzona?: 'VIA_PUBLICA' | 'CONDOMINIO_FECHADO' | 'LOTEAMENTO_ABERTO' | 'FAZENDA' | 'SITIO' | 'CHACARA' | 'RURAL_PRODUTIVA' | 'RURAL_INDUSTRIAL' | 'RURAL_EXPANSAO' | 'INSTITUCIONAL' | 'INDUSTRIAL_PLANEJADA';
-  uso: 'HABITACAO_UNIFAMILIAR' | 'HABITACAO_MULTIFAMILIAR' | 'COMERCIAL_VAREJISTA' | 'SERVICOS' | 'INDUSTRIAL_LEVE' | 'INDUSTRIAL_PESADO' | 'SAUDE' | 'INSTITUCIONAL';
+  zona: 'URBANA' | 'RURAL';
+  tipo: 'OBRA_NOVA' | 'REFORMA' | 'AMPLIACAO' | 'DEMOLICAO';
+  natureza: 'RESIDENCIAL' | 'COMERCIAL' | 'INDUSTRIAL' | 'AGROINDUSTRIA' | 'INFRAESTRUTURA';
+  padrao: 'BAIXO' | 'MEDIO' | 'ALTO' | 'LUXO';
+  uso?: 'UNIFAMILIAR' | 'MULTIFAMILIAR' | 'MISTO' | 'CORPORATIVO' | 'LOGISTICO';
 }
 
 export interface Project {
@@ -114,16 +126,18 @@ export interface Project {
   codigoInterno?: string;
   nome: string;
   endereco?: string;
-  tipoObra?: string;
-  constructionType?: string; // Added to fix type error
-  classificacao?: WorkClassification;
-  dadosLote?: string;
+
+  // Classification (Unified)
+  classificacao: WorkClassification;
+
+  // Physical Data
+  areaTerreno?: number;
   areaConstruida?: number;
-  area?: number; // Added to fix type error - likely alias for areaConstruida
   pavimentos?: number;
-  exigenciasAprovacao?: string;
+
   status: 'ORCAMENTO' | 'NEGOCIACAO' | 'FECHADA' | 'ATIVA' | 'CONCLUIDA' | 'EM_PAUSA' | 'CANCELADA' | 'PLANEJAMENTO';
-  categoria?: 'COMERCIAL' | 'INDUSTRIAL' | 'RESIDENCIAL' | 'HOSPITALAR' | 'CONDOMINIO' | 'EDIFICIO';
+
+  // Relationships
   clientId: string;
   client?: Client;
   mestreObraId?: string;
@@ -285,14 +299,15 @@ export interface Activity {
   criadoEm: string;
 }
 
-export interface Professional {
-  id: string;
-  nome: string;
-  tipo: string;
-  documento?: string;
-  contatos?: string;
+export interface Professional extends Party {
+  // Party já cobre nome, documento, contatos
   userId?: string;
   categories?: ProfessionalCategory[];
+
+  // Compatibilidade Legada
+  // Os campos 'nome', 'documento' já existem em Party, então não precisamos redeclarar se os tipos baterem.
+  // Party.nome é string (Professional.nome era string).
+  // Party.documento é string | undefined (Professional.documento era string | undefined).
 }
 
 export interface ProfessionalCategory {
@@ -346,12 +361,85 @@ export type DashboardTab =
   | 'projetos'     // Projetos
   | 'engenharia'   // Engenharia
   | 'financeiro'   // Financeiro
-  | 'estoque'      // Compras & Estoque
+  | 'compras'      // Compras (Procurement)
+  | 'estoque'      // Estoque (Stock Control)
   | 'rh-sst'       // RH / SST
   | 'logistica'    // Logística
   | 'design'       // Acabamentos & Design
   | 'notifications' // Notificações do Sistema
   | 'config';      // Admin / Configurações
+
+// ========== DIÁRIO DE OBRA (RDO) ==========
+
+export type ClimaType = 'SOL' | 'CHUVA_LEVE' | 'CHUVA_FORTE' | 'NUBLADO' | 'TEMPESTADE';
+export type PeriodoType = 'MANHA' | 'TARDE' | 'NOITE' | 'DIA_TODO';
+
+export interface DiarioObra {
+  id: string;
+  projectId: string;
+  project?: Project;
+  data: string; // Data de referência (ISO Date)
+  climaManha: ClimaType;
+  climaTarde: ClimaType;
+  temperaturaMedia?: number;
+  observacoesClima?: string;
+
+  // Produtividade
+  atividadesExecutadas: AtividadeDiaria[];
+  profissionaisPresentes: ProfissionalDiario[];
+  materiaisUtilizados: MaterialUtilizado[];
+
+  // Equipamentos e Maquinário
+  equipamentos?: string; // JSON array de {nome, horas, observacao}
+
+  // Gestão
+  responsavelId: string; // Mestre ou Engenheiro
+  responsavel?: string; // Nome do responsável
+  status: 'EM_PREENCHIMENTO' | 'AGUARDANDO_APROVACAO' | 'APROVADO' | 'REJEITADO';
+
+  // Observações Gerais
+  observacoes?: string;
+  ocorrencias?: string; // Acidentes, atrasos, problemas
+  visitantes?: string; // Visitas técnicas, cliente, etc
+
+  // Controle
+  criadoEm: string;
+  aprovadoEm?: string;
+  aprovadoPor?: string;
+}
+
+export interface AtividadeDiaria {
+  id: string;
+  diarioObraId: string;
+  descricao: string;
+  local?: string; // Pavimento, área, etc
+  horaInicio?: string;
+  horaFim?: string;
+  percentualConcluido?: number;
+  equipe?: string; // JSON array de profissionais
+  observacoes?: string;
+}
+
+export interface ProfissionalDiario {
+  id: string;
+  diarioObraId: string;
+  nome: string;
+  funcao: string; // Pedreiro, Ajudante, etc
+  horasNormais: number;
+  horasExtras?: number;
+  observacoes?: string;
+}
+
+export interface MaterialUtilizado {
+  id: string;
+  diarioObraId: string;
+  material: string;
+  quantidade: number;
+  unidade: string; // m³, kg, un, etc
+  fornecedor?: string;
+  notaFiscal?: string;
+  observacoes?: string;
+}
 
 // ========== FASE 1: DP (DEPARTAMENTO PESSOAL) ==========
 

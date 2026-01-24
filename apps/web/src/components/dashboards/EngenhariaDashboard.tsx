@@ -24,6 +24,7 @@ import { useAppFlow } from '@/store/useAppFlow';
 import { toast } from 'sonner';
 
 // Sub-components
+// Sub-components
 import { EngenhariaOverview } from './engenharia/EngenhariaOverview';
 import { EngenhariaProjects } from './engenharia/EngenhariaProjects';
 import { EngenhariaBudgets } from './engenharia/EngenhariaBudgets';
@@ -31,6 +32,7 @@ import { EngenhariaSupply } from './engenharia/EngenhariaSupply';
 import { EngenhariaFinancial } from './engenharia/EngenhariaFinancial';
 import { ScopeValidationPage } from './engenharia/ScopeValidationPage';
 import { DisciplineManagementPage } from './engenharia/DisciplineManagementPage';
+import { ProjectDetailsPage } from './engenharia/ProjectDetailsPage'; // Added Import
 import { DepartmentRequests } from '../shared/DepartmentRequests';
 
 // Placeholder components for sections not yet implemented
@@ -51,7 +53,7 @@ export function EngenhariaDashboard({ onTabChange, onOpenWizard }: { onTabChange
     const [currentSection, setCurrentSection] = useState<'overview' | 'projects' | 'budgets' | 'supply' | 'financial' | 'fleet' | 'stock' | 'activities'>('overview');
 
     // Detailed View Logic
-    const [viewMode, setViewMode] = useState<'dashboard' | 'validation' | 'discipline'>('dashboard');
+    const [viewMode, setViewMode] = useState<'dashboard' | 'validation' | 'discipline' | 'project-detail'>('dashboard');
     const [scopeValidationData, setScopeValidationData] = useState<any>(null);
     const [selectedDiscipline, setSelectedDiscipline] = useState<any>(null); // Kept for Discipline Page logic if needed via projects
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -90,12 +92,24 @@ export function EngenhariaDashboard({ onTabChange, onOpenWizard }: { onTabChange
     };
 
     const handleSelectProject = (project: Project) => {
-        // Here we could open a project detailed view or set a global context
-        // For now, let's keep it simple or implement specific logic
-        toast.success(`Selecionada obra: ${project.nome}`);
+        setSelectedProject(project);
+        setViewMode('project-detail');
     };
 
     // Render Logic
+    if (viewMode === 'project-detail' && selectedProject) {
+        return (
+            <ProjectDetailsPage
+                project={selectedProject}
+                onBack={() => {
+                    setViewMode('dashboard');
+                    setSelectedProject(null);
+                }}
+                onNavigateTo={(section) => onTabChange(section as DashboardTab)}
+            />
+        );
+    }
+
     if (viewMode === 'validation' && scopeValidationData) {
         return (
             <ScopeValidationPage

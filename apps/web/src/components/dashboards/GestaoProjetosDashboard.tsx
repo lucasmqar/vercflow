@@ -1,242 +1,220 @@
-"use client"
-
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Layers,
-    Plus,
-    Search,
-    Settings2,
-    Building2,
-    Activity,
-    Zap,
     LayoutGrid,
-    ClipboardList,
-    Target,
-    Users,
-    MapPin,
-    Send,
-    TrendingUp,
-    BarChart3,
-    ChevronRight,
-    Clock,
-    PieChart,
-    Calendar,
-    AlertTriangle,
-    CheckCircle2,
-    TrendingDown,
-    ArrowRight,
+    Search,
     Filter,
-    MoreVertical,
-    List,
-    Camera
+    Layers,
+    ChevronRight,
+    FileText,
+    CheckCircle2,
+    Clock,
+    User,
+    ArrowUpRight,
+    Plus
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { DashboardTab } from '@/types';
-import { ReusableKanbanBoard } from '@/components/tasks/ReusableKanbanBoard';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useAppFlow } from '@/store/useAppFlow';
+import { Project, Activity } from '@/types';
 import HeaderAnimated from '@/components/common/HeaderAnimated';
-import { PlaceholderModal } from '@/components/shared/PlaceholderModal';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-export function GestaoProjetosDashboard({ onTabChange, onOpenWizard }: { onTabChange: (tab: DashboardTab) => void, onOpenWizard?: () => void }) {
-    const [viewMode, setViewMode] = useState<'geral' | 'atividades'>('geral');
+interface GestaoProjetosDashboardProps {
+    onTabChange: (tab: any) => void;
+    onOpenWizard?: () => void;
+}
+
+export function GestaoProjetosDashboard({ onTabChange, onOpenWizard }: GestaoProjetosDashboardProps) {
+    const { projects } = useAppFlow();
+    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [modalConfig, setModalConfig] = useState<{ isOpen: boolean; title: string; icon?: any }>({
-        isOpen: false,
-        title: "",
-    });
 
-    const openPlaceholder = (title: string, icon?: any) => {
-        setModalConfig({ isOpen: true, title, icon });
-    };
+    const filteredProjects = projects.filter(p =>
+        p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.classificacao.natureza?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Mock Disciplines (Eventually should come from store/API)
+    // Connecting simplified disciplines to the selected project
+    const projectDisciplines = [
+        { id: '1', name: 'Arquitetônico', status: 'EM_ANDAMENTO', progress: 65, responsible: 'Arq. Juliana' },
+        { id: '2', name: 'Estrutural', status: 'AGUARDANDO', progress: 0, responsible: 'Eng. Roberto' },
+        { id: '3', name: 'Elétrico', status: 'AGUARDANDO', progress: 0, responsible: 'Eng. Lucas' },
+        { id: '4', name: 'Hidrossanitário', status: 'AGUARDANDO', progress: 0, responsible: 'Eng. Lucas' },
+        { id: '5', name: 'Interiores', status: 'EM_ANDAMENTO', progress: 30, responsible: 'Design Team' },
+    ];
 
     return (
-        <div className="flex flex-col h-full bg-gradient-to-br from-background to-secondary/5 overflow-hidden font-sans pb-32">
-            {/* Module Header */}
-            <div className="p-8 border-b bg-background/95 backdrop-blur-md shrink-0">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-8">
-                    <div>
-                        <HeaderAnimated title="Gestão de Portfólio" />
-                        <p className="text-muted-foreground font-medium mt-1">Dashboards estratégicos para aprovação e criação de novos conceitos.</p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-4">
-                        <div className="flex p-1 bg-muted/40 rounded-xl border border-white/5 shrink-0">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setViewMode('geral')}
-                                className={cn(
-                                    "rounded-lg text-[10px] font-black uppercase tracking-widest px-4 h-9 transition-all",
-                                    viewMode === 'geral' ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
-                                )}
-                            >
-                                <LayoutGrid size={14} className="mr-2" /> Overview
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setViewMode('atividades')}
-                                className={cn(
-                                    "rounded-lg text-[10px] font-black uppercase tracking-widest px-4 h-9 transition-all",
-                                    viewMode === 'atividades' ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
-                                )}
-                            >
-                                <ClipboardList size={14} className="mr-2" /> Atividades
-                            </Button>
-                        </div>
-                        <Button
-                            onClick={onOpenWizard}
-                            className="h-12 rounded-2xl font-black uppercase tracking-widest text-[11px] px-8 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
-                        >
-                            <Plus size={18} className="mr-2" /> Novo Projeto
-                        </Button>
-                    </div>
-                </div>
+        <div className="flex h-full bg-background font-sans overflow-hidden">
+            {/* Left Column: Project Selector (Macro View) */}
+            <div className="w-[400px] border-r border-border/40 flex flex-col bg-muted/5">
+                <div className="p-8 pb-4">
+                    <HeaderAnimated title="Projetos" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1 mb-6">Central de Criação</p>
 
-                <div className="flex flex-col md:flex-row gap-4">
-                    <div className="relative flex-1 group">
-                        <Search className="absolute left-4 top-3.5 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
+                    <div className="relative mb-6">
+                        <Search className="absolute left-4 top-3.5 text-muted-foreground" size={16} />
                         <Input
-                            placeholder="Buscar projetos, clientes ou responsáveis..."
-                            className="pl-12 h-12 rounded-xl border-white/10 bg-muted/20 focus:bg-background transition-all font-medium text-sm"
+                            placeholder="Buscar projeto..."
+                            className="pl-10 h-10 rounded-xl bg-background border-border/40"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Button variant="outline" className="rounded-xl h-12 gap-2 font-black px-6 border-white/10 uppercase text-[10px] tracking-widest hover:bg-muted/50">
-                        <Filter size={18} /> Filtros Avançados
-                    </Button>
+
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Portfólio Ativo</span>
+                        <Badge variant="secondary" className="text-[9px] h-5">{filteredProjects.length}</Badge>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 custom-scrollbar">
+                    {filteredProjects.map((project) => (
+                        <div
+                            key={project.id}
+                            onClick={() => setSelectedProject(project)}
+                            className={`
+                                group p-4 rounded-3xl border cursor-pointer transition-all duration-300 relative overflow-hidden
+                                ${selectedProject?.id === project.id
+                                    ? 'bg-primary text-primary-foreground border-primary shadow-xl shadow-primary/20'
+                                    : 'bg-background border-border/40 hover:border-primary/30 hover:bg-white'
+                                }
+                            `}
+                        >
+                            <div className="relative z-10 flex justify-between items-start">
+                                <div>
+                                    <h4 className="font-bold text-sm leading-tight mb-1">{project.nome}</h4>
+                                    <p className={`text-[10px] uppercase tracking-wider font-bold ${selectedProject?.id === project.id ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                                        {project.classificacao.natureza} • {project.classificacao.zona}
+                                    </p>
+                                </div>
+                                {selectedProject?.id === project.id && (
+                                    <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                                        <ChevronRight size={14} />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Project Progress Bar Mini */}
+                            <div className="mt-4 h-1 w-full bg-black/10 rounded-full overflow-hidden">
+                                <div className="h-full bg-current w-1/3 rounded-full opacity-50" />
+                            </div>
+                        </div>
+                    ))}
+
+                    {filteredProjects.length === 0 && (
+                        <div className="text-center py-10 opacity-50">
+                            <Layers size={32} className="mx-auto mb-2 text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground font-medium">Nenhum projeto encontrado</p>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Dashboard Content */}
-            <div className="flex-1 overflow-y-auto no-scrollbar p-8">
-                <AnimatePresence mode="wait">
-                    {viewMode === 'geral' ? (
-                        <motion.div
-                            key="geral"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="space-y-12 max-w-[1400px] mx-auto"
-                        >
-                            {/* Strategic Stats */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {[
-                                    { label: 'Projetos Ativos', value: '14', icon: Layers, color: 'text-blue-500', trend: '+2 este mês' },
-                                    { label: 'Taxa de Aprovação', value: '92%', icon: Target, color: 'text-emerald-500', trend: '+5% vs ano ant.' },
-                                    { label: 'Margem Estimada', value: '24.5%', icon: BarChart3, color: 'text-purple-500', trend: 'Acima da meta' },
-                                    { label: 'SLA de Criação', value: '4.2d', icon: TrendingUp, color: 'text-orange-500', trend: '-1.2d de redução' },
-                                ].map((stat, i) => (
-                                    <div
-                                        key={i}
-                                        className="cursor-pointer"
-                                        onClick={() => openPlaceholder(`Métrica: ${stat.label}`, stat.icon)}
-                                    >
-                                        <Card className="rounded-[2.5rem] border-border/40 bg-background/40 backdrop-blur-xl p-8 shadow-sm group hover:shadow-2xl hover:shadow-primary/5 transition-all h-full">
-                                            <div className="flex justify-between items-start mb-6">
-                                                <div className={cn("p-4 rounded-2xl bg-muted/50 transition-transform group-hover:scale-110 shadow-inner", stat.color)}>
-                                                    <stat.icon size={24} strokeWidth={2.5} />
-                                                </div>
-                                                <Badge variant="secondary" className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 opacity-60">Mensal</Badge>
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60 mb-2">{stat.label}</p>
-                                                <div className="flex items-end gap-3">
-                                                    <h3 className="text-3xl font-black tracking-tighter leading-none">{stat.value}</h3>
-                                                    <span className="text-[10px] font-black text-emerald-500 mb-1">{stat.trend}</span>
-                                                </div>
-                                            </div>
-                                        </Card>
-                                    </div>
-                                ))}
+            {/* Right Column: Project Details & Disciplines (Micro View) */}
+            <div className="flex-1 flex flex-col bg-background relative overflow-hidden">
+                {selectedProject ? (
+                    <>
+                        <div className="h-64 relative shrink-0">
+                            {/* Hero Header for Project */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-slate-900 to-slate-800 z-0">
+                                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-20 mix-blend-overlay" />
                             </div>
 
-                            {/* Active Projects List */}
-                            <div className="space-y-6">
-                                <div className="flex justify-between items-center px-2">
-                                    <h3 className="text-2xl font-black tracking-tight">Design & Aprovações</h3>
-                                    <div className="flex gap-2">
-                                        <Badge variant="outline" className="text-[9px] font-black uppercase py-1 px-3 border-primary/20 text-primary">FASE DE CRIAÇÃO (4)</Badge>
+                            <div className="relative z-10 p-10 h-full flex flex-col justify-end text-white">
+                                <Badge className="self-start mb-4 bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-md">
+                                    {selectedProject.status}
+                                </Badge>
+                                <h1 className="text-4xl font-black tracking-tighter mb-2">{selectedProject.nome}</h1>
+                                <div className="flex items-center gap-6 text-sm font-medium text-white/70">
+                                    <span className="flex items-center gap-2"><LayoutGrid size={16} /> {selectedProject.areaConstruida || 0}m²</span>
+                                    <span className="flex items-center gap-2"><User size={16} /> {selectedProject.client?.nome || 'Cliente'}</span>
+                                    <span className="flex items-center gap-2"><Clock size={16} /> Início: {format(new Date(selectedProject.criadoEm), 'MMM yyyy', { locale: ptBR })}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-10 bg-muted/5">
+                            <div className="max-w-5xl mx-auto space-y-10">
+                                {/* Disciplines Grid */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h3 className="text-xl font-black tracking-tight flex items-center gap-2">
+                                            <Layers className="text-primary" /> Disciplinas Técnicas
+                                        </h3>
+                                        <Button variant="outline" size="sm" className="gap-2 text-xs font-bold uppercase tracking-widest rounded-xl">
+                                            <Filter size={14} /> Filtrar
+                                        </Button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {projectDisciplines.map((discipline, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="group bg-background rounded-[2rem] p-6 border border-border/40 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer relative overflow-hidden"
+                                            >
+                                                <div className="flex justify-between items-start mb-6">
+                                                    <div className={`p-3 rounded-2xl ${discipline.status === 'EM_ANDAMENTO' ? 'bg-blue-500/10 text-blue-500' : 'bg-muted text-muted-foreground'}`}>
+                                                        <FileText size={20} />
+                                                    </div>
+                                                    <Badge variant="outline" className="border-border/40 text-[9px] font-black uppercase tracking-widest">{discipline.status}</Badge>
+                                                </div>
+
+                                                <h4 className="font-bold text-lg mb-1">{discipline.name}</h4>
+                                                <p className="text-xs text-muted-foreground font-medium mb-4 flex items-center gap-1.5">
+                                                    <User size={10} /> {discipline.responsible}
+                                                </p>
+
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                                                        <span>Progresso</span>
+                                                        <span>{discipline.progress}%</span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                                        <motion.div
+                                                            initial={{ width: 0 }}
+                                                            animate={{ width: `${discipline.progress}%` }}
+                                                            className={`h-full rounded-full ${discipline.progress === 100 ? 'bg-emerald-500' : 'bg-primary'}`}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="absolute right-6 bottom-6 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-4 group-hover:translate-x-0">
+                                                    <ArrowUpRight size={20} className="text-primary" />
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
 
-                                <div className="grid gap-6">
-                                    {[1, 2].map((_, i) => (
-                                        <motion.div
-                                            key={i}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: i * 0.1 }}
-                                        >
-                                            <Card className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl p-8 hover:border-primary/20 transition-all cursor-pointer group shadow-sm hover:shadow-2xl hover:shadow-primary/5">
-                                                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10">
-                                                    <div className="flex items-center gap-8">
-                                                        <div className="w-20 h-20 rounded-[2rem] bg-muted/50 flex items-center justify-center text-primary group-hover:scale-110 transition-transform shadow-inner border border-white/5 relative overflow-hidden">
-                                                            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                            <Building2 size={32} />
-                                                        </div>
-                                                        <div>
-                                                            <div className="flex items-center gap-3 mb-2">
-                                                                <h4 className="text-2xl font-black tracking-tight">Verc Concept Design {i + 1}</h4>
-                                                                <Badge className="bg-blue-500/10 text-blue-500 border-none text-[8px] font-black uppercase tracking-widest px-3">ESTUDO PRELIMINAR</Badge>
-                                                            </div>
-                                                            <div className="flex flex-wrap gap-4">
-                                                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2 opacity-60">
-                                                                    <Users size={12} className="text-primary" /> Arq. Juliana
-                                                                </span>
-                                                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2 opacity-60">
-                                                                    <Clock size={12} className="text-primary" /> Modificado: Hoje
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-4">
-                                                        <Button
-                                                            variant="outline"
-                                                            className="h-12 rounded-xl text-[10px] font-black uppercase tracking-widest px-6 border-primary/20 text-primary hover:bg-primary hover:text-white transition-all"
-                                                            onClick={(e: any) => {
-                                                                e.stopPropagation();
-                                                                openPlaceholder("Aprovação Técnica de Layout", CheckCircle2);
-                                                            }}
-                                                        >
-                                                            Aprovar Layout
-                                                        </Button>
-                                                        <Button className="h-12 rounded-xl text-[10px] font-black uppercase tracking-widest px-6 bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 gap-2">
-                                                            <Send size={14} /> Handoff Engenharia
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </Card>
-                                        </motion.div>
-                                    ))}
+                                {/* Placeholder for Documents */}
+                                <div className="p-10 rounded-[2.5rem] border border-dashed border-border flex flex-col items-center justify-center text-center space-y-4 opacity-50 hover:opacity-100 transition-opacity cursor-pointer bg-muted/20">
+                                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+                                        <Plus size={24} className="text-muted-foreground" />
+                                    </div>
+                                    <h3 className="font-bold text-lg">Adicionar Nova Disciplina</h3>
+                                    <p className="text-sm text-muted-foreground max-w-sm">Vincule novos projetos complementares ou estudos preliminares a esta obra.</p>
                                 </div>
                             </div>
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key="atividades"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="h-full min-h-[600px]"
-                        >
-                            <ReusableKanbanBoard contextFilter="PROJETOS" title="Pipeline de Criação & Aprovações Técnicas" />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-10 opacity-40">
+                        <div className="w-24 h-24 rounded-[2rem] bg-muted flex items-center justify-center mb-6 animate-pulse">
+                            <Layers size={32} className="text-muted-foreground" />
+                        </div>
+                        <h2 className="text-2xl font-black tracking-tight mb-2">Selecione um Projeto</h2>
+                        <p className="text-sm font-medium text-muted-foreground max-w-sm">
+                            Escolha um projeto no menu lateral para visualizar suas disciplinas técnicas, status e documentos.
+                        </p>
+                    </div>
+                )}
             </div>
-
-            <PlaceholderModal
-                isOpen={modalConfig.isOpen}
-                onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
-                title={modalConfig.title}
-                icon={modalConfig.icon}
-            />
         </div>
     );
 }
+

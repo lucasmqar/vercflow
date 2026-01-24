@@ -66,16 +66,10 @@ export function CaptureDashboard({ onTabChange, onOpenWizard }: { onTabChange: (
     };
 
     return (
-        <div className="flex flex-col min-h-full bg-background overflow-y-auto scrollbar-none pb-32 font-sans relative">
-            <div className="absolute inset-0 bg-gradient-to-b from-background via-white to-background pointer-events-none" />
-
+        <div className="flex flex-col min-h-full bg-background overflow-y-auto scrollbar-none pb-32 font-sans">
             {/* Header / Command Center */}
-            <div className="relative w-full px-4 lg:px-8 pt-8 pb-12 overflow-hidden">
-                <div className="absolute inset-0 z-0 opacity-10 grayscale pointer-events-none">
-                    <ShaderAnimation />
-                </div>
-
-                <div className="relative z-10 max-w-7xl mx-auto space-y-12">
+            <div className="w-full px-4 lg:px-8 pt-8 pb-12">
+                <div className="max-w-7xl mx-auto space-y-12">
                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8">
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
@@ -259,7 +253,7 @@ export function CaptureDashboard({ onTabChange, onOpenWizard }: { onTabChange: (
                 onSuccess={fetchRegistros}
                 parentRecord={selectedParent}
             />
-        </div>
+        </div >
     );
 }
 

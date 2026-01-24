@@ -71,8 +71,9 @@ export function ShaderAnimation() {
         const mesh = new THREE.Mesh(geometry, material)
         scene.add(mesh)
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true })
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }) // Enable Alpha
         renderer.setPixelRatio(window.devicePixelRatio)
+        renderer.setClearColor(0x000000, 0); // Clear transparent
 
         container.appendChild(renderer.domElement)
 
@@ -135,7 +136,7 @@ export function ShaderAnimation() {
             ref={containerRef}
             className="w-full h-full"
             style={{
-                background: "#000",
+                background: "transparent", // Transparent background
                 overflow: "hidden",
             }}
         />

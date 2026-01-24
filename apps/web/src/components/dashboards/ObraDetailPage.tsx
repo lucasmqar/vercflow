@@ -25,7 +25,9 @@ import {
     Activity,
     AlertTriangle,
     CheckCircle2,
-    BarChart3
+    BarChart3,
+    Package, // Added
+    Plus // Added
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -279,8 +281,44 @@ function PeopleTab({ obra }: { obra: Project }) {
     );
 }
 
+import { NewRequisitionModal } from '../shared/NewRequisitionModal';
+import { DepartmentRequests } from '../shared/DepartmentRequests';
+
 function PurchasesTab({ obra }: { obra: Project }) {
-    return <ModulePlaceholder title="Suprimentos & Almoxarifado" icon={ShoppingCart} />;
+    const [isReqModalOpen, setIsReqModalOpen] = useState(false);
+
+    return (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div>
+                    <h3 className="text-xl font-black uppercase tracking-tight">Requisições da Obra</h3>
+                    <p className="text-sm text-muted-foreground font-medium">Itens solicitados especificamente para este centro de custo.</p>
+                </div>
+                <div className="flex gap-3">
+                    <Button variant="outline" size="sm" className="rounded-xl font-bold uppercase text-[10px] tracking-widest gap-2">
+                        <Package size={14} /> Ver Estoque Local
+                    </Button>
+                    <Button
+                        size="sm"
+                        onClick={() => setIsReqModalOpen(true)}
+                        className="rounded-xl font-bold uppercase text-[10px] tracking-widest bg-primary text-primary-foreground gap-2"
+                    >
+                        <Plus size={14} /> Nova Requisição
+                    </Button>
+                </div>
+            </div>
+
+            {/* We reuse the DepartmentRequests component but ideally filtered by Project context */}
+            {/* For now, it shows department wide, but in V2 needs projectId filter prop */}
+            <DepartmentRequests department="COMPRAS" />
+
+            <NewRequisitionModal
+                isOpen={isReqModalOpen}
+                onClose={() => setIsReqModalOpen(false)}
+                projectId={obra.id}
+            />
+        </div>
+    );
 }
 
 function FinancialTab({ obra }: { obra: Project }) {
