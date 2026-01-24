@@ -10,7 +10,10 @@ import {
     Clock,
     Briefcase,
     Plus,
-    CheckCircle2
+    CheckCircle2,
+    History,
+    AlertTriangle,
+    Check
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -102,7 +105,14 @@ export function BudgetListPage({ onSelect }: { onSelect: (budget: Budget) => voi
 }
 
 export function BudgetDetailPage({ budget, onBack, onCreateProposal }: { budget: Budget, onBack: () => void, onCreateProposal: (budget: Budget) => void }) {
-    const { updateBudgetStatus, createRequest } = useAppFlow();
+    const { updateBudgetStatus, createRequest, createBudgetRevision } = useAppFlow();
+    const [isRevising, setIsRevising] = useState(false);
+    const [revisionData, setRevisionData] = useState({
+        escopoMacro: budget.escopoMacro,
+        valorEstimado: budget.valorEstimado,
+        prazoEstimadoMeses: budget.prazoEstimadoMeses,
+        resumoAlteracoes: ''
+    });
 
     const handleSendToEngineering = () => {
         updateBudgetStatus(budget.id, 'AGUARDANDO_ENGENHARIA');
@@ -115,6 +125,15 @@ export function BudgetDetailPage({ budget, onBack, onCreateProposal }: { budget:
             priority: 'ALTA',
             status: 'PENDENTE'
         });
+    };
+
+    const handleCreateRevision = () => {
+        if (!revisionData.resumoAlteracoes) return;
+        createBudgetRevision(budget.id, {
+            ...revisionData,
+            responsavelId: 'current-user-id' // Mock
+        });
+        setIsRevising(false);
     };
 
     return (
@@ -136,23 +155,101 @@ export function BudgetDetailPage({ budget, onBack, onCreateProposal }: { budget:
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
                     <Card className="rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-xl p-8">
-                        <h3 className="text-xl font-black uppercase tracking-widest mb-6 border-b border-white/5 pb-4">Escopo Macro & Premissas</h3>
-                        <p className="text-sm font-medium leading-relaxed opacity-70">
-                            {budget.escopoMacro || "Nenhum detalhamento de escopo disponível para este orçamento."}
-                        </p>
+                        <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
+                            <h3 className="text-xl font-black uppercase tracking-widest">Escopo Macro & Premissas</h3>
+                            {!isRevising && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setIsRevising(true)}
+                                    className="rounded-xl h-9 font-black text-[10px] uppercase tracking-widest"
+                                >
+                                    Gerar Nova Revisão
+                                </Button>
+                            )}
+                        </div>
+
+                        {isRevising ? (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-top-4">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-muted-foreground mb-2 block">Motivo da Alteração</label>
+                                    <Input
+                                        placeholder="Ex: Mudança de tipo de fundação a pedido do cliente"
+                                        className="h-11 rounded-xl bg-white/5 border-white/10"
+                                        value={revisionData.resumoAlteracoes}
+                                        onChange={e => setRevisionData({ ...revisionData, resumoAlteracoes: e.target.value })}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase text-muted-foreground mb-2 block">Novo Valor (R$)</label>
+                                        <Input
+                                            type="number"
+                                            className="h-11 rounded-xl bg-white/5 border-white/10"
+                                            value={revisionData.valorEstimado}
+                                            onChange={e => setRevisionData({ ...revisionData, valorEstimado: Number(e.target.value) })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase text-muted-foreground mb-2 block">Novo Prazo (Meses)</label>
+                                        <Input
+                                            type="number"
+                                            className="h-11 rounded-xl bg-white/5 border-white/10"
+                                            value={revisionData.prazoEstimadoMeses}
+                                            onChange={e => setRevisionData({ ...revisionData, prazoEstimadoMeses: Number(e.target.value) })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 pt-2">
+                                    <Button onClick={handleCreateRevision} className="flex-1 rounded-xl font-black uppercase text-[11px]">Salvar Revisão</Button>
+                                    <Button variant="ghost" onClick={() => setIsRevising(false)} className="rounded-xl font-black uppercase text-[11px]">Cancelar</Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-sm font-medium leading-relaxed opacity-70">
+                                {budget.escopoMacro || "Nenhum detalhamento de escopo disponível para este orçamento."}
+                            </p>
+                        )}
                     </Card>
 
-                    <Card className="rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-xl p-8">
-                        <h3 className="text-xl font-black uppercase tracking-widest mb-6 border-b border-white/5 pb-4">Itens do Orçamento (Macro)</h3>
-                        <div className="space-y-4">
-                            {["Serviços Preliminares", "Infraestrutura", "Superestrutura", "Alvenaria", "Instalações"].map((item) => (
-                                <div key={item} className="flex justify-between items-center p-4 rounded-2xl bg-white/5 border border-white/5">
-                                    <span className="text-xs font-black uppercase tracking-widest">{item}</span>
-                                    <span className="text-xs font-bold opacity-30">Vínculo Automático do Mestre</span>
-                                </div>
-                            ))}
-                        </div>
-                    </Card>
+                    {/* Histórico de Revisões */}
+                    {budget.revisions && budget.revisions.length > 0 && (
+                        <Card className="rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-xl p-8">
+                            <h3 className="text-xl font-black uppercase tracking-widest mb-6 border-b border-white/5 pb-4 flex items-center gap-2">
+                                <History size={20} className="text-primary" /> Histórico de Propostas
+                            </h3>
+                            <div className="space-y-4">
+                                {budget.revisions.map((rev, idx) => {
+                                    const isLast = idx === (budget.revisions?.length || 0) - 1;
+                                    return (
+                                        <div key={rev.id} className={cn(
+                                            "p-4 rounded-2xl border transition-all",
+                                            isLast ? "bg-primary/5 border-primary/20" : "bg-muted/10 border-white/5 opacity-60"
+                                        )}>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="text-[10px] font-black uppercase text-primary">Revisão v{rev.version}</span>
+                                                        {!isLast && (
+                                                            <Badge variant="outline" className="text-[8px] bg-rose-500/10 text-rose-500 border-rose-500/20">OBSOLETA</Badge>
+                                                        )}
+                                                        {isLast && (
+                                                            <Badge variant="outline" className="text-[8px] bg-emerald-500/10 text-emerald-500 border-emerald-500/20">ATUAL</Badge>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs font-bold">{rev.resumoAlteracoes}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-xs font-black">R$ {rev.valorEstimado.toLocaleString()}</p>
+                                                    <p className="text-[9px] text-muted-foreground">{new Date(rev.createdAt).toLocaleDateString()}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </Card>
+                    )}
                 </div>
 
                 <div className="space-y-6">

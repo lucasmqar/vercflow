@@ -9,10 +9,13 @@ import {
     Truck,
     Users,
     Package,
-    Wallet
+    Wallet,
+    Zap,
+    ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { DashboardTab, Project } from '@/types';
@@ -28,6 +31,7 @@ import { EngenhariaSupply } from './engenharia/EngenhariaSupply';
 import { EngenhariaFinancial } from './engenharia/EngenhariaFinancial';
 import { ScopeValidationPage } from './engenharia/ScopeValidationPage';
 import { DisciplineManagementPage } from './engenharia/DisciplineManagementPage';
+import { DepartmentRequests } from '../shared/DepartmentRequests';
 
 // Placeholder components for sections not yet implemented
 const PlaceholderSection = ({ title, icon: Icon }: any) => (
@@ -44,7 +48,7 @@ const PlaceholderSection = ({ title, icon: Icon }: any) => (
 
 export function EngenhariaDashboard({ onTabChange, onOpenWizard }: { onTabChange: (tab: DashboardTab) => void, onOpenWizard?: () => void }) {
     // Navigation State
-    const [currentSection, setCurrentSection] = useState<'overview' | 'projects' | 'budgets' | 'supply' | 'financial' | 'fleet' | 'stock'>('overview');
+    const [currentSection, setCurrentSection] = useState<'overview' | 'projects' | 'budgets' | 'supply' | 'financial' | 'fleet' | 'stock' | 'activities'>('overview');
 
     // Detailed View Logic
     const [viewMode, setViewMode] = useState<'dashboard' | 'validation' | 'discipline'>('dashboard');
@@ -53,12 +57,14 @@ export function EngenhariaDashboard({ onTabChange, onOpenWizard }: { onTabChange
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
     const { projects, getRequestsForDepartment } = useAppFlow();
-    const requestsCount = getRequestsForDepartment('ENGENHARIA').length;
+    const requests = getRequestsForDepartment('ENGENHARIA');
+    const activeRequestsCount = requests.filter(r => r.status !== 'CONCLUIDO' && r.status !== 'REJEITADO').length;
     const activeProjectsCount = projects.filter(p => p.status === 'ATIVA' || p.status === 'PLANEJAMENTO').length;
 
     // Navigation Items
     const navItems = [
         { id: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
+        { id: 'activities', label: 'Solicitações (Triagem)', icon: Zap, badge: activeRequestsCount },
         { id: 'projects', label: 'Obras', icon: Building2 },
         { id: 'budgets', label: 'Orçamentos', icon: FileText },
         { id: 'supply', label: 'Suprimentos', icon: ShoppingCart },
@@ -86,7 +92,7 @@ export function EngenhariaDashboard({ onTabChange, onOpenWizard }: { onTabChange
     const handleSelectProject = (project: Project) => {
         // Here we could open a project detailed view or set a global context
         // For now, let's keep it simple or implement specific logic
-        toast.info(`Selecionada obra: ${project.nome}`);
+        toast.success(`Selecionada obra: ${project.nome}`);
     };
 
     // Render Logic
@@ -141,6 +147,11 @@ export function EngenhariaDashboard({ onTabChange, onOpenWizard }: { onTabChange
                                 >
                                     <item.icon size={20} className={cn("shrink-0", isActive ? "text-primary-foreground" : "text-muted-foreground", "lg:mr-3")} />
                                     <span className="hidden lg:block font-bold text-xs uppercase tracking-wide truncate">{item.label}</span>
+                                    {item.badge > 0 && (
+                                        <Badge className="ml-auto bg-primary-foreground text-primary border-none text-[8px] font-black h-4 px-1.5 animate-pulse">
+                                            {item.badge}
+                                        </Badge>
+                                    )}
                                 </Button>
                             );
                         })}
@@ -176,10 +187,20 @@ export function EngenhariaDashboard({ onTabChange, onOpenWizard }: { onTabChange
                             {currentSection === 'overview' && (
                                 <EngenhariaOverview
                                     projects={projects}
-                                    requestsCount={requestsCount}
+                                    requestsCount={activeRequestsCount}
                                     activeProjectsCount={activeProjectsCount}
                                     onNavigate={setCurrentSection}
                                 />
+                            )}
+
+                            {currentSection === 'activities' && (
+                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+                                    <div className="flex flex-col gap-2">
+                                        <h2 className="text-2xl font-black tracking-tight">Solicitações Interdepartamentais</h2>
+                                        <p className="text-sm text-muted-foreground font-medium">Itens distribuídos via triagem ou solicitados por outros setores.</p>
+                                    </div>
+                                    <DepartmentRequests department="ENGENHARIA" />
+                                </div>
                             )}
 
                             {currentSection === 'projects' && (

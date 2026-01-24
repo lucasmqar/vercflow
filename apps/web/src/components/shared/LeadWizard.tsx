@@ -26,6 +26,8 @@ interface LeadWizardProps {
 import { UploadCloud } from 'lucide-react'; // Added icon
 
 // Updated Interface for Classification
+import { MapSelector } from './MapSelector';
+
 interface WorkClassification {
     zona: 'URBANA' | 'RURAL' | 'MISTA_EXPANSAO';
     subzona: string;
@@ -48,6 +50,8 @@ export function LeadWizard({ isOpen, onClose }: LeadWizardProps) {
         // Obra/Lead
         nomeObra: '',
         localizacao: '',
+        lat: undefined as number | undefined,
+        lng: undefined as number | undefined,
         areaEstimada: '',
         descricao: '',
 
@@ -65,6 +69,7 @@ export function LeadWizard({ isOpen, onClose }: LeadWizardProps) {
         attachments: [] as any[] // Mock attachments
     });
 
+    // ... (classificationOptions and usageOptions same as before)
     const classificationOptions = {
         URBANA: [
             { id: 'VIA_PUBLICA', label: 'Via Pública / Lote Tradicional' },
@@ -97,7 +102,7 @@ export function LeadWizard({ isOpen, onClose }: LeadWizardProps) {
         { id: 'INSTITUCIONAL', label: 'Institucional / Público' }
     ];
 
-    const nextStep = () => setStep(prev => Math.min(prev + 1, 5)); // Increased steps to 5
+    const nextStep = () => setStep(prev => Math.min(prev + 1, 6));
     const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
     const handleComplete = () => {
@@ -113,29 +118,31 @@ export function LeadWizard({ isOpen, onClose }: LeadWizardProps) {
             clientId,
             nomeObra: formData.nomeObra,
             localizacao: formData.localizacao,
+            lat: formData.lat,
+            lng: formData.lng,
             classificacao: formData.classificacao as any,
-            tipoObra: formData.classificacao.uso, // Mapping usage to old type for compatibility or keeping both
+            tipoObra: formData.classificacao.uso,
             areaEstimada: parseFloat(formData.areaEstimada) || 0,
             attachments: formData.attachments,
             status: 'NOVO'
         });
 
-        toast.success(`Lead "${formData.nomeObra}" registrado no Comercial!`);
+        toast.success(`Lead "${formData.nomeObra}" registrado com sucesso no mapa comercial!`);
         onClose();
-        // Reset form...
         setStep(1);
     };
 
     if (!isOpen) return null;
 
+    const stepLabel = ['Cliente', 'Obra', 'Geolocalização', 'Classificação', 'Anexos', 'Revisão'][step - 1];
+
     return (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 lg:p-8 overflow-hidden">
-            {/* Lighter Overlay */}
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/40 backdrop-blur-md" // Lighter overlay
+                className="absolute inset-0 bg-black/40 backdrop-blur-md"
                 onClick={onClose}
             />
 
@@ -147,11 +154,11 @@ export function LeadWizard({ isOpen, onClose }: LeadWizardProps) {
                 <div className="relative z-10 p-6 border-b border-border/10 flex justify-between items-center bg-background/80 backdrop-blur-md">
                     <div>
                         <Badge className="bg-primary text-primary-foreground border-none font-black text-[9px] tracking-widest uppercase mb-2">
-                            COMERCIAL • ENTRADA DE LEADS
+                            COMERCIAL • INTELIGÊNCIA GEOGRÁFICA
                         </Badge>
                         <h2 className="text-2xl font-black tracking-tight">Novo Lead Comercial</h2>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Etapa {step} de 5 • {['Cliente', 'Obra', 'Classificação', 'Anexos', 'Revisão'][step - 1]}
+                            Etapa {step} de 6 • {stepLabel}
                         </p>
                     </div>
                     <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-muted/20">
@@ -164,7 +171,7 @@ export function LeadWizard({ isOpen, onClose }: LeadWizardProps) {
                     <motion.div
                         className="h-full bg-primary"
                         initial={{ width: '0%' }}
-                        animate={{ width: `${(step / 5) * 100}%` }}
+                        animate={{ width: `${(step / 6) * 100}%` }}
                         transition={{ duration: 0.3 }}
                     />
                 </div>
@@ -242,9 +249,30 @@ export function LeadWizard({ isOpen, onClose }: LeadWizardProps) {
                             </motion.div>
                         )}
 
-                        {/* STEP 3: DETAILED CLASSIFICATION */}
+                        {/* STEP 3: GEOLOCATION (MAP) */}
                         {step === 3 && (
-                            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-3xl mx-auto space-y-8">
+                            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-3xl mx-auto space-y-6">
+                                <div className="text-center mb-8">
+                                    <h3 className="text-xl font-black mb-2">Localização no Mapa</h3>
+                                    <p className="text-sm text-muted-foreground">Marque o ponto exato da futura obra</p>
+                                </div>
+                                <MapSelector
+                                    lat={formData.lat}
+                                    lng={formData.lng}
+                                    onChange={(lat, lng) => setFormData({ ...formData, lat, lng })}
+                                />
+                                <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex items-start gap-4 mt-4">
+                                    <AlertCircle className="text-primary shrink-0" size={20} />
+                                    <p className="text-xs text-muted-foreground leading-relaxed">
+                                        A geolocalização é crucial para estudos de viabilidade técnica, logística de canteiro e conformidade com órgãos municipais.
+                                    </p>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* STEP 4: DETAILED CLASSIFICATION */}
+                        {step === 4 && (
+                            <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-3xl mx-auto space-y-8">
                                 <div className="text-center mb-8">
                                     <h3 className="text-xl font-black mb-2">Classificação de Contexto</h3>
                                     <p className="text-sm text-muted-foreground">Definição precisa do ambiente e uso</p>

@@ -16,8 +16,11 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import { DashboardTab } from '@/types';
 import HeaderAnimated from '@/components/common/HeaderAnimated';
+import { DepartmentRequests } from '../shared/DepartmentRequests';
+import { useAppFlow } from '@/store/useAppFlow';
 
 // Placeholder components for sections
 const PlaceholderSection = ({ title, icon: Icon }: any) => (
@@ -35,11 +38,13 @@ const PlaceholderSection = ({ title, icon: Icon }: any) => (
 export function ComprasDashboard({ onTabChange }: { onTabChange: (tab: DashboardTab) => void }) {
     // Navigation State
     const [currentSection, setCurrentSection] = useState<'overview' | 'requisitions' | 'quotes' | 'orders' | 'suppliers' | 'catalogs'>('overview');
+    const { getRequestsForDepartment } = useAppFlow();
+    const requestsCount = getRequestsForDepartment('COMPRAS').filter(r => r.status !== 'CONCLUIDO' && r.status !== 'REJEITADO').length;
 
     // Navigation Items
     const navItems = [
         { id: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
-        { id: 'requisitions', label: 'Requisições', icon: ClipboardList },
+        { id: 'requisitions', label: 'Requisições (Triagem)', icon: ClipboardList, badge: requestsCount },
         { id: 'quotes', label: 'Cotações', icon: Tags },
         { id: 'orders', label: 'Pedidos de Compra', icon: ShoppingCart },
         { id: 'suppliers', label: 'Fornecedores', icon: Users },
@@ -77,6 +82,11 @@ export function ComprasDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
                                 >
                                     <item.icon size={20} className={cn("shrink-0", isActive ? "text-primary-foreground" : "text-muted-foreground", "lg:mr-3")} />
                                     <span className="hidden lg:block font-bold text-xs uppercase tracking-wide truncate">{item.label}</span>
+                                    {item.badge > 0 && (
+                                        <Badge className="ml-auto bg-amber-500 text-white border-none text-[8px] font-black h-4 px-1.5">
+                                            {item.badge}
+                                        </Badge>
+                                    )}
                                 </Button>
                             );
                         })}
@@ -87,7 +97,7 @@ export function ComprasDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
                             <p className="text-[10px] font-black uppercase text-amber-600 mb-1">Requisições Abertas</p>
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                                <span className="text-xs font-bold text-foreground">12 Pendentes</span>
+                                <span className="text-xs font-bold text-foreground">{requestsCount} Pendentes</span>
                             </div>
                         </Card>
                     </div>
@@ -109,10 +119,20 @@ export function ComprasDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
                             transition={{ duration: 0.3 }}
                             className="max-w-[1920px] mx-auto h-full"
                         >
-                            <PlaceholderSection
-                                title={navItems.find(i => i.id === currentSection)?.label}
-                                icon={navItems.find(i => i.id === currentSection)?.icon}
-                            />
+                            {currentSection === 'requisitions' ? (
+                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+                                    <div className="flex flex-col gap-2">
+                                        <h2 className="text-2xl font-black tracking-tight">Requisições de Compra & Triagem</h2>
+                                        <p className="text-sm text-muted-foreground font-medium">Itens distribuídos pelo hub de campo aguardando cotação.</p>
+                                    </div>
+                                    <DepartmentRequests department="COMPRAS" />
+                                </div>
+                            ) : (
+                                <PlaceholderSection
+                                    title={navItems.find(i => i.id === currentSection)?.label}
+                                    icon={navItems.find(i => i.id === currentSection)?.icon}
+                                />
+                            )}
                         </motion.div>
                     </div>
                 </div>

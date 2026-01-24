@@ -13,6 +13,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
     --primary: 240 5.9% 10%;
+    --primary-rgb: 24, 24, 27;
     --primary-foreground: 0 0% 98%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
@@ -25,49 +26,35 @@
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
     --ring: 240 5.9% 10%;
-    --radius: 0.5rem;
+    --foreground-rgb: 9, 9, 11;
+    --radius: 1.25rem;
     --font-sans: "Inter", sans-serif;
     --font-mono: "Geist Mono", monospace;
   }
 
   [data-theme="dark"],
   .dark {
-    /* Base: Slightly blue-ish dark gray (IDE style) */
     --background: 224 8% 12%;
     --foreground: 210 40% 98%;
-
-    /* Cards: Slightly lighter than bg */
+    --foreground-rgb: 250, 250, 250;
     --card: 224 8% 15%;
     --card-foreground: 210 40% 98%;
-
-    /* Popovers: Same as card */
     --popover: 224 8% 15%;
     --popover-foreground: 210 40% 98%;
-
-    /* Primary: White/Neutral for monochrome look */
     --primary: 0 0% 98%;
+    --primary-rgb: 250, 250, 250;
     --primary-foreground: 224 8% 10%;
-
-    /* Secondary: Neutral dark gray */
     --secondary: 220 10% 20%;
     --secondary-foreground: 0 0% 98%;
-
-    /* Muted: UI elements background */
     --muted: 220 10% 16%;
     --muted-foreground: 220 10% 65%;
-
-    /* Accent: Hover states */
     --accent: 220 10% 20%;
     --accent-foreground: 0 0% 98%;
-
-    /* Destructive */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-
-    /* Borders */
     --border: 220 10% 16%;
     --input: 220 10% 16%;
-    --ring: 220 10% 80%;
+    --ring: 250, 250, 250;
   }
 }
 

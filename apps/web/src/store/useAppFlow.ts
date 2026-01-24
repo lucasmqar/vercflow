@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Lead, Budget, Proposal, Project, Client } from '@/types';
+import { Lead, Budget, Proposal, Project, Client, BudgetRevision } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 // New Types for Interdepartmental Communication
@@ -10,6 +10,7 @@ export interface DepartmentRequest {
     toDepartment: 'COMERCIAL' | 'ENGENHARIA' | 'PROJETOS' | 'FINANCEIRO' | 'COMPRAS' | 'RH' | 'LOGISTICA';
     type: string; // 'MATERIAL_PURCHASE' | 'TEAM_ALLOCATION' | 'DOCUMENT_REQUEST' etc
     projectId?: string;
+    recordId?: string;
     title: string;
     description: string;
     priority: 'BAIXA' | 'MEDIA' | 'ALTA' | 'CRITICA';
@@ -45,6 +46,7 @@ interface AppFlowState {
     // Budget Management
     createBudget: (budget: Omit<Budget, 'id' | 'criadoEm'>) => string;
     updateBudgetStatus: (id: string, status: Budget['status']) => void;
+    createBudgetRevision: (budgetId: string, revisionData: Omit<BudgetRevision, 'id' | 'budgetId' | 'version' | 'createdAt'>) => string;
 
     // Proposal Management
     createProposal: (proposal: Omit<Proposal, 'id' | 'criadoEm'>) => string;
@@ -58,6 +60,7 @@ interface AppFlowState {
     // Interdepartmental Requests
     createRequest: (request: Omit<DepartmentRequest, 'id' | 'createdAt'>) => string;
     updateRequestStatus: (id: string, status: DepartmentRequest['status']) => void;
+    updateRequest: (id: string, data: Partial<DepartmentRequest>) => void;
     getRequestsForDepartment: (department: DepartmentRequest['toDepartment']) => DepartmentRequest[];
 }
 
@@ -146,6 +149,35 @@ export const useAppFlow = create<AppFlowState>()(
             updateBudgetStatus: (id, status) => set((state) => ({
                 budgets: state.budgets.map(b => b.id === id ? { ...b, status } : b)
             })),
+
+            createBudgetRevision: (budgetId, revisionData) => {
+                const id = uuidv4();
+                const budgets = get().budgets;
+                const budget = budgets.find(b => b.id === budgetId);
+
+                if (!budget) return '';
+
+                const version = (budget.revisions?.length || 0) + 1;
+                const newRevision: BudgetRevision = {
+                    ...revisionData,
+                    id,
+                    budgetId,
+                    version,
+                    createdAt: new Date().toISOString()
+                };
+
+                set((state) => ({
+                    budgets: state.budgets.map(b => b.id === budgetId ? {
+                        ...b,
+                        escopoMacro: revisionData.escopoMacro,
+                        valorEstimado: revisionData.valorEstimado,
+                        prazoEstimadoMeses: revisionData.prazoEstimadoMeses,
+                        revisions: [...(b.revisions || []), newRevision]
+                    } : b)
+                }));
+
+                return id;
+            },
 
             // PROPOSAL MANAGEMENT
             createProposal: (propData) => {
@@ -258,8 +290,12 @@ export const useAppFlow = create<AppFlowState>()(
                 } : r)
             })),
 
+            updateRequest: (id, data) => set((state) => ({
+                requests: state.requests.map(r => r.id === id ? { ...r, ...data } : r)
+            })),
+
             getRequestsForDepartment: (department) => {
-                return get().requests.filter(r => r.toDepartment === department && r.status === 'PENDENTE');
+                return get().requests.filter(r => r.toDepartment === department);
             }
         }),
         {

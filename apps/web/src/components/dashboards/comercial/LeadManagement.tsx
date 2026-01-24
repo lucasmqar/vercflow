@@ -9,8 +9,10 @@ import {
     Building2,
     Clock,
     MoreVertical,
-    Target
+    Target,
+    Map as MapIcon
 } from 'lucide-react';
+import { MapSelector } from '@/components/shared/MapSelector';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -146,10 +148,15 @@ export function LeadDetailPage({ lead, onBack, onConvert }: { lead: Lead, onBack
 
                 <div className="space-y-6">
                     <Card className="rounded-[2.5rem] border-white/5 bg-primary/5 p-8 border-dashed border-2">
-                        <h3 className="text-xl font-black uppercase text-primary mb-4">Ações do Lead</h3>
-                        <p className="text-xs text-muted-foreground font-medium mb-6 leading-relaxed">
-                            Converta este lead em um orçamento técnico para iniciar o processo de precificação.
-                        </p>
+                        <h3 className="text-xl font-black uppercase text-primary mb-4">Geolocalização</h3>
+                        <div className="h-64 rounded-2xl overflow-hidden mb-6 border border-primary/20">
+                            <MapSelector
+                                lat={lead.lat}
+                                lng={lead.lng}
+                                onChange={() => { }} // Ready-only in details
+                                height="100%"
+                            />
+                        </div>
                         <Button
                             onClick={() => onConvert(lead)}
                             className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-[11px] shadow-lg shadow-primary/20"

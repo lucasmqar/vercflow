@@ -9,8 +9,12 @@ import { DashboardTab } from '@/types';
 import HeaderAnimated from '@/components/common/HeaderAnimated';
 import {
     Palette, Layers, Image, LayoutDashboard,
-    Users, Grid, LayoutTemplate, Zap, CheckSquare, Camera
+    Users, Grid, LayoutTemplate, Zap, CheckSquare, Camera,
+    ClipboardList
 } from 'lucide-react';
+import { useAppFlow } from '@/store/useAppFlow';
+import { Badge } from '@/components/ui/badge';
+import { DepartmentRequests } from '../shared/DepartmentRequests';
 
 // Sub-components
 import { DesignOverview } from './design/DesignOverview';
@@ -24,7 +28,9 @@ import { DesignFieldRecords } from './design/DesignFieldRecords';
 
 export function DesignDashboard({ onTabChange }: { onTabChange: (tab: DashboardTab) => void }) {
     // Navigation State
-    const [currentSection, setCurrentSection] = useState<'overview' | 'projects' | 'specs' | 'moodboards' | 'team' | 'checklists' | 'records'>('overview');
+    const [currentSection, setCurrentSection] = useState<'overview' | 'projects' | 'specs' | 'moodboards' | 'team' | 'checklists' | 'records' | 'activities'>('overview');
+    const { getRequestsForDepartment } = useAppFlow();
+    const requestsCount = getRequestsForDepartment('PROJETOS').filter(r => r.status !== 'CONCLUIDO' && r.status !== 'REJEITADO').length;
 
     // Detailed View State
     // Detailed View State
@@ -33,6 +39,7 @@ export function DesignDashboard({ onTabChange }: { onTabChange: (tab: DashboardT
     // Navigation Items
     const navItems = [
         { id: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
+        { id: 'activities', label: 'Solicitações (Triagem)', icon: Zap, badge: requestsCount },
         { id: 'projects', label: 'Projetos', icon: Layers },
         { id: 'records', label: 'Registros de Campo', icon: Camera },
         { id: 'specs', label: 'Especificações', icon: Palette },
@@ -86,6 +93,11 @@ export function DesignDashboard({ onTabChange }: { onTabChange: (tab: DashboardT
                                 >
                                     <item.icon size={20} className={cn("shrink-0", isActive ? "text-primary-foreground" : "text-muted-foreground", "lg:mr-3")} />
                                     <span className="hidden lg:block font-bold text-xs uppercase tracking-wide truncate">{item.label}</span>
+                                    {item.badge > 0 && (
+                                        <Badge className="ml-auto bg-pink-500 text-white border-none text-[8px] font-black h-4 px-1.5">
+                                            {item.badge}
+                                        </Badge>
+                                    )}
                                 </Button>
                             );
                         })}
@@ -140,6 +152,16 @@ export function DesignDashboard({ onTabChange }: { onTabChange: (tab: DashboardT
 
                             {currentSection === 'checklists' && (
                                 <DesignChecklists />
+                            )}
+
+                            {currentSection === 'activities' && (
+                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+                                    <div className="flex flex-col gap-2">
+                                        <h2 className="text-2xl font-black tracking-tight">Solicitações de Projeto</h2>
+                                        <p className="text-sm text-muted-foreground font-medium">Itens distribuídos para detalhamento técnico ou revisão de design.</p>
+                                    </div>
+                                    <DepartmentRequests department="PROJETOS" />
+                                </div>
                             )}
 
                             {currentSection === 'team' && (

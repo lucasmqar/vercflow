@@ -33,6 +33,11 @@ model User {
   obrasAsEngenheiro Project[] @relation("EngenheiroResponsavel")
   vehicles          Vehicle[] @relation("VehicleResponsable")
   stockMovements    StockMovement[] @relation("UserStockMovements")
+  
+  // Fase 1: DP & DST
+  employee          Employee?
+  safetyInspections SafetyInspection[] @relation("InspectorSafety")
+  toolLoans         ToolLoan[]
 }
 
 model Client {
@@ -47,6 +52,7 @@ model Client {
   configOrgaos      String?   // JSON {prefeitura: boolean, condomínio: boolean, suderv: boolean, etc}
   criadoEm          DateTime  @default(now())
   projects          Project[]
+  leads             Lead[]    // Fase 2: Pipeline Comercial
 }
 
 model Project {
@@ -73,6 +79,7 @@ model Project {
   engenheiroId          String?
   engenheiroResponsavel User?         @relation("EngenheiroResponsavel", fields: [engenheiroId], references: [id])
   
+  
   activities            Activity[]
   records               Record[]
   disciplines           Discipline[]
@@ -82,6 +89,14 @@ model Project {
   files                 ProjectFile[]
   fees                  Fee[]
   stockMovements        StockMovement[]
+  
+  // Fase 1: DP & DST
+  accidents             Accident[]
+  safetyInspections     SafetyInspection[]
+  toolLoans             ToolLoan[]
+  
+  // Fase 2: Comercial
+  proposal              Proposal?
 }
 
 model Fee {
@@ -403,4 +418,300 @@ model Vehicle {
   status        String   @default("DISPONIVEL") // DISPONIVEL, EM_USO, MANUTENCAO
   quilometragem Int      @default(0)
   criadoEm      DateTime @default(now())
+  maintenances  MaintenanceRecord[]
 }
+
+// ========== FASE 1: DP (DEPARTAMENTO PESSOAL) ==========
+
+model Employee {
+  id              String    @id @default(cuid())
+  userId          String?   @unique
+  user            User?     @relation(fields: [userId], references: [id])
+  nome            String
+  cpf             String    @unique
+  rg              String?
+  dataNascimento  DateTime?
+  endereco        String?
+  contatos        String?   // JSON {telefone, email, emergencia}
+  cargo           String
+  departamento    String
+  salario         Float
+  dataAdmissao    DateTime
+  dataDemissao    DateTime?
+  statusAtual     String    @default("ATIVO") // ATIVO, FERIAS, AFASTADO, DEMITIDO
+  motivoDemissao  String?
+  observacoes     String?
+  criadoEm        DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  payrolls         Payroll[]
+  benefits         EmployeeBenefit[]
+  asos             ASO[]
+  accidents        Accident[]
+  epiDistributions EPIDistribution[]
+  exitInterview    ExitInterview?
+}
+
+model Payroll {
+  id              String    @id @default(cuid())
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id])
+  mesReferencia   DateTime
+  salarioBase     Float
+  horasExtras     Float?
+  bonificacoes    Float?
+  descontos       Float?
+  salarioLiquido  Float
+  dataPagamento   DateTime?
+  status          String    @default("PENDENTE") // PENDENTE, PAGO, CANCELADO
+  observacoes     String?
+  criadoEm        DateTime  @default(now())
+  
+  @@unique([employeeId, mesReferencia])
+}
+
+model Benefit {
+  id              String            @id @default(cuid())
+  nome            String
+  tipo            String            // VALE_TRANSPORTE, ALIMENTACAO, SAUDE, DENTAL, etc
+  valor           Float?
+  descricao       String?
+  criadoEm        DateTime          @default(now())
+  
+  employees       EmployeeBenefit[]
+}
+
+model EmployeeBenefit {
+  id              String    @id @default(cuid())
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id])
+  benefitId       String
+  benefit         Benefit   @relation(fields: [benefitId], references: [id])
+  dataInicio      DateTime
+  dataFim         DateTime?
+  valorMensal     Float?
+  criadoEm        DateTime  @default(now())
+  
+  @@unique([employeeId, benefitId, dataInicio])
+}
+
+model ThirdPartyContract {
+  id              String    @id @default(cuid())
+  empresa         String
+  cnpj            String
+  contato         String?
+  servico         String
+  valorMensal     Float
+  dataInicio      DateTime
+  dataFim         DateTime?
+  status          String    @default("ATIVO") // ATIVO, SUSPENSO, ENCERRADO
+  observacoes     String?
+  criadoEm        DateTime  @default(now())
+}
+
+model ASO {
+  id              String    @id @default(cuid())
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id])
+  tipo            String    // ADMISSIONAL, PERIODICO, RETORNO_FERIAS, RETORNO_AFASTAMENTO, DEMISSIONAL
+  dataExame       DateTime
+  dataValidade    DateTime?
+  medico          String
+  clinica         String?
+  resultado       String    // APTO, INAPTO, APTO_COM_RESTRICOES
+  restricoes      String?
+  anexoUrl        String?
+  criadoEm        DateTime  @default(now())
+}
+
+model ExitInterview {
+  id              String    @id @default(cuid())
+  employeeId      String    @unique
+  employee        Employee  @relation(fields: [employeeId], references: [id])
+  dataEntrevista  DateTime
+  entrevistador   String
+  motivoSaida     String    // VOLUNTARIO, DEMISSAO_SEM_JUSTA_CAUSA, JUSTA_CAUSA, APOSENTADORIA
+  feedbackJson    String?
+  notaSatisfacao  Int?
+  sugestoes       String?
+  voltaria        Boolean?
+  criadoEm        DateTime  @default(now())
+}
+
+// ========== FASE 1: DST (SEGURANÇA DO TRABALHO) ==========
+
+model SafetyInspection {
+  id              String    @id @default(cuid())
+  projectId       String?
+  project         Project?  @relation(fields: [projectId], references: [id])
+  inspectorId     String
+  inspector       User      @relation("InspectorSafety", fields: [inspectorId], references: [id])
+  dataInspecao    DateTime
+  tipo            String    // ROTINA, ESPECIAL, POS_ACIDENTE
+  checklistJson   String?
+  conformidades   Int       @default(0)
+  naoConformidades Int      @default(0)
+  observacoes     String?
+  status          String    @default("PENDENTE") // PENDENTE, REGULARIZADO
+  criadoEm        DateTime  @default(now())
+}
+
+model Accident {
+  id              String    @id @default(cuid())
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id])
+  projectId       String?
+  project         Project?  @relation(fields: [projectId], references: [id])
+  dataOcorrencia  DateTime
+  horaOcorrencia  String?
+  local           String
+  descricao       String
+  gravidade       String    // LEVE, MODERADO, GRAVE, FATAL
+  tipoAcidente    String    // TIPICO, TRAJETO, DOENCA_OCUPACIONAL
+  partesCorpo     String?
+  testemunhas     String?
+  catEmitida      Boolean   @default(false)
+  numeroCAT       String?
+  dataAfastamento DateTime?
+  diasAfastado    Int?
+  investigacao    String?
+  medidasCorretivas String?
+  status          String    @default("ABERTO") // ABERTO, INVESTIGACAO, FECHADO
+  criadoEm        DateTime  @default(now())
+}
+
+model EPIDistribution {
+  id              String    @id @default(cuid())
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id])
+  epiTipo         String    // CAPACETE, LUVAS, OCULOS, BOTINAS, CINTO, etc
+  marca           String?
+  quantidade      Int       @default(1)
+  dataEntrega     DateTime
+  dataValidade    DateTime?
+  nf              String?
+  assinaturaUrl   String?
+  status          String    @default("EM_USO") // EM_USO, DEVOLVIDO, DANIFICADO
+  observacoes     String?
+  criadoEm        DateTime  @default(now())
+}
+
+// ========== FASE 1: LOGÍSTICA (Complemento - Ferramentas) ==========
+
+model Tool {
+  id              String     @id @default(cuid())
+  codigo          String     @unique
+  nome            String
+  tipo            String
+  marca           String?
+  estado          String     @default("BOM") // BOM, REGULAR, DANIFICADO
+  localizacao     String?
+  responsavel     String?
+  dataAquisicao   DateTime?
+  valorAquisicao  Float?
+  criadoEm        DateTime   @default(now())
+  
+  loans           ToolLoan[]
+}
+
+model ToolLoan {
+  id              String    @id @default(cuid())
+  toolId          String
+  tool            Tool      @relation(fields: [toolId], references: [id])
+  usuarioId       String
+  usuario         User      @relation(fields: [usuarioId], references: [id])
+  projectId       String?
+  project         Project?  @relation(fields: [projectId], references: [id])
+  dataSaida       DateTime
+  dataRetorno     DateTime?
+  estadoSaida     String
+  estadoRetorno   String?
+  observacoes     String?
+  criadoEm        DateTime  @default(now())
+}
+
+model MaintenanceRecord {
+  id              String    @id @default(cuid())
+  vehicleId       String
+  vehicle         Vehicle   @relation(fields: [vehicleId], references: [id])
+  tipo            String    // PREVENTIVA, CORRETIVA, REVISAO
+  descricao       String
+  oficina         String?
+  valor           Float?
+  dataExecucao    DateTime
+  quilometragem   Int?
+  proximaRevisao  DateTime?
+  anexoUrl        String?
+  criadoEm        DateTime  @default(now())
+}
+
+// ========== FASE 2: COMERCIAL (Pipeline de Vendas) ==========
+
+model Lead {
+  id              String    @id @default(cuid())
+  clientId        String
+  client          Client    @relation(fields: [clientId], references: [id])
+  
+  nomeObra        String
+  localizacao     String?
+  origem          String?   // INDICACAO, SITE, REDE_SOCIAL, EVENTO, PARCERIA
+  classificacao   String?   // RESIDENCIAL, COMERCIAL, INDUSTRIAL, etc
+  areaEstimada    Float?
+  tipoObra        String?
+  
+  status          String    @default("NOVO") // NOVO, EM_QUALIFICACAO, QUALIFICADO, PERDIDO, CONVERTIDO
+  motivoPerda     String?
+  observacoes     String?
+  
+  criadoEm        DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  budgets         Budget[]
+}
+
+model Budget {
+  id                  String    @id @default(cuid())
+  leadId              String
+  lead                Lead      @relation(fields: [leadId], references: [id])
+  
+  escopoMacro         String    // Descrição geral do orçamento
+  valorEstimado       Float
+  prazoEstimadoMeses  Int?
+  
+  premissas           String?   // JSON ou texto
+  exclusoes           String?   // JSON ou texto
+  observacoesTecnicas String?
+  
+  status              String    @default("EM_ELABORACAO") // EM_ELABORACAO, REVISAO, APROVADO, RECUSADO
+  
+  criadoEm            DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  proposals           Proposal[]
+}
+
+model Proposal {
+  id            String    @id @default(cuid())
+  budgetId      String
+  budget        Budget    @relation(fields: [budgetId], references: [id])
+  
+  projectId     String?   @unique
+  project       Project?  @relation(fields: [projectId], references: [id])
+  
+  versao        Int       @default(1)
+  valorFinal    Float
+  prazoMeses    Int?
+  
+  condicoesComerciais String? // JSON ou texto
+  formaPagamento      String?
+  
+  status        String    @default("PENDENTE") // PENDENTE, NEGOCIACAO, APROVADA, RECUSADA, CONVERTIDA
+  motivoRecusa  String?
+  
+  dataEnvio     DateTime?
+  dataAprovacao DateTime?
+  
+  criadoEm      DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+

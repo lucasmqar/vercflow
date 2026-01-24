@@ -44,12 +44,19 @@ import { Building2, Shield, Zap, Box, Truck, DollarSign, Users, PieChart } from 
 
 const queryClient = new QueryClient();
 
+import { WelcomeTransition } from './components/layout/WelcomeTransition';
+import { SystemActionsFloating } from './components/layout/SystemActionsFloating';
+import { NotificationsDashboard } from './components/dashboards/NotificationsDashboard';
+
+// ... other imports
+
 function AppContent() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<DashboardTab>('home');
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
-  const [appReady, setAppReady] = useState(false);
+  const [appReady, setAppReady] = useState(false); // Finished Loading
+  const [welcomeComplete, setWelcomeComplete] = useState(false); // Finished Welcome Animation
 
   if (!user) {
     return <Login />;
@@ -61,7 +68,7 @@ function AppContent() {
         {!appReady && (
           <motion.div
             key="loader"
-            exit={{ opacity: 0, transition: { duration: 0.8, ease: "easeInOut" } }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 z-[99999]"
           >
             <CyberneticLoader onComplete={() => setAppReady(true)} />
@@ -69,70 +76,90 @@ function AppContent() {
         )}
       </AnimatePresence>
 
-      {/* Main App Content */}
-      <div className={`min-h-screen bg-background text-foreground flex flex-col transition-opacity duration-1000 ${appReady ? 'opacity-100' : 'opacity-0'}`}>
-
-        {/* Navigation Layer */}
-        <DesktopNav activeTab={activeTab} onTabChange={setActiveTab} />
-        <MobileDock
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          onOpenCommandPalette={() => setShowCommandPalette(true)}
+      {/* Welcome Sequence (After Loader, Before Dashboard) */}
+      {appReady && !welcomeComplete && (
+        <WelcomeTransition
+          username={user.nome.split(' ')[0]}
+          onComplete={() => setWelcomeComplete(true)}
         />
+      )}
 
-        {/* Global Command Palette */}
-        <CommandPalette
-          isOpen={showCommandPalette}
-          onClose={() => setShowCommandPalette(false)}
-          onSelect={(item) => {
-            if (item.id === 'new-obra') setShowWizard(true);
-            if (item.id === 'new-registro') setActiveTab('captura');
-            if (item.id === 'inbox') setActiveTab('triagem'); // Back to triagem
-            setShowCommandPalette(false);
-          }}
-        />
+      {/* Main App Content - Only visible after welcome */}
+      {welcomeComplete && (
+        <>
+          <MobileDock
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onOpenCommandPalette={() => setShowCommandPalette(true)}
+          />
+          <DesktopNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-        {/* Dashboards Area */}
-        <main className="flex-1 w-full max-w-[1600px] mx-auto relative overflow-hidden pb-40 lg:pb-32 pt-8 px-4 lg:px-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.98 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              className="h-full w-full"
-            >
-              {activeTab === 'home' && <HomeDashboard onTabChange={setActiveTab} onOpenWizard={() => setShowWizard(true)} />}
-              {activeTab === 'captura' && <CaptureDashboard onTabChange={setActiveTab} />}
-              {activeTab === 'triagem' && <TriagemDashboard onTabChange={setActiveTab} />}
-              {activeTab === 'comercial' && <ComercialDashboard onTabChange={setActiveTab} onOpenWizard={() => setShowWizard(true)} />}
-              {activeTab === 'obras' && <ObrasDashboard onTabChange={setActiveTab} onOpenWizard={() => setShowWizard(true)} />}
-              {activeTab === 'projetos' && <ProjetosBoard />}
-              {activeTab === 'engenharia' && <EngenhariaDashboard onTabChange={setActiveTab} onOpenWizard={() => setShowWizard(true)} />}
-              {activeTab === 'design' && <DesignDashboard onTabChange={setActiveTab} />}
-              {activeTab === 'estoque' && <EstoqueDashboard onTabChange={setActiveTab} />}
-              {activeTab === 'financeiro' && <FinanceiroDashboard onTabChange={setActiveTab} />}
-              {activeTab === 'rh-sst' && <RHDashboard onTabChange={setActiveTab} />}
-              {activeTab === 'logistica' && <FrotaDashboard onTabChange={setActiveTab} />}
-              {activeTab === 'config' && <SettingsDashboard onTabChange={setActiveTab} />}
-            </motion.div>
-          </AnimatePresence>
-        </main>
+          {/* Right-Side Utility Island */}
+          <div className="fixed bottom-8 right-8 z-[100] hidden lg:flex items-center gap-3">
+            <ThemeToggleFloating />
+            <SystemActionsFloating
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
+          </div>
 
-        <ThemeToggleFloating />
+          <motion.div
+            className="min-h-screen bg-background text-foreground flex flex-col"
+            initial={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          >
 
-        <AnimatePresence>
-          {showWizard && (
-            <>
-              <LeadWizard
-                isOpen={showWizard}
-                onClose={() => setShowWizard(false)}
-              />
-            </>
-          )}
-        </AnimatePresence>
-      </div>
+            <CommandPalette
+              isOpen={showCommandPalette}
+              onClose={() => setShowCommandPalette(false)}
+              onSelect={(item) => {
+                if (item.id === 'new-obra') setShowWizard(true);
+                if (item.id === 'new-registro') setActiveTab('captura');
+                if (item.id === 'inbox') setActiveTab('triagem');
+                setShowCommandPalette(false);
+              }}
+            />
+
+            <main className="flex-1 w-full max-w-[1600px] mx-auto relative overflow-hidden pb-40 lg:pb-32 pt-8 px-4 lg:px-6">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                  className="h-full w-full"
+                >
+                  {activeTab === 'home' && <HomeDashboard onTabChange={setActiveTab} onOpenWizard={() => setShowWizard(true)} />}
+                  {activeTab === 'captura' && <CaptureDashboard onTabChange={setActiveTab} />}
+                  {activeTab === 'triagem' && <TriagemDashboard onTabChange={setActiveTab} />}
+                  {activeTab === 'comercial' && <ComercialDashboard onTabChange={setActiveTab} onOpenWizard={() => setShowWizard(true)} />}
+                  {activeTab === 'obras' && <ObrasDashboard onTabChange={setActiveTab} onOpenWizard={() => setShowWizard(true)} />}
+                  {activeTab === 'projetos' && <ProjetosBoard />}
+                  {activeTab === 'engenharia' && <EngenhariaDashboard onTabChange={setActiveTab} onOpenWizard={() => setShowWizard(true)} />}
+                  {activeTab === 'design' && <DesignDashboard onTabChange={setActiveTab} />}
+                  {activeTab === 'estoque' && <EstoqueDashboard onTabChange={setActiveTab} />}
+                  {activeTab === 'financeiro' && <FinanceiroDashboard onTabChange={setActiveTab} />}
+                  {activeTab === 'rh-sst' && <RHDashboard onTabChange={setActiveTab} />}
+                  {activeTab === 'logistica' && <FrotaDashboard onTabChange={setActiveTab} />}
+                  {activeTab === 'notifications' && <NotificationsDashboard />}
+                  {activeTab === 'config' && <SettingsDashboard onTabChange={setActiveTab} />}
+                </motion.div>
+              </AnimatePresence>
+            </main>
+
+            <AnimatePresence>
+              {showWizard && (
+                <LeadWizard
+                  isOpen={showWizard}
+                  onClose={() => setShowWizard(false)}
+                />
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </>
+      )}
     </>
   );
 }

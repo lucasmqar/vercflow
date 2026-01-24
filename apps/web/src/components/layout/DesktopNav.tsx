@@ -20,6 +20,7 @@ export function DesktopNav({ activeTab, onTabChange }: DesktopNavProps) {
         { id: 'captura', icon: Camera, label: 'Captura' },
         { id: 'triagem', icon: ShieldCheck, label: 'Triagem' },
         { id: 'comercial', icon: Target, label: 'Comercial' },
+        { id: 'obras', icon: Building2, label: 'Gestão de Obras' },
         { id: 'engenharia', icon: Hammer, label: 'Engenharia' },
         { id: 'projetos', icon: Layers, label: 'Projetos' },
         { id: 'design', icon: Palette, label: 'Design' },
@@ -27,12 +28,11 @@ export function DesktopNav({ activeTab, onTabChange }: DesktopNavProps) {
         { id: 'logistica', icon: Truck, label: 'Logística' },
         { id: 'financeiro', icon: DollarSign, label: 'Financeiro' },
         { id: 'rh-sst', icon: Shield, label: 'RH / SST' },
-        { id: 'config', icon: Settings, label: 'Admin' },
     ];
 
     return (
         <div className="hidden lg:flex fixed bottom-8 left-1/2 -translate-x-1/2 z-[100]">
-            <div className="glass-hub p-2 rounded-[24px] flex items-center gap-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 bg-background/40 backdrop-blur-2xl transition-all">
+            <div className="glass-hub p-2 rounded-[24px] flex items-center gap-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 bg-background/25 backdrop-blur-2xl transition-all">
                 {/* Logo section */}
                 <div className="pl-3 pr-2 border-r border-white/10 mr-1 flex items-center">
                     <div

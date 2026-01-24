@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Record } from '@/types';
 import { toast } from 'sonner';
+import { getApiUrl } from '@/lib/api';
 
 interface RegistrosState {
     registros: Record[];
@@ -22,9 +23,9 @@ export const useRegistros = create<RegistrosState>((set, get) => ({
     fetchRegistros: async () => {
         set({ isLoading: true });
         try {
-            const response = await fetch('http://localhost:4000/api/records');
+            const response = await fetch(getApiUrl('/api/records'));
             const data = await response.json();
-            set({ registros: data, isLoading: false });
+            set({ registros: Array.isArray(data) ? data : [], isLoading: false });
         } catch (error) {
             toast.error('Erro ao carregar registros');
             set({ isLoading: false });
@@ -33,7 +34,7 @@ export const useRegistros = create<RegistrosState>((set, get) => ({
 
     addRegistro: async (data) => {
         try {
-            const response = await fetch('http://localhost:4000/api/records', {
+            const response = await fetch(getApiUrl('/api/records'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
@@ -62,7 +63,7 @@ export const useRegistros = create<RegistrosState>((set, get) => ({
 
     saveSketch: async (recordId, dataJson, imageUrl) => {
         try {
-            const response = await fetch(`http://localhost:4000/api/records/${recordId}/sketch`, {
+            const response = await fetch(getApiUrl(`/api/records/${recordId}/sketch`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ dataJson, imageUrl }),
@@ -86,7 +87,7 @@ export const useRegistros = create<RegistrosState>((set, get) => ({
         }));
 
         try {
-            const response = await fetch(`http://localhost:4000/api/records/${id}`, {
+            const response = await fetch(getApiUrl(`/api/records/${id}`), {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status }),
@@ -108,7 +109,7 @@ export const useRegistros = create<RegistrosState>((set, get) => ({
 
     convertRegistro: async (id, data) => {
         try {
-            const response = await fetch(`http://localhost:4000/api/records/${id}/convert`, {
+            const response = await fetch(getApiUrl(`/api/records/${id}/convert`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
@@ -131,7 +132,7 @@ export const useRegistros = create<RegistrosState>((set, get) => ({
         }));
 
         try {
-            const response = await fetch(`http://localhost:4000/api/records/${id}`, {
+            const response = await fetch(getApiUrl(`/api/records/${id}`), {
                 method: 'DELETE',
             });
 
@@ -145,7 +146,7 @@ export const useRegistros = create<RegistrosState>((set, get) => ({
 
     updateActivityStatus: async (id, status) => {
         try {
-            const response = await fetch(`http://localhost:4000/api/activities/${id}`, {
+            const response = await fetch(getApiUrl(`/api/activities/${id}`), {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status }),
@@ -169,7 +170,7 @@ export const useRegistros = create<RegistrosState>((set, get) => ({
         });
 
         try {
-            const response = await fetch(`http://localhost:4000/api/record-items/${id}`, {
+            const response = await fetch(getApiUrl(`/api/record-items/${id}`), {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ checked }),

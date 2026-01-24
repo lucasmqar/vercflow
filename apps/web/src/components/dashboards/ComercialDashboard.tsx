@@ -6,7 +6,9 @@ import {
     Users,
     FileText,
     TrendingUp,
-    Briefcase
+    Briefcase,
+    Bell,
+    Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -24,10 +26,16 @@ import { ComercialBudgets } from './comercial/ComercialBudgets';
 import { ComercialProposals } from './comercial/ComercialProposals';
 import { ComercialClients } from './comercial/ComercialClients';
 import { ClientProfilePage } from './comercial/ClientProfilePage';
+import { ComercialPipeline } from './comercial/ComercialPipeline';
+import { ComercialMap } from './comercial/ComercialMap';
+import { ComercialActivities } from './comercial/ComercialActivities';
+import { ComercialNewEntryModal } from './comercial/ComercialNewEntryModal';
+import { Map as MapIcon, Kanban } from 'lucide-react';
 
 export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange: (tab: DashboardTab) => void, onOpenWizard?: () => void }) {
     // Navigation State
-    const [currentSection, setCurrentSection] = useState<'overview' | 'leads' | 'budgets' | 'proposals' | 'clients'>('overview');
+    const [currentSection, setCurrentSection] = useState<'overview' | 'activities' | 'pipeline' | 'map' | 'leads' | 'budgets' | 'proposals' | 'clients'>('overview');
+    const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
 
     // Selection State for Detail Views
     const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
@@ -39,9 +47,11 @@ export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange:
         leads,
         budgets,
         proposals,
+        projects,
         createBudget,
         createProposal,
-        updateProposalStatus
+        updateProposalStatus,
+        createBudgetRevision
     } = useAppFlow();
 
     // Stats Logic
@@ -51,11 +61,14 @@ export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange:
 
     // Navigation Items
     const navItems = [
-        { id: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
-        { id: 'leads', label: 'Leads', icon: TrendingUp },
+        { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'activities', label: 'Caixa de Entrada', icon: Bell },
+        { id: 'pipeline', label: 'Pipeline Obras', icon: Kanban },
+        { id: 'map', label: 'Mapa Geolocal', icon: MapIcon },
+        { id: 'leads', label: 'Captação Leads', icon: TrendingUp },
         { id: 'budgets', label: 'Orçamentos', icon: FileText },
         { id: 'proposals', label: 'Propostas', icon: Briefcase },
-        { id: 'clients', label: 'Carteira', icon: Users },
+        { id: 'clients', label: 'Carteira Clientes', icon: Users },
     ];
 
     // Handlers
@@ -118,6 +131,13 @@ export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange:
                     </div>
 
                     <div className="flex flex-col gap-2 w-full px-4 flex-1 overflow-y-auto">
+                        <Button
+                            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl mb-4 font-black uppercase tracking-widest text-xs h-12 shadow-lg shadow-primary/20"
+                            onClick={() => setIsEntryModalOpen(true)}
+                        >
+                            <Plus size={18} className="mr-2" /> Nova Entrada
+                        </Button>
+
                         {navItems.map((item) => {
                             const isActive = currentSection === item.id;
                             return (
@@ -181,6 +201,32 @@ export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange:
                                 />
                             )}
 
+                            {currentSection === 'activities' && (
+                                <ComercialActivities />
+                            )}
+
+                            {currentSection === 'pipeline' && (
+                                <ComercialPipeline
+                                    leads={leads}
+                                    projects={projects}
+                                    budgets={budgets}
+                                    proposals={proposals}
+                                    onSelectLead={(id) => {
+                                        setSelectedLeadId(id);
+                                        setCurrentSection('leads');
+                                    }}
+                                />
+                            )}
+
+                            {currentSection === 'map' && (
+                                <ComercialMap
+                                    leads={leads}
+                                    projects={projects}
+                                    budgets={budgets}
+                                    proposals={proposals}
+                                />
+                            )}
+
                             {currentSection === 'leads' && (
                                 <ComercialLeads
                                     leads={leads}
@@ -225,6 +271,11 @@ export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange:
                     </div>
                 </div>
             </div>
+
+            <ComercialNewEntryModal
+                isOpen={isEntryModalOpen}
+                onClose={() => setIsEntryModalOpen(false)}
+            />
         </div>
     );
 }

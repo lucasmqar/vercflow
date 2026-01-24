@@ -88,7 +88,7 @@ app.post('/api/records', async (req, res) => {
                 clientId: clientId || null,
                 texto,
                 type: type || 'TEXTO',
-                status: 'REGISTRO',
+                status: 'CAPTURE',
                 prioridade: prioridade || 'MEDIA',
                 natureza,
                 parentId: parentId || null,
@@ -1700,6 +1700,669 @@ app.post('/api/purchases/:id/order', async (req, res) => {
     }
 });
 
+// ========== FASE 1: DP (DEPARTAMENTO PESSOAL) ==========
+
+// Employees: Funcionários CLT
+app.get('/api/employees', async (req, res) => {
+    try {
+        const { status, departamento } = req.query;
+        const where: any = {};
+        if (status) where.statusAtual = status;
+        if (departamento) where.departamento = departamento;
+
+        const employees = await prisma.employee.findMany({
+            where,
+            include: {
+                user: { select: { nome: true, email: true } },
+                _count: { select: { payrolls: true, asos: true, accidents: true } }
+            },
+            orderBy: { nome: 'asc' }
+        });
+        res.json(employees);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar funcionários' });
+    }
+});
+
+app.post('/api/employees', async (req, res) => {
+    const {
+        userId, nome, cpf, rg, dataNascimento, endereco, contatos,
+        cargo, departamento, salario, dataAdmissao
+    } = req.body;
+    try {
+        const employee = await prisma.employee.create({
+            data: {
+                userId,
+                nome,
+                cpf,
+                rg,
+                dataNascimento: dataNascimento ? new Date(dataNascimento) : null,
+                endereco,
+                contatos,
+                cargo,
+                departamento,
+                salario,
+                dataAdmissao: new Date(dataAdmissao),
+                statusAtual: 'ATIVO'
+            }
+        });
+        res.json(employee);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao criar funcionário' });
+    }
+});
+
+app.get('/api/employees/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: { id },
+            include: {
+                user: { select: { nome: true, email: true } },
+                payrolls: { orderBy: { mesReferencia: 'desc' }, take: 12 },
+                benefits: { include: { benefit: true } },
+                asos: { orderBy: { dataExame: 'desc' } },
+                accidents: { orderBy: { dataOcorrencia: 'desc' } },
+                epiDistributions: { orderBy: { dataEntrega: 'desc' } },
+                exitInterview: true
+            }
+        });
+        if (!employee) return res.status(404).json({ error: 'Funcionário não encontrado' });
+        res.json(employee);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar funcionário' });
+    }
+});
+
+app.patch('/api/employees/:id', async (req, res) => {
+    const { id } = req.params;
+    const { statusAtual, dataDemissao, motivoDemissao, salario, cargo, departamento } = req.body;
+    try {
+        const employee = await prisma.employee.update({
+            where: { id },
+            data: {
+                statusAtual,
+                dataDemissao: dataDemissao ? new Date(dataDemissao) : undefined,
+                motivoDemissao,
+                salario,
+                cargo,
+                departamento
+            }
+        });
+        res.json(employee);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao atualizar funcionário' });
+    }
+});
+
+// Payrolls: Folha de Pagamento
+app.get('/api/payrolls', async (req, res) => {
+    try {
+        const { mesReferencia, status } = req.query;
+        const where: any = {};
+        if (mesReferencia) where.mesReferencia = new Date(mesReferencia as string);
+        if (status) where.status = status;
+
+        const payrolls = await prisma.payroll.findMany({
+            where,
+            include: { employee: { select: { nome: true, cpf: true, cargo: true } } },
+            orderBy: { mesReferencia: 'desc' }
+        });
+        res.json(payrolls);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar folhas de pagamento' });
+    }
+});
+
+app.post('/api/employees/:id/payroll', async (req, res) => {
+    const { id } = req.params;
+    const { mesReferencia, salarioBase, horasExtras, bonificacoes, descontos } = req.body;
+    try {
+        const salarioLiquido = salarioBase + (horasExtras || 0) + (bonificacoes || 0) - (descontos || 0);
+        const payroll = await prisma.payroll.create({
+            data: {
+                employeeId: id,
+                mesReferencia: new Date(mesReferencia),
+                salarioBase,
+                horasExtras,
+                bonificacoes,
+                descontos,
+                salarioLiquido,
+                status: 'PENDENTE'
+            }
+        });
+        res.json(payroll);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao gerar folha de pagamento' });
+    }
+});
+
+app.patch('/api/payrolls/:id', async (req, res) => {
+    const { id } = req.params;
+    const { status, dataPagamento } = req.body;
+    try {
+        const payroll = await prisma.payroll.update({
+            where: { id },
+            data: {
+                status,
+                dataPagamento: dataPagamento ? new Date(dataPagamento) : undefined
+            }
+        });
+        res.json(payroll);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao atualizar folha de pagamento' });
+    }
+});
+
+// Benefits: Benefícios
+app.get('/api/benefits', async (req, res) => {
+    try {
+        const benefits = await prisma.benefit.findMany({
+            include: { _count: { select: { employees: true } } }
+        });
+        res.json(benefits);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar benefícios' });
+    }
+});
+
+app.post('/api/benefits', async (req, res) => {
+    const { nome, tipo, valor, descricao } = req.body;
+    try {
+        const benefit = await prisma.benefit.create({
+            data: { nome, tipo, valor, descricao }
+        });
+        res.json(benefit);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao criar benefício' });
+    }
+});
+
+app.post('/api/employees/:id/benefits', async (req, res) => {
+    const { id } = req.params;
+    const { benefitId, dataInicio, valorMensal } = req.body;
+    try {
+        const employeeBenefit = await prisma.employeeBenefit.create({
+            data: {
+                employeeId: id,
+                benefitId,
+                dataInicio: new Date(dataInicio),
+                valorMensal
+            },
+            include: { benefit: true }
+        });
+        res.json(employeeBenefit);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao vincular benefício' });
+    }
+});
+
+// Third Party Contracts: Terceirizados
+app.get('/api/third-party-contracts', async (req, res) => {
+    try {
+        const { status } = req.query;
+        const where = status ? { status: status as string } : {};
+        const contracts = await prisma.thirdPartyContract.findMany({
+            where,
+            orderBy: { dataInicio: 'desc' }
+        });
+        res.json(contracts);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar contratos terceirizados' });
+    }
+});
+
+app.post('/api/third-party-contracts', async (req, res) => {
+    const { empresa, cnpj, contato, servico, valorMensal, dataInicio } = req.body;
+    try {
+        const contract = await prisma.thirdPartyContract.create({
+            data: {
+                empresa,
+                cnpj,
+                contato,
+                servico,
+                valorMensal,
+                dataInicio: new Date(dataInicio),
+                status: 'ATIVO'
+            }
+        });
+        res.json(contract);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao criar contrato terceirizado' });
+    }
+});
+
+// ASO: Atestados de Saúde Ocupacional
+app.get('/api/asos', async (req, res) => {
+    try {
+        const { employeeId, tipo } = req.query;
+        const where: any = {};
+        if (employeeId) where.employeeId = employeeId;
+        if (tipo) where.tipo = tipo;
+
+        const asos = await prisma.aSO.findMany({
+            where,
+            include: { employee: { select: { nome: true, cpf: true } } },
+            orderBy: { dataExame: 'desc' }
+        });
+        res.json(asos);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar ASOs' });
+    }
+});
+
+app.post('/api/asos', async (req, res) => {
+    const { employeeId, tipo, dataExame, dataValidade, medico, clinica, resultado, restricoes, anexoUrl } = req.body;
+    try {
+        const aso = await prisma.aSO.create({
+            data: {
+                employeeId,
+                tipo,
+                dataExame: new Date(dataExame),
+                dataValidade: dataValidade ? new Date(dataValidade) : null,
+                medico,
+                clinica,
+                resultado,
+                restricoes,
+                anexoUrl
+            }
+        });
+        res.json(aso);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao criar ASO' });
+    }
+});
+
+// Exit Interviews: Entrevistas de Desligamento
+app.get('/api/exit-interviews', async (req, res) => {
+    try {
+        const interviews = await prisma.exitInterview.findMany({
+            include: { employee: { select: { nome: true, cpf: true, cargo: true } } },
+            orderBy: { dataEntrevista: 'desc' }
+        });
+        res.json(interviews);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar entrevistas de desligamento' });
+    }
+});
+
+app.post('/api/exit-interviews', async (req, res) => {
+    const { employeeId, dataEntrevista, entrevistador, motivoSaida, feedbackJson, notaSatisfacao, sugestoes, voltaria } = req.body;
+    try {
+        const interview = await prisma.exitInterview.create({
+            data: {
+                employeeId,
+                dataEntrevista: new Date(dataEntrevista),
+                entrevistador,
+                motivoSaida,
+                feedbackJson,
+                notaSatisfacao,
+                sugestoes,
+                voltaria
+            }
+        });
+        res.json(interview);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao criar entrevista de desligamento' });
+    }
+});
+
+// ========== FASE 1: DST (SEGURANÇA DO TRABALHO) ==========
+
+// Safety Inspections: Inspeções de Segurança
+app.get('/api/safety-inspections', async (req, res) => {
+    try {
+        const { projectId, status } = req.query;
+        const where: any = {};
+        if (projectId) where.projectId = projectId;
+        if (status) where.status = status;
+
+        const inspections = await prisma.safetyInspection.findMany({
+            where,
+            include: {
+                project: { select: { nome: true } },
+                inspector: { select: { nome: true } }
+            },
+            orderBy: { dataInspecao: 'desc' }
+        });
+        res.json(inspections);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar inspeções de segurança' });
+    }
+});
+
+app.post('/api/safety-inspections', async (req, res) => {
+    const { projectId, inspectorId, dataInspecao, tipo, checklistJson, conformidades, naoConformidades, observacoes } = req.body;
+    try {
+        const inspection = await prisma.safetyInspection.create({
+            data: {
+                projectId,
+                inspectorId,
+                dataInspecao: new Date(dataInspecao),
+                tipo,
+                checklistJson,
+                conformidades: conformidades || 0,
+                naoConformidades: naoConformidades || 0,
+                observacoes,
+                status: 'PENDENTE'
+            }
+        });
+        res.json(inspection);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao criar inspeção de segurança' });
+    }
+});
+
+app.patch('/api/safety-inspections/:id', async (req, res) => {
+    const { id } = req.params;
+    const { status, observacoes } = req.body;
+    try {
+        const inspection = await prisma.safetyInspection.update({
+            where: { id },
+            data: { status, observacoes }
+        });
+        res.json(inspection);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao atualizar inspeção' });
+    }
+});
+
+// Accidents: Acidentes de Trabalho
+app.get('/api/accidents', async (req, res) => {
+    try {
+        const { employeeId, projectId, status, gravidade } = req.query;
+        const where: any = {};
+        if (employeeId) where.employeeId = employeeId;
+        if (projectId) where.projectId = projectId;
+        if (status) where.status = status;
+        if (gravidade) where.gravidade = gravidade;
+
+        const accidents = await prisma.accident.findMany({
+            where,
+            include: {
+                employee: { select: { nome: true, cpf: true } },
+                project: { select: { nome: true } }
+            },
+            orderBy: { dataOcorrencia: 'desc' }
+        });
+        res.json(accidents);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar acidentes' });
+    }
+});
+
+app.post('/api/accidents', async (req, res) => {
+    const {
+        employeeId, projectId, dataOcorrencia, horaOcorrencia, local, descricao,
+        gravidade, tipoAcidente, partesCorpo, testemunhas
+    } = req.body;
+    try {
+        const accident = await prisma.accident.create({
+            data: {
+                employeeId,
+                projectId,
+                dataOcorrencia: new Date(dataOcorrencia),
+                horaOcorrencia,
+                local,
+                descricao,
+                gravidade,
+                tipoAcidente,
+                partesCorpo,
+                testemunhas,
+                catEmitida: false,
+                status: 'ABERTO'
+            }
+        });
+        res.json(accident);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao registrar acidente' });
+    }
+});
+
+app.patch('/api/accidents/:id', async (req, res) => {
+    const { id } = req.params;
+    const { status, investigacao, medidasCorretivas, dataAfastamento, diasAfastado } = req.body;
+    try {
+        const accident = await prisma.accident.update({
+            where: { id },
+            data: {
+                status,
+                investigacao,
+                medidasCorretivas,
+                dataAfastamento: dataAfastamento ? new Date(dataAfastamento) : undefined,
+                diasAfastado
+            }
+        });
+        res.json(accident);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao atualizar acidente' });
+    }
+});
+
+app.post('/api/accidents/:id/cat', async (req, res) => {
+    const { id } = req.params;
+    const { numeroCAT } = req.body;
+    try {
+        const accident = await prisma.accident.update({
+            where: { id },
+            data: {
+                catEmitida: true,
+                numeroCAT,
+                status: 'INVESTIGACAO'
+            }
+        });
+        res.json(accident);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao emitir CAT' });
+    }
+});
+
+// EPI Distributions: Distribuição de EPIs
+app.get('/api/epi-distributions', async (req, res) => {
+    try {
+        const { employeeId, status } = req.query;
+        const where: any = {};
+        if (employeeId) where.employeeId = employeeId;
+        if (status) where.status = status;
+
+        const distributions = await prisma.ePIDistribution.findMany({
+            where,
+            include: {
+                employee: { select: { nome: true, cpf: true } }
+            },
+            orderBy: { dataEntrega: 'desc' }
+        });
+        res.json(distributions);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar distribuições de EPI' });
+    }
+});
+
+app.post('/api/epi-distributions', async (req, res) => {
+    const { employeeId, epiTipo, marca, quantidade, dataEntrega, dataValidade, nf, assinaturaUrl } = req.body;
+    try {
+        const distribution = await prisma.ePIDistribution.create({
+            data: {
+                employeeId,
+                epiTipo,
+                marca,
+                quantidade: quantidade || 1,
+                dataEntrega: new Date(dataEntrega),
+                dataValidade: dataValidade ? new Date(dataValidade) : null,
+                nf,
+                assinaturaUrl,
+                status: 'EM_USO'
+            }
+        });
+        res.json(distribution);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao distribuir EPI' });
+    }
+});
+
+// ========== FASE 1: LOGÍSTICA (Complemento) ==========
+
+// Tools: Ferramentas
+app.get('/api/tools', async (req, res) => {
+    try {
+        const { estado, tipo } = req.query;
+        const where: any = {};
+        if (estado) where.estado = estado;
+        if (tipo) where.tipo = tipo;
+
+        const tools = await prisma.tool.findMany({
+            where,
+            include: {
+                loans: {
+                    where: { dataRetorno: null },
+                    include: { usuario: { select: { nome: true } } }
+                }
+            },
+            orderBy: { nome: 'asc' }
+        });
+        res.json(tools);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar ferramentas' });
+    }
+});
+
+app.post('/api/tools', async (req, res) => {
+    const { codigo, nome, tipo, marca, estado, localizacao, responsavel, dataAquisicao, valorAquisicao } = req.body;
+    try {
+        const tool = await prisma.tool.create({
+            data: {
+                codigo,
+                nome,
+                tipo,
+                marca,
+                estado: estado || 'BOM',
+                localizacao,
+                responsavel,
+                dataAquisicao: dataAquisicao ? new Date(dataAquisicao) : null,
+                valorAquisicao
+            }
+        });
+        res.json(tool);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao cadastrar ferramenta' });
+    }
+});
+
+app.post('/api/tools/:id/loan', async (req, res) => {
+    const { id } = req.params;
+    const { usuarioId, projectId, dataSaida, estadoSaida } = req.body;
+    try {
+        const loan = await prisma.toolLoan.create({
+            data: {
+                toolId: id,
+                usuarioId,
+                projectId,
+                dataSaida: new Date(dataSaida),
+                estadoSaida
+            }
+        });
+        res.json(loan);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao emprestar ferramenta' });
+    }
+});
+
+app.patch('/api/tool-loans/:id/return', async (req, res) => {
+    const { id } = req.params;
+    const { dataRetorno, estadoRetorno, observacoes } = req.body;
+    try {
+        const loan = await prisma.toolLoan.update({
+            where: { id },
+            data: {
+                dataRetorno: new Date(dataRetorno),
+                estadoRetorno,
+                observacoes
+            }
+        });
+
+        // Update tool estado if returned damaged
+        if (estadoRetorno === 'DANIFICADO') {
+            await prisma.tool.update({
+                where: { id: loan.toolId },
+                data: { estado: 'DANIFICADO' }
+            });
+        }
+
+        res.json(loan);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao devolver ferramenta' });
+    }
+});
+
+// Vehicle Maintenances: Manutenções Veiculares
+app.get('/api/vehicles/:id/maintenances', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const maintenances = await prisma.maintenanceRecord.findMany({
+            where: { vehicleId: id },
+            orderBy: { dataExecucao: 'desc' }
+        });
+        res.json(maintenances);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar manutenções' });
+    }
+});
+
+app.post('/api/vehicles/:id/maintenances', async (req, res) => {
+    const { id } = req.params;
+    const { tipo, descricao, oficina, valor, dataExecucao, quilometragem, proximaRevisao, anexoUrl } = req.body;
+    try {
+        const maintenance = await prisma.maintenanceRecord.create({
+            data: {
+                vehicleId: id,
+                tipo,
+                descricao,
+                oficina,
+                valor,
+                dataExecucao: new Date(dataExecucao),
+                quilometragem,
+                proximaRevisao: proximaRevisao ? new Date(proximaRevisao) : null,
+                anexoUrl
+            }
+        });
+        res.json(maintenance);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao registrar manutenção' });
+    }
+});
+
 app.listen(port, () => {
     console.log(`[VERCFLOW API]: Server is running at http://localhost:${port}`);
 });
+

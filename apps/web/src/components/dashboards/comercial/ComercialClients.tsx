@@ -9,54 +9,19 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export function ComercialClients({ onOpenProfile }: any) {
-    // Mock Data
-    const clientes = [
-        {
-            id: 1,
-            nome: "Incorporadora Alpha",
-            tipo: "Corporativo (PJ)",
-            documento: "12.345.678/0001-99",
-            contato: "Roberto Sales (CEO)",
-            email: "roberto@alpha.com",
-            status: "ATIVO",
-            contratos: 3,
-            valorTotal: "R$ 4.2M",
-            nps: 9.5,
-            saude: "Excelente",
-            logo: "A"
-        },
-        {
-            id: 2,
-            nome: "Condomínio Jardins",
-            tipo: "Condominial (PJ)",
-            documento: "99.888.777/0001-00",
-            contato: "Maria Oliveira (Síndica)",
-            email: "maria@jardins.com",
-            status: "ATIVO",
-            contratos: 1,
-            valorTotal: "R$ 850k",
-            nps: 8.0,
-            saude: "Alerta",
-            logo: "J"
-        },
-        {
-            id: 3,
-            nome: "Dr. Fernando Costa",
-            tipo: "Residencial (PF)",
-            documento: "123.456.789-00",
-            contato: "Fernando Costa",
-            email: "fernando@costa.com",
-            status: "PROSPECT",
-            contratos: 0,
-            valorTotal: "R$ 0",
-            nps: null,
-            saude: "Novo",
-            logo: "F"
-        },
-    ];
+import { useAppFlow } from '@/store/useAppFlow';
+import { Client } from '@/types';
 
-    const handleOpenProfile = (client: any) => {
+export function ComercialClients({ onOpenProfile }: any) {
+    const { clients } = useAppFlow();
+    const [search, setSearch] = useState('');
+
+    const filteredClients = clients.filter(c =>
+        c.nome.toLowerCase().includes(search.toLowerCase()) ||
+        c.documento?.includes(search)
+    );
+
+    const handleOpenProfile = (client: Client) => {
         if (onOpenProfile) {
             onOpenProfile(client);
         }
@@ -68,20 +33,25 @@ export function ComercialClients({ onOpenProfile }: any) {
                 <div>
                     <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
                         Carteira de Clientes
-                        <Badge variant="secondary" className="text-xs font-black px-2">{clientes.length}</Badge>
+                        <Badge variant="secondary" className="text-xs font-black px-2">{filteredClients.length}</Badge>
                     </h2>
                     <p className="text-sm text-muted-foreground mt-1">Gestão de relacionamento e histórico.</p>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     <div className="relative flex-1 md:w-64">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input placeholder="Buscar cliente..." className="pl-10 rounded-xl bg-background/50 border-border/40" />
+                        <Input
+                            placeholder="Buscar cliente..."
+                            className="pl-10 rounded-xl bg-background/50 border-border/40"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
                     </div>
                 </div>
             </div>
 
             <div className="grid gap-6">
-                {clientes.map(c => (
+                {filteredClients.map(c => (
                     <Card key={c.id} className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl hover:border-primary/20 hover:shadow-2xl transition-all group overflow-hidden">
                         <CardContent className="p-8">
                             <div className="flex flex-col lg:flex-row items-start justify-between gap-8">
@@ -103,13 +73,13 @@ export function ComercialClients({ onOpenProfile }: any) {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12 flex-1 lg:max-w-2xl">
                                     <div>
                                         <p className="text-[10px] font-black uppercase text-muted-foreground/40 mb-2 tracking-widest flex items-center gap-1.5"><Users size={12} /> Contato Principal</p>
-                                        <p className="text-xs font-black">{c.contato}</p>
-                                        <p className="text-[10px] font-bold text-muted-foreground mt-1 lowercase">{c.email}</p>
+                                        <p className="text-xs font-black">{c.contatos || 'Não informado'}</p>
+                                        <p className="text-[10px] font-bold text-muted-foreground mt-1 lowercase">email@exemplo.com</p>
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-black uppercase text-muted-foreground/40 mb-2 tracking-widest flex items-center gap-1.5"><TrendingUp size={12} /> Volume Comercial</p>
-                                        <p className="text-xs font-black text-primary">{c.valorTotal}</p>
-                                        <p className="text-[10px] font-bold text-muted-foreground mt-1 uppercase">{c.contratos} Contratos</p>
+                                        <p className="text-xs font-black text-primary">{c.valorTotal?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'R$ 0,00'}</p>
+                                        <p className="text-[10px] font-bold text-muted-foreground mt-1 uppercase">{c.contratos || 0} Contratos</p>
                                     </div>
                                     <div className="text-center">
                                         <p className="text-[10px] font-black uppercase text-muted-foreground/40 mb-2 tracking-widest">Satisfaction (NPS)</p>

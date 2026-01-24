@@ -7,7 +7,7 @@ import {
   ArrowRightCircle, ArrowLeftCircle, MoreVertical, ClipboardList,
   MessageSquare, Share, Layers, User, Building2, MapPin,
   Download, Paperclip, ChevronDown, Send, Briefcase, Hash,
-  Maximize2, Minimize2, List
+  Maximize2, Minimize2, List, ShieldCheck, DollarSign
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,23 +21,26 @@ import HeaderAnimated from '@/components/common/HeaderAnimated';
 import { cn } from '@/lib/utils';
 import { DashboardTab } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useRegistros } from '@/hooks/useRegistros';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAppFlow } from '@/store/useAppFlow';
+import { useRegistros } from '@/hooks/useRegistros';
+import { toast } from 'sonner';
 
 type ViewMode = 'SUMMARY' | 'TECHNICAL' | 'FULL';
 type Phase = 'CAPTURE' | 'TRIAGE' | 'ANALYSIS' | 'DISTRIBUTION';
 
 export function TriagemDashboard({ onTabChange }: { onTabChange: (tab: DashboardTab) => void }) {
   const { registros, fetchRegistros, updateRegistroStatus } = useRegistros();
+  const { createRequest } = useAppFlow();
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('FULL');
-  const [currentPhase, setCurrentPhase] = useState<Phase>('TRIAGE');
+  const [currentPhase, setCurrentPhase] = useState<Phase>('CAPTURE');
 
   // Advanced Distribution State
   const [distributeModalOpen, setDistributeModalOpen] = useState(false);
   const [distributionData, setDistributionData] = useState({
-    department: '',
+    department: '' as any,
     assignee: '',
     type: '',
     priority: '',
@@ -45,9 +48,15 @@ export function TriagemDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
     notes: ''
   });
 
-  // Filter only pertinent statutes for Triage
-  const triageList = registros.filter(r => ['REGISTRO', 'TRIAGEM', 'REVISAO'].includes(r.status));
-  const selectedRecord = registros.find(r => r.id === selectedRecordId) || triageList[0];
+  // Filter only pertinent statutes for Triage (Supporting both English and Portuguese variants)
+  const triageList = registros.filter(r =>
+    ['CAPTURE', 'TRIAGE', 'ANALYSIS', 'DISTRIBUTION', 'REGISTRO', 'TRIAGEM', 'VALIDACAO', 'CLASSIFICACAO', 'DISTRIBUICAO'].includes(r.status)
+  );
+  const selectedRecord = registros.find(r => r.id === selectedRecordId) || (triageList.length > 0 ? triageList[0] : null);
+
+  useEffect(() => {
+    fetchRegistros();
+  }, []);
 
   useEffect(() => {
     if (!selectedRecordId && triageList.length > 0) {
@@ -66,10 +75,19 @@ export function TriagemDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
         priority: selectedRecord.prioridade || '',
         projectId: selectedRecord.projectId || 'none'
       }));
-      // Auto-set phase based on status (simplified)
-      if (selectedRecord.status === 'REGISTRO') setCurrentPhase('TRIAGE');
-      else if (selectedRecord.status === 'TRIAGEM') setCurrentPhase('ANALYSIS');
-      else if (selectedRecord.status === 'REVISAO') setCurrentPhase('DISTRIBUTION');
+      // Auto-set phase based on recorded status (normalized)
+      const statusMap: Record<string, Phase> = {
+        'REGISTRO': 'CAPTURE',
+        'CAPTURE': 'CAPTURE',
+        'TRIAGEM': 'TRIAGE',
+        'VALIDACAO': 'TRIAGE',
+        'TRIAGE': 'TRIAGE',
+        'CLASSIFICACAO': 'ANALYSIS',
+        'ANALYSIS': 'ANALYSIS',
+        'DISTRIBUICAO': 'DISTRIBUTION',
+        'DISTRIBUTION': 'DISTRIBUTION'
+      };
+      setCurrentPhase(statusMap[selectedRecord.status] || 'CAPTURE');
     }
   }, [triageList, selectedRecordId, selectedRecord]);
 
@@ -79,28 +97,60 @@ export function TriagemDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
   };
 
   const handleConfirmDistribution = () => {
-    if (selectedRecordId) {
-      updateRegistroStatus(selectedRecordId, 'DISTRIBUICAO');
+    if (selectedRecordId && selectedRecord) {
+      // 1. Mark as Converted (Archived from Triage)
+      updateRegistroStatus(selectedRecordId, 'CONVERTIDO');
+
+      // 2. Create Interdepartmental Request
+      const deptMap: Record<string, any> = {
+        'Engenharia': 'ENGENHARIA',
+        'Suprimentos': 'COMPRAS',
+        'Design': 'PROJETOS',
+        'Financeiro': 'FINANCEIRO',
+        'SST/Legal': 'RH'
+      };
+
+      createRequest({
+        fromDepartment: 'COMERCIAL', // Or triage/ops hub
+        toDepartment: deptMap[distributionData.department] || 'ENGENHARIA',
+        type: distributionData.type || 'TECHNICAL_TASK',
+        title: `Triagem: ${selectedRecord.texto?.substring(0, 30)}...`,
+        description: `Registro distribuído via Triagem.\nOrigem: ${selectedRecord.refCodigo}\nAutor: ${selectedRecord.author?.nome}\nNotas: ${distributionData.notes}`,
+        priority: (selectedRecord.prioridade || 'MEDIA') as any,
+        status: 'PENDENTE',
+        projectId: selectedRecord.projectId || undefined,
+        recordId: selectedRecord.id
+      });
+
+      toast.success(`Distribuído com sucesso para ${distributionData.department}`);
     }
     setDistributeModalOpen(false);
   };
 
   const nextPhase = () => {
-    if (currentPhase === 'TRIAGE') setCurrentPhase('ANALYSIS');
-    else if (currentPhase === 'ANALYSIS') setCurrentPhase('DISTRIBUTION');
+    if (!selectedRecordId) return;
+
+    let nextStatus: Phase = 'TRIAGE';
+    if (currentPhase === 'CAPTURE') nextStatus = 'TRIAGE';
+    else if (currentPhase === 'TRIAGE') nextStatus = 'ANALYSIS';
+    else if (currentPhase === 'ANALYSIS') nextStatus = 'DISTRIBUTION';
+    else return;
+
+    updateRegistroStatus(selectedRecordId, nextStatus);
+    setCurrentPhase(nextStatus);
   };
 
   return (
-    <div className="flex flex-col h-full bg-background/50 overflow-hidden font-sans">
+    <div className="flex flex-col h-full bg-background overflow-hidden font-sans">
       {/* Header */}
-      <div className="h-20 shrink-0 px-8 flex items-center justify-between border-b border-border/40 bg-background/50 backdrop-blur-sm">
+      <div className="h-20 shrink-0 px-8 flex items-center justify-between border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <HeaderAnimated title="Triagem & Distribuição" />
         <div className="flex gap-3">
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input placeholder="Filtrar ocorrências..." className="pl-10 h-10 rounded-xl bg-muted/30 border-border/40" />
+            <Input placeholder="Filtrar ocorrências..." className="pl-10 h-10 rounded-xl bg-muted/30 border-transparent text-foreground placeholder:text-muted-foreground/30 focus-visible:ring-primary/20" />
           </div>
-          <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl border-border/40">
+          <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl border-border/40 bg-background hover:bg-muted/10 transition-colors">
             <Filter size={16} />
           </Button>
         </div>
@@ -108,10 +158,10 @@ export function TriagemDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
 
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar List - Master View */}
-        <div className="w-[400px] border-r border-border/40 flex flex-col bg-muted/5 shrink-0">
-          <div className="p-4 border-b border-border/40 flex justify-between items-center">
-            <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Fila de Entrada ({triageList.length})</span>
-            <Badge variant="secondary" className="bg-primary/10 text-primary text-[10px] font-black uppercase">Live</Badge>
+        <div className="w-[400px] border-r border-border/40 flex flex-col bg-background shrink-0">
+          <div className="p-4 border-b border-border/40 flex justify-between items-center bg-background">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-50">Fila de Entrada ({triageList.length})</span>
+            <Badge variant="secondary" className="bg-primary/10 text-primary text-[9px] font-black uppercase tracking-tighter">Live</Badge>
           </div>
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-3">
@@ -120,10 +170,10 @@ export function TriagemDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
                   key={reg.id}
                   onClick={() => setSelectedRecordId(reg.id)}
                   className={cn(
-                    "p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02]",
+                    "p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02] relative overflow-hidden group",
                     selectedRecordId === reg.id
-                      ? "bg-background border-primary/40 shadow-lg shadow-primary/5"
-                      : "bg-background/40 border-transparent hover:bg-background hover:border-border/40"
+                      ? "bg-primary/5 border-primary/20 shadow-lg shadow-primary/5"
+                      : "bg-background border-border/40 hover:bg-muted/30 hover:border-border/60"
                   )}
                 >
                   <div className="flex justify-between items-start mb-2">
@@ -134,7 +184,7 @@ export function TriagemDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
                     )}>
                       {reg.status}
                     </Badge>
-                    <span className="text-[10px] font-mono text-muted-foreground">{new Date(reg.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-[10px] font-mono text-muted-foreground">{new Date(reg.criadoEm || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   <h4 className="font-bold text-sm leading-tight line-clamp-2 mb-2 text-foreground/90">
                     {reg.texto || 'Ocorrência sem título'}
@@ -149,7 +199,8 @@ export function TriagemDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
         </div>
 
         {/* Main Area - Detail View */}
-        <div className="flex-1 flex flex-col overflow-y-auto bg-background/30 p-8">
+        <div className="flex-1 flex flex-col overflow-y-auto bg-muted/5 p-8 relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none opacity-20" />
           {selectedRecord ? (
             <div className="max-w-5xl mx-auto w-full space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
 
@@ -169,7 +220,7 @@ export function TriagemDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
                 </div>
 
                 {/* View Mode Selector */}
-                <div className="bg-muted/30 p-1 rounded-xl flex gap-1 border border-border/40">
+                <div className="bg-muted/20 p-1 rounded-xl flex gap-1 border border-border/20">
                   <Button
                     size="sm"
                     variant="ghost"
@@ -205,10 +256,10 @@ export function TriagemDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
                   <AnimatePresence mode="wait">
                     {viewMode === 'SUMMARY' && (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} key="summary">
-                        <Card className="rounded-[2rem] border-border/40 bg-background/60 shadow-sm p-6">
+                        <Card className="rounded-[2rem] border-border/40 bg-background shadow-sm p-6">
                           <div className="grid grid-cols-2 gap-4">
                             <DetailBlock label="Autor" value={selectedRecord.author?.nome} icon={User} />
-                            <DetailBlock label="Data" value={new Date(selectedRecord.timestamp || Date.now()).toLocaleDateString()} icon={Clock} />
+                            <DetailBlock label="Data" value={new Date(selectedRecord.criadoEm || Date.now()).toLocaleDateString()} icon={Clock} />
                           </div>
                         </Card>
                       </motion.div>
@@ -216,7 +267,7 @@ export function TriagemDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
 
                     {viewMode === 'TECHNICAL' && (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} key="technical">
-                        <Card className="rounded-[2rem] border-border/40 bg-background/60 shadow-sm p-6 font-mono text-xs space-y-4">
+                        <Card className="rounded-[2rem] border-border/40 bg-background shadow-sm p-6 font-mono text-xs space-y-4">
                           <div className="p-2 border rounded bg-muted/10">GPS: -23.5505, -46.6333 (Verified)</div>
                           <div className="p-2 border rounded bg-muted/10">Device ID: IPHONE_14_PRO_MAX</div>
                           <div className="p-2 border rounded bg-muted/10">Sync Latency: 24ms</div>
@@ -227,7 +278,7 @@ export function TriagemDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
 
                     {viewMode === 'FULL' && (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} key="full" className="space-y-6">
-                        <Card className="rounded-[2rem] border-border/40 bg-background/60 shadow-sm p-6 space-y-4">
+                        <Card className="rounded-[2rem] border-border/40 bg-background shadow-sm p-6 space-y-4">
                           <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-primary">
                             <FileText size={16} /> Dados Completos
                           </h3>
@@ -269,6 +320,20 @@ export function TriagemDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
                 {/* Action / Phase Panel */}
                 <div className="space-y-6">
                   <Card className="rounded-[2rem] border-primary/20 bg-background shadow-lg shadow-primary/5 p-6 space-y-6 h-full border-t-4 border-t-primary">
+
+                    {currentPhase === 'CAPTURE' && (
+                      <div className="space-y-6 animate-in fade-in">
+                        <div>
+                          <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-primary mb-1">
+                            <FileText size={16} /> Nova Captura
+                          </h3>
+                          <p className="text-xs text-muted-foreground">Registro aguardando início do processo de triagem.</p>
+                        </div>
+                        <Button onClick={nextPhase} className="w-full rounded-xl font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20 mt-4 h-12">
+                          Iniciar Triagem <ArrowRightCircle size={16} className="ml-2" />
+                        </Button>
+                      </div>
+                    )}
 
                     {currentPhase === 'ANALYSIS' && (
                       <div className="space-y-6 animate-in fade-in">
@@ -321,15 +386,23 @@ export function TriagemDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
                           <ActionOption title="Engenharia" desc="Técnico" icon={Layers} onClick={() => handleOpenDistribute('Engenharia')} />
                           <ActionOption title="Suprimentos" desc="Compras" icon={ClipboardList} onClick={() => handleOpenDistribute('Suprimentos')} />
                           <ActionOption title="Design" desc="Projetos" icon={FileText} onClick={() => handleOpenDistribute('Design')} />
+                          <ActionOption title="Financeiro" desc="Custos/Taxas" icon={DollarSign} onClick={() => handleOpenDistribute('Financeiro')} />
+                          <ActionOption title="SST/Legal" desc="Conformidade" icon={ShieldCheck} onClick={() => handleOpenDistribute('SST/Legal')} />
                         </div>
                       </div>
                     )}
 
                     {currentPhase === 'TRIAGE' && (
-                      <div className="flex flex-col items-center justify-center text-center h-40 space-y-4">
-                        <Shield size={32} className="text-muted-foreground/30" />
-                        <p className="text-xs font-bold text-muted-foreground">Aguardando Início da Análise</p>
-                        <Button onClick={nextPhase} size="sm" variant="outline" className="rounded-xl border-dashed">Iniciar Tratativa</Button>
+                      <div className="space-y-6 animate-in fade-in">
+                        <div>
+                          <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-primary mb-1">
+                            <Shield size={16} /> Triagem Inicial
+                          </h3>
+                          <p className="text-xs text-muted-foreground">Valide as informações básicas do registro para iniciar a análise técnica.</p>
+                        </div>
+                        <Button onClick={nextPhase} className="w-full rounded-xl font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20 mt-4 h-12">
+                          Iniciar Análise <ArrowRightCircle size={16} className="ml-2" />
+                        </Button>
                       </div>
                     )}
 

@@ -44,12 +44,10 @@ export type Department =
   | 'EXTERNO';
 
 export type RecordStatus =
-  | 'REGISTRO'
-  | 'TRIAGEM'
-  | 'CLASSIFICACAO'
-  | 'ORDENACAO'
-  | 'VALIDACAO'
-  | 'DISTRIBUICAO'
+  | 'CAPTURE'
+  | 'TRIAGE'
+  | 'ANALYSIS'
+  | 'DISTRIBUTION'
   | 'CONVERTIDO'
   | 'ARQUIVADO';
 
@@ -77,13 +75,22 @@ export interface User {
 export interface Client {
   id: string;
   nome: string;
+  razaoSocial?: string;
+  nomeFantasia?: string;
   tipo: string;
   documento?: string;
+  cnpj?: string;
   rgIe?: string;
   contatos?: string;
+  email?: string;
   enderecoCompleto?: string;
   representacao?: string;
   configOrgaos?: string;
+  logo?: string;
+  nps?: number;
+  saude?: 'Excelente' | 'Bom' | 'Alerta' | 'Novo';
+  valorTotal?: number;
+  contratos?: number;
   criadoEm: string;
 }
 
@@ -123,6 +130,8 @@ export interface Project {
   engenheiroId?: string;
   orcamentoId?: string; // Link to the original commercial budget
   propostaId?: string;   // Link to the approved proposal
+  lat?: number;
+  lng?: number;
   attachments?: Attachment[];
   criadoEm: string;
   updatedAt: string;
@@ -134,14 +143,19 @@ export interface Project {
 
 export interface Lead {
   id: string;
-  clientId: string;
+  clientId?: string; // Optional if manual origin
   client?: Client;
+  nomeValidacao?: string; // For manual entry without client ID
   nomeObra: string;
   localizacao: string;
   classificacao?: WorkClassification;
   areaEstimada?: number;
   tipoObra: string;
+  origem?: string; // Added Origin
+  contato?: string; // Added Contact
   status: 'NOVO' | 'EM_QUALIFICACAO' | 'QUALIFICADO' | 'PERDIDO' | 'CONVERTIDO';
+  lat?: number;
+  lng?: number;
   attachments?: Attachment[];
   criadoEm: string;
 }
@@ -156,7 +170,20 @@ export interface Budget {
   valorEstimado: number;
   prazoEstimadoMeses: number;
   status: 'EM_ELABORACAO' | 'AGUARDANDO_ENGENHARIA' | 'ENVIADO' | 'APROVADO' | 'REJEITADO'; // Added AGUARDANDO_ENGENHARIA
+  revisions?: BudgetRevision[];
   criadoEm: string;
+}
+
+export interface BudgetRevision {
+  id: string;
+  budgetId: string;
+  version: number;
+  escopoMacro: string;
+  valorEstimado: number;
+  prazoEstimadoMeses: number;
+  responsavelId: string;
+  resumoAlteracoes: string;
+  createdAt: string;
 }
 
 export interface Proposal {
@@ -228,14 +255,17 @@ export interface Document {
 export interface Fee {
   id: string;
   projectId: string;
+  project?: Project;
   documentId?: string;
   nome: string;
+  descricao?: string;
   valor: number;
   vencimento?: string;
   status: 'PENDENTE' | 'PAGO' | 'CANCELADO';
   anexoUrl?: string;
   criadoEm: string;
 }
+
 
 export interface Activity {
   id: string;
@@ -320,4 +350,249 @@ export type DashboardTab =
   | 'rh-sst'       // RH / SST
   | 'logistica'    // Logística
   | 'design'       // Acabamentos & Design
+  | 'notifications' // Notificações do Sistema
   | 'config';      // Admin / Configurações
+
+// ========== FASE 1: DP (DEPARTAMENTO PESSOAL) ==========
+
+export interface Employee {
+  id: string;
+  userId?: string;
+  nome: string;
+  cpf: string;
+  rg?: string;
+  dataNascimento?: string;
+  endereco?: string;
+  contatos?: string; // JSON
+  cargo: string;
+  departamento: string;
+  salario: number;
+  dataAdmissao: string;
+  dataDemissao?: string;
+  statusAtual: 'ATIVO' | 'FERIAS' | 'AFASTADO' | 'DEMITIDO';
+  motivoDemissao?: string;
+  observacoes?: string;
+  criadoEm: string;
+  updatedAt: string;
+  payrolls?: Payroll[];
+  benefits?: EmployeeBenefit[];
+  asos?: ASO[];
+  accidents?: Accident[];
+  epiDistributions?: EPIDistribution[];
+  exitInterview?: ExitInterview;
+}
+
+export interface Payroll {
+  id: string;
+  employeeId: string;
+  employee?: Employee;
+  mesReferencia: string;
+  salarioBase: number;
+  horasExtras?: number;
+  bonificacoes?: number;
+  descontos?: number;
+  salarioLiquido: number;
+  dataPagamento?: string;
+  status: 'PENDENTE' | 'PAGO' | 'CANCELADO';
+  observacoes?: string;
+  criadoEm: string;
+}
+
+export interface Benefit {
+  id: string;
+  nome: string;
+  tipo: string;
+  valor?: number;
+  descricao?: string;
+  criadoEm: string;
+  employees?: EmployeeBenefit[];
+}
+
+export interface EmployeeBenefit {
+  id: string;
+  employeeId: string;
+  employee?: Employee;
+  benefitId: string;
+  benefit?: Benefit;
+  dataInicio: string;
+  dataFim?: string;
+  valorMensal?: number;
+  criadoEm: string;
+}
+
+export interface ThirdPartyContract {
+  id: string;
+  empresa: string;
+  cnpj: string;
+  contato?: string;
+  servico: string;
+  valorMensal: number;
+  dataInicio: string;
+  dataFim?: string;
+  status: 'ATIVO' | 'SUSPENSO' | 'ENCERRADO';
+  observacoes?: string;
+  criadoEm: string;
+}
+
+export interface ASO {
+  id: string;
+  employeeId: string;
+  employee?: Employee;
+  tipo: 'ADMISSIONAL' | 'PERIODICO' | 'RETORNO_FERIAS' | 'RETORNO_AFASTAMENTO' | 'DEMISSIONAL';
+  dataExame: string;
+  dataValidade?: string;
+  medico: string;
+  clinica?: string;
+  resultado: 'APTO' | 'INAPTO' | 'APTO_COM_RESTRICOES';
+  restricoes?: string;
+  anexoUrl?: string;
+  criadoEm: string;
+}
+
+export interface ExitInterview {
+  id: string;
+  employeeId: string;
+  employee?: Employee;
+  dataEntrevista: string;
+  entrevistador: string;
+  motivoSaida: 'VOLUNTARIO' | 'DEMISSAO_SEM_JUSTA_CAUSA' | 'JUSTA_CAUSA' | 'APOSENTADORIA';
+  feedbackJson?: string;
+  notaSatisfacao?: number;
+  sugestoes?: string;
+  voltaria?: boolean;
+  criadoEm: string;
+}
+
+// ========== FASE 1: DST (SEGURANÇA DO TRABALHO) ==========
+
+export interface SafetyInspection {
+  id: string;
+  projectId?: string;
+  project?: Project;
+  inspectorId: string;
+  inspector?: User;
+  dataInspecao: string;
+  tipo: 'ROTINA' | 'ESPECIAL' | 'POS_ACIDENTE';
+  checklistJson?: string;
+  conformidades: number;
+  naoConformidades: number;
+  observacoes?: string;
+  status: 'PENDENTE' | 'REGULARIZADO';
+  criadoEm: string;
+}
+
+export interface Accident {
+  id: string;
+  employeeId: string;
+  employee?: Employee;
+  projectId?: string;
+  project?: Project;
+  dataOcorrencia: string;
+  horaOcorrencia?: string;
+  local: string;
+  descricao: string;
+  gravidade: 'LEVE' | 'MODERADO' | 'GRAVE' | 'FATAL';
+  tipoAcidente: 'TIPICO' | 'TRAJETO' | 'DOENCA_OCUPACIONAL';
+  partesCorpo?: string;
+  testemunhas?: string;
+  catEmitida: boolean;
+  numeroCAT?: string;
+  dataAfastamento?: string;
+  diasAfastado?: number;
+  investigacao?: string;
+  medidasCorretivas?: string;
+  status: 'ABERTO' | 'INVESTIGACAO' | 'FECHADO';
+  criadoEm: string;
+}
+
+export interface EPIDistribution {
+  id: string;
+  employeeId: string;
+  employee?: Employee;
+  epiTipo: string;
+  marca?: string;
+  quantidade: number;
+  dataEntrega: string;
+  dataValidade?: string;
+  nf?: string;
+  assinaturaUrl?: string;
+  status: 'EM_USO' | 'DEVOLVIDO' | 'DANIFICADO';
+  observacoes?: string;
+  criadoEm: string;
+}
+
+// ========== FASE 1: LOGÍSTICA (Complemento) ==========
+
+export interface Tool {
+  id: string;
+  codigo: string;
+  nome: string;
+  tipo: string;
+  marca?: string;
+  estado: 'BOM' | 'REGULAR' | 'DANIFICADO';
+  localizacao?: string;
+  responsavel?: string;
+  dataAquisicao?: string;
+  valorAquisicao?: number;
+  criadoEm: string;
+  loans?: ToolLoan[];
+}
+
+export interface ToolLoan {
+  id: string;
+  toolId: string;
+  tool?: Tool;
+  usuarioId: string;
+  usuario?: User;
+  projectId?: string;
+  project?: Project;
+  dataSaida: string;
+  dataRetorno?: string;
+  estadoSaida: string;
+  estadoRetorno?: string;
+  observacoes?: string;
+  criadoEm: string;
+}
+
+export interface MaintenanceRecord {
+  id: string;
+  vehicleId: string;
+  tipo: 'PREVENTIVA' | 'CORRETIVA' | 'REVISAO';
+  descricao: string;
+  oficina?: string;
+  valor?: number;
+  dataExecucao: string;
+  quilometragem?: number;
+  proximaRevisao?: string;
+  anexoUrl?: string;
+  criadoEm: string;
+}
+
+// ========== LOGÍSTICA (Frotas & Estoque) ==========
+
+export interface Vehicle {
+  id: string;
+  placa: string;
+  modelo: string;
+  tipo: string;
+  status: 'ATIVO' | 'MANUTENCAO' | 'INATIVO';
+  responsavelId?: string;
+  responsavel?: User;
+  criadoEm: string;
+}
+
+export interface StockMovement {
+  id: string;
+  tipo: 'ENTRADA' | 'SAIDA' | 'TRANSFERENCIA';
+  materialDescricao: string;
+  quantidade: number;
+  unidade: string;
+  projectId?: string;
+  project?: Project;
+  userId: string;
+  user?: User;
+  status: 'PENDENTE' | 'APROVADO' | 'RECUSADO';
+  observacoes?: string;
+  criadoEm: string;
+}
+

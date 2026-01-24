@@ -51,8 +51,16 @@ import { ObraDetailPage } from './ObraDetailPage';
 import { useAppFlow } from '@/store/useAppFlow';
 import { toast } from 'sonner';
 
+// Obras Sub-pages
+import { ObrasDiarios } from './obras/ObrasDiarios';
+import { ObrasCronograma } from './obras/ObrasCronograma';
+import { ObrasMetas } from './obras/ObrasMetas';
+import { ObrasSST } from './obras/ObrasSST';
+import { ObrasEntrega } from './obras/ObrasEntrega';
+
 export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (tab: DashboardTab) => void, onOpenWizard?: () => void }) {
   const [moduleView, setModuleView] = useState<'geral' | 'atividades'>('geral');
+  const [currentSubView, setCurrentSubView] = useState<'portfolio' | 'diarios' | 'cronograma' | 'metas' | 'sst' | 'entrega'>('portfolio');
   const [activeTab, setActiveTab] = useState('vis-geral');
   const [modalConfig, setModalConfig] = useState<{ isOpen: boolean; title: string; icon?: any; type?: any }>({
     isOpen: false,
@@ -138,12 +146,45 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
               <Card className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl p-8 shadow-sm">
                 <h4 className="font-black text-[10px] uppercase tracking-widest text-muted-foreground mb-6 opacity-60">Operações de Campo</h4>
                 <nav className="space-y-2">
-                  <LocalNavItem icon={LayoutGrid} label="Portfolio Global" active={!selectedObraId} onClick={() => setSelectedObraId(null)} />
-                  <LocalNavItem icon={ClipboardList} label="Diários de Obra" onClick={() => openPlaceholder("Diário de Obra Digital", ClipboardList)} />
-                  <LocalNavItem icon={Activity} label="Cronograma Master" onClick={() => openPlaceholder("Cronograma Master (Gantt)", Activity)} />
-                  <LocalNavItem icon={Target} label="Metas Semanais" onClick={() => openPlaceholder("Metas & KPIs Semanais", Target)} />
-                  <LocalNavItem icon={AlertTriangle} label="Ocorrências SST" onClick={() => openPlaceholder("Gestão de Ocorrências SST", AlertTriangle)} />
-                  <LocalNavItem icon={CheckCircle2} label="Checklist Entrega" onClick={() => openPlaceholder("Checklist de Entrega Técnica", CheckCircle2)} />
+                  <LocalNavItem
+                    icon={LayoutGrid}
+                    label="Portfolio Global"
+                    active={currentSubView === 'portfolio'}
+                    onClick={() => {
+                      setCurrentSubView('portfolio');
+                      setSelectedObraId(null);
+                    }}
+                  />
+                  <LocalNavItem
+                    icon={ClipboardList}
+                    label="Diários de Obra"
+                    active={currentSubView === 'diarios'}
+                    onClick={() => setCurrentSubView('diarios')}
+                  />
+                  <LocalNavItem
+                    icon={Activity}
+                    label="Cronograma Master"
+                    active={currentSubView === 'cronograma'}
+                    onClick={() => setCurrentSubView('cronograma')}
+                  />
+                  <LocalNavItem
+                    icon={Target}
+                    label="Metas Semanais"
+                    active={currentSubView === 'metas'}
+                    onClick={() => setCurrentSubView('metas')}
+                  />
+                  <LocalNavItem
+                    icon={AlertTriangle}
+                    label="Ocorrências SST"
+                    active={currentSubView === 'sst'}
+                    onClick={() => setCurrentSubView('sst')}
+                  />
+                  <LocalNavItem
+                    icon={CheckCircle2}
+                    label="Checklist Entrega"
+                    active={currentSubView === 'entrega'}
+                    onClick={() => setCurrentSubView('entrega')}
+                  />
                 </nav>
               </Card>
 
@@ -177,97 +218,105 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
 
             {/* Main Content Area */}
             <div className="lg:col-span-9 space-y-8">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-                <div className="flex items-center justify-between border-b border-border/40 pb-2 overflow-x-auto no-scrollbar">
-                  <TabsList className="bg-transparent h-auto p-0 gap-10">
-                    <TabItem value="vis-geral" icon={LayoutGrid} label="Portfolio Ativo" isActive={activeTab === 'vis-geral'} />
-                    <TabItem value="mapa" icon={MapPin} label="Geolocalização" isActive={activeTab === 'mapa'} />
-                    <TabItem value="inspecao" icon={ClipboardList} label="Qualidade" isActive={activeTab === 'inspecao'} />
-                    <TabItem value="equipe" icon={HardHat} label="Gestão de Equipes" isActive={activeTab === 'equipe'} />
-                  </TabsList>
-                </div>
+              {currentSubView === 'portfolio' && (
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+                  <div className="flex items-center justify-between border-b border-border/40 pb-2 overflow-x-auto no-scrollbar">
+                    <TabsList className="bg-transparent h-auto p-0 gap-10">
+                      <TabItem value="vis-geral" icon={LayoutGrid} label="Portfolio Ativo" isActive={activeTab === 'vis-geral'} />
+                      <TabItem value="mapa" icon={MapPin} label="Geolocalização" isActive={activeTab === 'mapa'} />
+                      <TabItem value="inspecao" icon={ClipboardList} label="Qualidade" isActive={activeTab === 'inspecao'} />
+                      <TabItem value="equipe" icon={HardHat} label="Gestão de Equipes" isActive={activeTab === 'equipe'} />
+                    </TabsList>
+                  </div>
 
-                <TabsContent value="vis-geral" className="space-y-6 mt-0">
-                  <AnimatePresence mode="wait">
-                    {!selectedObraId ? (
-                      <motion.div
-                        key="portfolio"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.98 }}
-                        className="space-y-6"
-                      >
-                        {activeObras.length === 0 && (
-                          <Card className="p-12 text-center rounded-[2.5rem] bg-muted/5 border-dashed border-2">
-                            <Building2 size={48} className="mx-auto text-muted-foreground opacity-20 mb-4" />
-                            <h3 className="text-xl font-black text-muted-foreground">Nenhuma Obra Ativa</h3>
-                            <p className="text-sm opacity-60 mt-2">Use o botão "Nova Obra" para começar.</p>
-                          </Card>
-                        )}
-
-                        {activeObras.map((obra) => (
-                          <div
-                            key={obra.id}
-                            className="p-1 rounded-[2.5rem] transition-all bg-transparent"
-                            onClick={() => setSelectedObraId(obra.id)}
-                          >
-                            <Card className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl hover:border-primary/20 transition-all cursor-pointer group shadow-sm">
-                              <CardContent className="p-8">
-                                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-                                  <div className="flex items-center gap-6">
-                                    <div className="w-16 h-16 rounded-[1.5rem] bg-secondary/50 border border-white/5 flex items-center justify-center text-primary font-black shadow-inner group-hover:scale-110 transition-transform relative overflow-hidden">
-                                      <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                      <span className="text-xl relative z-10">OB</span>
-                                    </div>
-                                    <div>
-                                      <div className="flex items-center gap-4 mb-2">
-                                        <h3 className="text-xl font-black tracking-tight leading-none group-hover:text-primary transition-colors">{obra.nome}</h3>
-                                        <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-black text-[10px] uppercase tracking-widest px-3 py-1">{obra.status}</Badge>
-                                      </div>
-                                      <div className="flex flex-wrap gap-4">
-                                        <p className="text-[10px] text-muted-foreground flex items-center gap-2 font-black uppercase tracking-widest opacity-60">
-                                          <MapPin size={12} className="text-primary" /> {obra.endereco || 'Local não definido'}
-                                        </p>
-                                        <p className="text-[10px] text-muted-foreground flex items-center gap-2 font-black uppercase tracking-widest opacity-60">
-                                          <Users size={12} className="text-primary" /> 12 H.H
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-10 text-right">
-                                    <div className="hidden sm:block">
-                                      <p className="text-[9px] font-black uppercase text-muted-foreground opacity-50 mb-1 tracking-widest">Entrega</p>
-                                      <p className="text-base font-black tracking-tight">Em Planejamento</p>
-                                    </div>
-                                    <Button variant="ghost" className="w-12 h-12 rounded-[1rem] border border-white/5 group-hover:bg-primary group-hover:text-white transition-all p-0 hover:scale-110 active:scale-90 shadow-sm">
-                                      <ChevronRight size={24} />
-                                    </Button>
-                                  </div>
-                                </div>
-                              </CardContent>
+                  <TabsContent value="vis-geral" className="space-y-6 mt-0">
+                    <AnimatePresence mode="wait">
+                      {!selectedObraId ? (
+                        <motion.div
+                          key="portfolio"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.98 }}
+                          className="space-y-6"
+                        >
+                          {activeObras.length === 0 && (
+                            <Card className="p-12 text-center rounded-[2.5rem] bg-muted/5 border-dashed border-2">
+                              <Building2 size={48} className="mx-auto text-muted-foreground opacity-20 mb-4" />
+                              <h3 className="text-xl font-black text-muted-foreground">Nenhuma Obra Ativa</h3>
+                              <p className="text-sm opacity-60 mt-2">Use o botão "Nova Obra" para começar.</p>
                             </Card>
-                          </div>
-                        ))}
-                      </motion.div>
-                    ) : (
+                          )}
 
-                      <motion.div
-                        key="detail"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="fixed inset-0 z-50 bg-background"
-                      >
-                        <ObraDetailPage
-                          obra={activeObras.find(o => o.id === selectedObraId)!}
-                          onBack={() => setSelectedObraId(null)}
-                        />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </TabsContent>
-              </Tabs>
+                          {activeObras.map((obra) => (
+                            <div
+                              key={obra.id}
+                              className="p-1 rounded-[2.5rem] transition-all bg-transparent"
+                              onClick={() => setSelectedObraId(obra.id)}
+                            >
+                              <Card className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl hover:border-primary/20 transition-all cursor-pointer group shadow-sm">
+                                <CardContent className="p-8">
+                                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                                    <div className="flex items-center gap-6">
+                                      <div className="w-16 h-16 rounded-[1.5rem] bg-secondary/50 border border-white/5 flex items-center justify-center text-primary font-black shadow-inner group-hover:scale-110 transition-transform relative overflow-hidden">
+                                        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <span className="text-xl relative z-10">OB</span>
+                                      </div>
+                                      <div>
+                                        <div className="flex items-center gap-4 mb-2">
+                                          <h3 className="text-xl font-black tracking-tight leading-none group-hover:text-primary transition-colors">{obra.nome}</h3>
+                                          <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-black text-[10px] uppercase tracking-widest px-3 py-1">{obra.status}</Badge>
+                                        </div>
+                                        <div className="flex flex-wrap gap-4">
+                                          <p className="text-[10px] text-muted-foreground flex items-center gap-2 font-black uppercase tracking-widest opacity-60">
+                                            <MapPin size={12} className="text-primary" /> {obra.endereco || 'Local não definido'}
+                                          </p>
+                                          <p className="text-[10px] text-muted-foreground flex items-center gap-2 font-black uppercase tracking-widest opacity-60">
+                                            <Users size={12} className="text-primary" /> 12 H.H
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-10 text-right">
+                                      <div className="hidden sm:block">
+                                        <p className="text-[9px] font-black uppercase text-muted-foreground opacity-50 mb-1 tracking-widest">Entrega</p>
+                                        <p className="text-base font-black tracking-tight">Em Planejamento</p>
+                                      </div>
+                                      <Button variant="ghost" className="w-12 h-12 rounded-[1rem] border border-white/5 group-hover:bg-primary group-hover:text-white transition-all p-0 hover:scale-110 active:scale-90 shadow-sm">
+                                        <ChevronRight size={24} />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          ))}
+                        </motion.div>
+                      ) : (
+
+                        <motion.div
+                          key="detail"
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="fixed inset-0 z-50 bg-background"
+                        >
+                          <ObraDetailPage
+                            obra={activeObras.find(o => o.id === selectedObraId)!}
+                            onBack={() => setSelectedObraId(null)}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </TabsContent>
+                </Tabs>
+              )}
+
+              {currentSubView === 'diarios' && <ObrasDiarios />}
+              {currentSubView === 'cronograma' && <ObrasCronograma />}
+              {currentSubView === 'metas' && <ObrasMetas />}
+              {currentSubView === 'sst' && <ObrasSST />}
+              {currentSubView === 'entrega' && <ObrasEntrega />}
             </div>
           </motion.div>
         ) : (
