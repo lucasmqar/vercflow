@@ -80,7 +80,7 @@ export function DesignProjects({ onSelectProject }: DesignProjectsProps) {
                     <Card
                         key={project.id}
                         onClick={() => onSelectProject && onSelectProject(project)}
-                        className="group rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-md hover:border-primary/20 hover:shadow-xl transition-all cursor-pointer overflow-hidden p-0 flex flex-col"
+                        className="group rounded-2xl border-white/5 bg-background/40 backdrop-blur-md hover:border-primary/20 hover:shadow-xl transition-all cursor-pointer overflow-hidden p-0 flex flex-col"
                     >
                         <div className={cn("h-32 w-full relative overflow-hidden", project.thumb)}>
                             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/90" />

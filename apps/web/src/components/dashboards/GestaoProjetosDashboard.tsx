@@ -78,7 +78,7 @@ export function GestaoProjetosDashboard({ onTabChange, onOpenWizard }: GestaoPro
                             key={project.id}
                             onClick={() => setSelectedProject(project)}
                             className={`
-                                group p-4 rounded-3xl border cursor-pointer transition-all duration-300 relative overflow-hidden
+                                group p-4 rounded-xl border cursor-pointer transition-all duration-300 relative overflow-hidden
                                 ${selectedProject?.id === project.id
                                     ? 'bg-primary text-primary-foreground border-primary shadow-xl shadow-primary/20'
                                     : 'bg-background border-border/40 hover:border-primary/30 hover:bg-white'
@@ -192,7 +192,7 @@ export function GestaoProjetosDashboard({ onTabChange, onOpenWizard }: GestaoPro
                                 </div>
 
                                 {/* Placeholder for Documents */}
-                                <div className="p-10 rounded-[2.5rem] border border-dashed border-border flex flex-col items-center justify-center text-center space-y-4 opacity-50 hover:opacity-100 transition-opacity cursor-pointer bg-muted/20">
+                                <div className="p-10 rounded-2xl border border-dashed border-border flex flex-col items-center justify-center text-center space-y-4 opacity-50 hover:opacity-100 transition-opacity cursor-pointer bg-muted/20">
                                     <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
                                         <Plus size={24} className="text-muted-foreground" />
                                     </div>

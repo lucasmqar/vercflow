@@ -68,7 +68,7 @@ export function ObrasEntrega() {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.1 }}
                     >
-                        <Card className="rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-sm p-8 flex flex-col h-full group hover:border-primary/30 transition-all cursor-pointer">
+                        <Card className="rounded-2xl border-white/5 bg-background/40 backdrop-blur-sm p-8 flex flex-col h-full group hover:border-primary/30 transition-all cursor-pointer">
                             <div className="flex justify-between items-start mb-6">
                                 <div className="p-3 rounded-2xl bg-primary/10 text-primary">
                                     <Home size={24} />
@@ -117,7 +117,7 @@ export function ObrasEntrega() {
                     </motion.div>
                 ))}
 
-                <Card className="rounded-[2.5rem] border-dashed border-border/40 bg-muted/5 flex items-center justify-center p-8 opacity-40 hover:opacity-100 transition-opacity cursor-pointer text-center">
+                <Card className="rounded-2xl border-dashed border-border/40 bg-muted/5 flex items-center justify-center p-8 opacity-40 hover:opacity-100 transition-opacity cursor-pointer text-center">
                     <div>
                         <Plus size={40} className="mx-auto mb-3" />
                         <p className="text-xs font-black uppercase tracking-widest">Adicionar Unidade</p>

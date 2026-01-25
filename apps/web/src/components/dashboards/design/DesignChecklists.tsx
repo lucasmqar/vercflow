@@ -96,7 +96,7 @@ export function DesignChecklists() {
             items: [
                 { id: 1, text: "Vistoria de entrega de obra civil" },
                 { id: 2, text: "Conferência de montagem de marcenaria" },
-                { id: 3, text: "Teste de iluminação e elétrica" },
+                { id: 3, text: "Verificação de iluminação e elétrica" },
                 { id: 4, text: "Limpeza fina realizada" },
                 { id: 5, text: "Produção e Staging para fotos" },
                 { id: 6, text: "Manual do proprietário entregue" },
@@ -206,7 +206,7 @@ export function DesignChecklists() {
                             exit={{ opacity: 0, x: 20 }}
                             className="w-full lg:w-1/3 sticky top-4"
                         >
-                            <Card className="p-6 rounded-[2.5rem] border-primary/20 bg-background/60 backdrop-blur-xl shadow-2xl">
+                            <Card className="p-6 rounded-2xl border-primary/20 bg-background/60 backdrop-blur-xl shadow-2xl">
                                 <div className="flex items-center justify-between mb-6">
                                     <h3 className="font-black text-lg flex items-center gap-2">
                                         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">

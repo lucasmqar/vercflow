@@ -218,7 +218,7 @@ export function ComercialMap({ leads, projects, budgets, proposals }: ComercialM
     };
 
     return (
-        <Card className="rounded-[2.5rem] overflow-hidden border border-border/20 shadow-2xl h-[calc(100vh-200px)] relative bg-muted/5 flex">
+        <Card className="rounded-2xl overflow-hidden border border-border/20 shadow-2xl h-[calc(100vh-200px)] relative bg-muted/5 flex">
 
             {/* Control Sidebar */}
             <div className="w-80 bg-background/95 backdrop-blur-xl border-r border-border/40 p-6 flex flex-col z-[1000]">

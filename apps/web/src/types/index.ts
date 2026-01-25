@@ -113,12 +113,91 @@ export interface Attachment {
   uploadedAt: string;
 }
 
+// Regulatory Data Structure (Strictly for Approval/Órgãos)
+export interface RegulatoryData {
+  orgaos: string[]; // Quais órgãos
+  cenario: string; // Estágio atual (Obra nova, Regularização, etc.)
+}
+
 export interface WorkClassification {
-  zona: 'URBANA' | 'RURAL';
-  tipo: 'OBRA_NOVA' | 'REFORMA' | 'AMPLIACAO' | 'DEMOLICAO';
-  natureza: 'RESIDENCIAL' | 'COMERCIAL' | 'INDUSTRIAL' | 'AGROINDUSTRIA' | 'INFRAESTRUTURA';
-  padrao: 'BAIXO' | 'MEDIO' | 'ALTO' | 'LUXO';
-  uso?: 'UNIFAMILIAR' | 'MULTIFAMILIAR' | 'MISTO' | 'CORPORATIVO' | 'LOGISTICO';
+  // 1. Natureza Principal (Tronco)
+  natureza: 'RESIDENCIAL' | 'COMERCIAL' | 'INDUSTRIAL' | 'HOSPITALAR' | 'INSTITUCIONAL';
+
+  // 2. Contexto Territorial
+  contexto: 'URBANA' | 'RURAL' | 'PERIURBANA';
+  subcontexto: string; // Ex: 'RUA_ABERTA', 'CONDOMINIO_HORIZONTAL', 'FAZENDA'
+
+  // 3. Tipologia Física
+  tipologia: string; // Ex: 'CASA_TERREA', 'GALPAO_LOGISTICO'
+
+  // 4. Padrão e Finalidade
+  padrao: string; // 'ECONOMICO', 'ALTO_PADRAO', 'CORPORATIVO_PREMIUM'
+  finalidade: string; // 'VENDA', 'RENDA', 'USO_PROPRIO'
+
+  // 5. Objeto do Contrato (O que será feito, independente de aprovação)
+  objetos: string[]; // Ex: ['PROJETO_OBRA_NOVA', 'INCENDIO', 'AMBIENTAL']
+
+  // 6. Regularização (Fluxo burocrático)
+  requerLegalizacao: boolean;
+  legalizacao?: RegulatoryData;
+
+  // Legacy / Compat
+  zona?: string;
+  tipoIntervencao?: string;
+  macrosegmento?: string;
+  subtipo?: string;
+  uso?: string;
+}
+
+export interface FiscalData {
+  regimeTributario?: string;
+  inscricaoEstadual?: string;
+  inscricaoMunicipal?: string;
+  isentoIE?: boolean;
+}
+
+export interface ClientAddress {
+  id: string;
+  tipo: 'PRINCIPAL' | 'COBRANCA' | 'OBRA' | 'OUTRO';
+  logradouro: string;
+  numero: string;
+  complemento?: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  cep: string;
+}
+
+export interface ClientDocument {
+  id: string;
+  tipo: 'RG' | 'CPF' | 'CNPJ' | 'CONTRATO_SOCIAL' | 'COMPROVANTE_ENDERECO' | 'PROCURACAO' | 'OUTRO';
+  url: string;
+  nome: string;
+  dataUpload: string;
+}
+
+export interface Client {
+  id: string;
+  nome: string;
+  tipo: 'PF' | 'PJ';
+  documento: string; // CPF or CNPJ
+  razaoSocial?: string;
+  nomeFantasia?: string;
+  email?: string;
+  contatos?: string; // Textual for now, or JSON
+
+  // Refined Addresses
+  enderecos: ClientAddress[];
+
+  // Documents
+  documentosAnexos: ClientDocument[];
+  docStatus: 'COMPLETO' | 'PENDENTE';
+
+  fiscal?: FiscalData;
+  responsavelLegal?: string;
+  cpfResponsavel?: string;
+  ativo: boolean;
+  criadoEm: string;
 }
 
 export interface Project {
@@ -142,34 +221,26 @@ export interface Project {
   client?: Client;
   mestreObraId?: string;
   engenheiroId?: string;
-  orcamentoId?: string; // Link to the original commercial budget
-  propostaId?: string;   // Link to the approved proposal
+  orcamentoId?: string;
+  propostaId?: string;
   lat?: number;
   lng?: number;
   attachments?: Attachment[];
   criadoEm: string;
   updatedAt: string;
-  _count?: {
-    activities: number;
-    records: number;
-  }
 }
 
 export interface Lead {
   id: string;
-  clientId?: string; // Optional if manual origin
+  clientId?: string;
   client?: Client;
-  nomeValidacao?: string; // For manual entry without client ID
+  nomeValidacao?: string;
   nomeObra: string;
   localizacao: string;
   classificacao?: WorkClassification;
   areaEstimada?: number;
   tipoObra: string;
-  origem?: string; // Added Origin
-  contato?: string; // Added Contact
   status: 'NOVO' | 'EM_QUALIFICACAO' | 'QUALIFICADO' | 'PERDIDO' | 'CONVERTIDO';
-  lat?: number;
-  lng?: number;
   attachments?: Attachment[];
   criadoEm: string;
 }
@@ -183,8 +254,17 @@ export interface Budget {
   escopoMacro: string;
   valorEstimado: number;
   prazoEstimadoMeses: number;
-  status: 'EM_ELABORACAO' | 'AGUARDANDO_ENGENHARIA' | 'ENVIADO' | 'APROVADO' | 'REJEITADO'; // Added AGUARDANDO_ENGENHARIA
+
+  // Validation Flow
+  validacaoTecnica: 'PENDENTE' | 'APROVADO' | 'REVISAO_SOLICITADA';
+  validacaoTecnicaObs?: string;
+  validacaoFinanceira: 'PENDENTE' | 'APROVADO' | 'ESTUDO_REQUIRED';
+  validacaoFinanceiraObs?: string;
+
+  status: 'EM_ELABORACAO' | 'AGUARDANDO_ENGENHARIA' | 'AGUARDANDO_FINANCEIRO' | 'ENVIADO' | 'APROVADO' | 'REJEITADO';
   revisions?: BudgetRevision[];
+  attachments?: Attachment[];
+  auditLog?: AuditLogEntry[];
   criadoEm: string;
 }
 
@@ -197,6 +277,8 @@ export interface BudgetRevision {
   prazoEstimadoMeses: number;
   responsavelId: string;
   resumoAlteracoes: string;
+  attachments?: Attachment[];
+  details?: string; // Rich text or raw data for audit
   createdAt: string;
 }
 
@@ -209,7 +291,36 @@ export interface Proposal {
   condicoesEspeciais?: string;
   status: 'PENDENTE' | 'NEGOCIACAO' | 'APROVADA' | 'RECUSADA' | 'FECHADA';
   dataValidade?: string;
+  attachments?: Attachment[];
+  auditLog?: AuditLogEntry[];
   criadoEm: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  userId: string;
+  userName: string;
+  action: string;
+  description: string;
+  timestamp: string;
+  metadata?: any;
+}
+
+export interface DepartmentRequest {
+  id: string;
+  fromDepartment: Department;
+  toDepartment: Department;
+  type: string;
+  projectId?: string;
+  recordId?: string; // Links to Budget, Proposal, etc.
+  title: string;
+  description: string;
+  priority: Priority;
+  status: 'PENDENTE' | 'EM_ANALISE' | 'APROVADO' | 'REJEITADO' | 'CONCLUIDO';
+  createdAt: string;
+  resolvedAt?: string;
+  attachments?: Attachment[];
+  metadata?: any;
 }
 
 export interface Record {
@@ -332,6 +443,7 @@ export interface Discipline {
   id: string;
   projectId: string;
   codigo: string;
+  code?: string; // Added shorthand
   name: string;
   category: string;
   status: string;
@@ -341,6 +453,8 @@ export interface Discipline {
   previsao?: string;
   entregaReal?: string;
   versaoAtual?: string;
+  progress?: number;
+  description?: string; // Reason for recommendation
 }
 
 export interface Task {
@@ -682,5 +796,4 @@ export interface StockMovement {
   status: 'PENDENTE' | 'APROVADO' | 'RECUSADO';
   observacoes?: string;
   criadoEm: string;
-}
-
+} 

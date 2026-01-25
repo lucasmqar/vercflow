@@ -44,10 +44,9 @@ export function ProjectHealthCard({
 
     return (
         <Card
-            className="rounded-2xl border-border/40 hover:border-primary/30 transition-all cursor-pointer overflow-hidden"
+            className="rounded-2xl border-border/40 hover:border-primary/30 transition-all cursor-pointer overflow-hidden bg-card"
             onClick={onClick}
         >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-50 -z-10" />
             <CardContent className="p-5 space-y-4">
                 {/* Header */}
                 <div className="flex items-start justify-between">

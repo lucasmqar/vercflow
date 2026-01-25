@@ -143,7 +143,7 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
           >
             {/* Local Context Menu */}
             <div className="lg:col-span-3 space-y-6">
-              <Card className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl p-8 shadow-sm">
+              <Card className="rounded-2xl border-border/40 bg-background/60 backdrop-blur-xl p-8 shadow-sm">
                 <h4 className="font-black text-[10px] uppercase tracking-widest text-muted-foreground mb-6 opacity-60">Operações de Campo</h4>
                 <nav className="space-y-2">
                   <LocalNavItem
@@ -190,7 +190,7 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
 
               {selectedObraId && (
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-                  <Card className="rounded-[2.5rem] border-primary/20 bg-primary/5 p-8 border-dashed border-2 relative overflow-hidden group">
+                  <Card className="rounded-2xl border-primary/20 bg-primary/5 p-8 border-dashed border-2 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                       <BarChart3 size={100} />
                     </div>
@@ -240,7 +240,7 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
                           className="space-y-6"
                         >
                           {activeObras.length === 0 && (
-                            <Card className="p-12 text-center rounded-[2.5rem] bg-muted/5 border-dashed border-2">
+                            <Card className="p-12 text-center rounded-2xl bg-muted/5 border-dashed border-2">
                               <Building2 size={48} className="mx-auto text-muted-foreground opacity-20 mb-4" />
                               <h3 className="text-xl font-black text-muted-foreground">Nenhuma Obra Ativa</h3>
                               <p className="text-sm opacity-60 mt-2">Use o botão "Nova Obra" para começar.</p>
@@ -250,10 +250,10 @@ export function ObrasDashboard({ onTabChange, onOpenWizard }: { onTabChange: (ta
                           {activeObras.map((obra) => (
                             <div
                               key={obra.id}
-                              className="p-1 rounded-[2.5rem] transition-all bg-transparent"
+                              className="p-1 rounded-2xl transition-all bg-transparent"
                               onClick={() => setSelectedObraId(obra.id)}
                             >
-                              <Card className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl hover:border-primary/20 transition-all cursor-pointer group shadow-sm">
+                              <Card className="rounded-2xl border-border/40 bg-background/60 backdrop-blur-xl hover:border-primary/20 transition-all cursor-pointer group shadow-sm">
                                 <CardContent className="p-8">
                                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
                                     <div className="flex items-center gap-6">

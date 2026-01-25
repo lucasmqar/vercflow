@@ -70,7 +70,7 @@ export function EngenhariaOverview({ projects, requestsCount, activeProjectsCoun
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Recent Activity / Timeline */}
                 <div className="lg:col-span-2 space-y-6">
-                    <Card className="rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-sm p-8">
+                    <Card className="rounded-2xl border-white/5 bg-background/40 backdrop-blur-sm p-8">
                         <div className="flex justify-between items-center mb-8">
                             <h3 className="font-black text-lg flex items-center gap-3">
                                 <Clock className="text-primary" />
@@ -111,7 +111,7 @@ export function EngenhariaOverview({ projects, requestsCount, activeProjectsCoun
 
                 {/* Quick Alerts / Requests */}
                 <div className="space-y-6">
-                    <Card className="rounded-[2.5rem] bg-amber-500/5 border-amber-500/10 p-6">
+                    <Card className="rounded-2xl bg-amber-500/5 border-amber-500/10 p-6">
                         <h3 className="font-black text-sm uppercase tracking-widest flex items-center gap-2 text-amber-700 mb-4">
                             <Zap size={16} /> Prioridade Alta
                         </h3>
@@ -129,7 +129,7 @@ export function EngenhariaOverview({ projects, requestsCount, activeProjectsCoun
                         </div>
                     </Card>
 
-                    <Card className="rounded-[2.5rem] bg-background border-border/40 p-6 h-full">
+                    <Card className="rounded-2xl bg-background border-border/40 p-6 h-full">
                         <h3 className="font-black text-sm uppercase tracking-widest flex items-center gap-2 mb-4">
                             <AlertTriangle size={16} className="text-destructive" /> Bloqueios
                         </h3>

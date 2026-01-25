@@ -44,13 +44,13 @@ export function ConstructionLoader({ onComplete }: ConstructionLoaderProps) {
                     className="relative"
                 >
                     <div className={cn(
-                        "w-24 h-24 rounded-3xl flex items-center justify-center shadow-2xl backdrop-blur-xl border border-primary/20",
+                        "w-24 h-24 rounded-xl flex items-center justify-center shadow-2xl backdrop-blur-xl border border-primary/20",
                         theme === 'dark' ? "bg-white/5" : "bg-black/5"
                     )}>
                         <Building2 size={48} className="text-primary" />
                     </div>
                     {/* Pulsing Ring */}
-                    <div className="absolute inset-0 rounded-3xl border border-primary/30 animate-ping opacity-20" />
+                    <div className="absolute inset-0 rounded-xl border border-primary/30 animate-ping opacity-20" />
                 </motion.div>
 
                 {/* Text Branding */}

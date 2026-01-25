@@ -105,7 +105,7 @@ export function AtividadesDashboard({ onTabChange, onOpenWizard }: { onTabChange
                                     <motion.div
                                         key={task.id}
                                         whileHover={{ x: 5 }}
-                                        className="flex items-center gap-6 p-6 rounded-3xl bg-background/40 border border-white/5 hover:border-primary/20 transition-all cursor-pointer group"
+                                        className="flex items-center gap-6 p-6 rounded-xl bg-background/40 border border-white/5 hover:border-primary/20 transition-all cursor-pointer group"
                                     >
                                         <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
                                             {task.type === 'DOC' && <FileText size={20} />}
@@ -182,7 +182,7 @@ function ChatMessage({ sender, message, time, isMe, isSystem }: any) {
             initial={{ opacity: 0, scale: 0.9, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             className={cn(
-                "max-w-[85%] p-4 rounded-3xl shadow-sm relative",
+                "max-w-[85%] p-4 rounded-xl shadow-sm relative",
                 isSystem ? "self-center bg-primary/10 text-primary border border-primary/20 text-center" :
                     isMe ? "self-end bg-emerald-500 text-white rounded-tr-none" : "self-start bg-background text-foreground border border-white/10 rounded-tl-none"
             )}

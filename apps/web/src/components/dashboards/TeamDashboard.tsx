@@ -147,7 +147,7 @@ export function TeamDashboard({ onTabChange }: { onTabChange: (tab: DashboardTab
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.05 }}
                     >
-                        <Card className="rounded-3xl border-border/50 shadow-xl shadow-black/5 bg-background hover:border-primary/30 transition-all group">
+                        <Card className="rounded-xl border-border/50 shadow-xl shadow-black/5 bg-background hover:border-primary/30 transition-all group">
                             <CardContent className="p-6">
                                 <div className="flex items-start justify-between mb-6">
                                     <div className="flex items-center gap-4">

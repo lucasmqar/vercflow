@@ -20,7 +20,8 @@ import { DashboardTab } from '@/types';
 import HeaderAnimated from '@/components/common/HeaderAnimated';
 import { useAppFlow } from '@/store/useAppFlow';
 import { toast } from 'sonner';
-import { UnifiedEntryWizard } from '@/components/shared/UnifiedEntryWizard';
+import { LeadWizard } from '@/components/shared/LeadWizard';
+import { ClientWizard } from '@/components/shared/ClientWizard';
 
 // Sub-components
 import { ComercialOverview } from './comercial/ComercialOverview';
@@ -36,13 +37,16 @@ import { ComercialActivities } from './comercial/ComercialActivities';
 export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange: (tab: DashboardTab) => void, onOpenWizard?: () => void }) {
     // Navigation State
     const [currentSection, setCurrentSection] = useState<'overview' | 'activities' | 'pipeline' | 'map' | 'leads' | 'budgets' | 'proposals' | 'clients'>('overview');
-    const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
 
     // Selection State for Detail Views
     const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
     const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
     const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
     const [selectedClientProfile, setSelectedClientProfile] = useState<any>(null);
+
+    // Wizard States
+    const [isClientWizardOpen, setIsClientWizardOpen] = useState(false);
+    const [isLeadWizardOpen, setIsLeadWizardOpen] = useState(false);
 
     const {
         leads,
@@ -52,7 +56,6 @@ export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange:
         createBudget,
         createProposal,
         updateProposalStatus,
-        createBudgetRevision
     } = useAppFlow();
 
     // Stats Logic
@@ -104,7 +107,6 @@ export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange:
         setSelectedClientProfile(client);
     };
 
-    // Wrapper to switch sections from Overview
     const handleNavigate = (section: any) => {
         setCurrentSection(section);
     };
@@ -132,12 +134,21 @@ export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange:
                     </div>
 
                     <div className="flex flex-col gap-2 w-full px-4 flex-1 overflow-y-auto">
-                        <Button
-                            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl mb-4 font-black uppercase tracking-widest text-xs h-12 shadow-lg shadow-primary/20"
-                            onClick={() => setIsEntryModalOpen(true)}
-                        >
-                            <Plus size={18} className="mr-2" /> Nova Entrada
-                        </Button>
+                        <div className="flex flex-col gap-2 mb-6 group">
+                            <Button
+                                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-black uppercase tracking-widest text-[10px] h-14 shadow-lg shadow-primary/20"
+                                onClick={() => setIsLeadWizardOpen(true)}
+                            >
+                                <Plus size={18} className="mr-2" /> Nova Obra
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="rounded-xl font-black uppercase tracking-widest text-[10px] h-10 border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/5 shadow-sm"
+                                onClick={() => setIsClientWizardOpen(true)}
+                            >
+                                <Users size={16} className="mr-2" /> Novo Cliente
+                            </Button>
+                        </div>
 
                         {navItems.map((item) => {
                             const isActive = currentSection === item.id;
@@ -147,7 +158,6 @@ export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange:
                                     variant={isActive ? "secondary" : "ghost"}
                                     onClick={() => {
                                         setCurrentSection(item.id as any);
-                                        // Reset selections when switching tabs to ensure clean state
                                         setSelectedLeadId(null);
                                         setSelectedBudgetId(null);
                                         setSelectedProposalId(null);
@@ -181,13 +191,11 @@ export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange:
 
                 {/* Main Content Area */}
                 <div className="flex-1 overflow-hidden flex flex-col bg-muted/5">
-                    {/* Top Bar (Mobile/Responsive or Contextual) */}
                     <div className="h-20 border-b border-border/40 flex items-center justify-between px-8 bg-background/50 backdrop-blur-sm shrink-0 lg:hidden">
                         <HeaderAnimated title="Comercial" />
                     </div>
 
-                    {/* Content */}
-                    <div className="flex-1 overflow-y-auto p-4 lg:p-8 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                    <div className="flex-1 overflow-y-auto p-4 lg:p-8 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
                         <motion.div
                             key={currentSection}
                             initial={{ opacity: 0, y: 10 }}
@@ -235,7 +243,7 @@ export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange:
                                     selectedLeadId={selectedLeadId}
                                     onBack={() => setSelectedLeadId(null)}
                                     onConvert={handleConvertLead}
-                                    onOpenWizard={onOpenWizard}
+                                    onOpenWizard={() => setIsLeadWizardOpen(true)}
                                 />
                             )}
 
@@ -273,12 +281,18 @@ export function ComercialDashboard({ onTabChange, onOpenWizard }: { onTabChange:
                 </div>
             </div>
 
-            <UnifiedEntryWizard
-                isOpen={isEntryModalOpen}
-                onClose={() => setIsEntryModalOpen(false)}
-                onSuccess={() => {
-                    setIsEntryModalOpen(false);
+            <LeadWizard
+                isOpen={isLeadWizardOpen}
+                onClose={() => setIsLeadWizardOpen(false)}
+                onRegisterClient={() => {
+                    setIsLeadWizardOpen(false);
+                    setIsClientWizardOpen(true);
                 }}
+            />
+
+            <ClientWizard
+                isOpen={isClientWizardOpen}
+                onClose={() => setIsClientWizardOpen(false)}
             />
         </div>
     );

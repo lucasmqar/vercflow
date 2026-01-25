@@ -198,35 +198,29 @@ export function HomeDashboard({ onTabChange, onOpenWizard }: HomeDashboardProps)
             <AnimatePresence mode="wait">
                 {view === 'geral' ? (
                     <motion.div key="geral" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="space-y-8">
-                        {/* Quick Action Cards - Enhanced */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                            {getQuickActions().map((action, idx) => {
-                                const Icon = action.icon;
-                                return (
-                                    <Card
-                                        key={idx}
-                                        className="rounded-[2rem] border-border/40 bg-gradient-to-br from-background to-muted/20 hover:shadow-2xl hover:shadow-primary/10 transition-all hover:-translate-y-1 cursor-pointer group"
-                                        onClick={() => {
-                                            if ('action' in action && action.action) action.action();
-                                            else if ('tab' in action && action.tab) onTabChange(action.tab);
-                                        }}
-                                    >
-                                        <CardContent className="pt-6 pb-6 text-center">
-                                            <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                                                <Icon size={24} strokeWidth={2.5} />
-                                            </div>
-                                            <p className="text-[10px] font-black text-foreground uppercase tracking-widest leading-tight">
-                                                {action.label}
-                                            </p>
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })}
+                        {/* Quick Access Toolbar */}
+                        <div className="flex flex-wrap items-center gap-3">
+                            <Button variant="outline" className="rounded-full h-9 px-4 text-[10px] font-black uppercase tracking-widest gap-2 bg-card hover:bg-muted/50 border-border/40" onClick={() => navigate('/orcamentos/novo')}>
+                                <DollarSign size={14} className="text-primary" />
+                                Novo Orçamento
+                            </Button>
+                            <Button variant="outline" className="rounded-full h-9 px-4 text-[10px] font-black uppercase tracking-widest gap-2 bg-card hover:bg-muted/50 border-border/40" onClick={onOpenWizard}>
+                                <FolderPlus size={14} className="text-primary" />
+                                Nova Obra
+                            </Button>
+                            <Button variant="outline" className="rounded-full h-9 px-4 text-[10px] font-black uppercase tracking-widest gap-2 bg-card hover:bg-muted/50 border-border/40" onClick={() => navigate('/clientes/novo')}>
+                                <Users size={14} className="text-primary" />
+                                Novo Cliente
+                            </Button>
+                            <Button variant="outline" className="rounded-full h-9 px-4 text-[10px] font-black uppercase tracking-widest gap-2 bg-card hover:bg-muted/50 border-border/40" onClick={() => onTabChange('captura')}>
+                                <Plus size={14} className="text-primary" />
+                                Novo Registro
+                            </Button>
                         </div>
 
                         {/* Critical Alerts */}
                         {dashboardData?.alertas?.length > 0 && (
-                            <Card className="border-l-4 border-l-red-500 bg-red-50/10 dark:bg-red-950/5 rounded-3xl overflow-hidden">
+                            <Card className="border-l-4 border-l-red-500 bg-red-50/10 dark:bg-red-950/5 rounded-xl overflow-hidden">
                                 <CardHeader className="py-4">
                                     <CardTitle className="flex items-center gap-2 text-red-600 font-black text-base">
                                         <Bell className="animate-pulse" size={18} />
@@ -303,7 +297,7 @@ export function HomeDashboard({ onTabChange, onOpenWizard }: HomeDashboardProps)
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <Card className="lg:col-span-2 rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl shadow-sm overflow-hidden">
+                            <Card className="lg:col-span-2 rounded-2xl border-border/40 bg-background/60 backdrop-blur-xl shadow-sm overflow-hidden">
                                 <CardHeader className="p-8 pb-0 flex flex-row items-center justify-between">
                                     <div>
                                         <CardTitle className="text-xl font-black">Performance Financeira</CardTitle>
@@ -334,7 +328,7 @@ export function HomeDashboard({ onTabChange, onOpenWizard }: HomeDashboardProps)
                                 </CardContent>
                             </Card>
 
-                            <Card className="rounded-[2.5rem] border-border/40 bg-background/60 p-8 shadow-sm">
+                            <Card className="rounded-2xl border-border/40 bg-background/60 p-8 shadow-sm">
                                 <h3 className="font-black text-lg mb-6">Eficiência por Departamento</h3>
                                 <div className="space-y-6">
                                     {[
@@ -375,11 +369,11 @@ export function HomeDashboard({ onTabChange, onOpenWizard }: HomeDashboardProps)
 
 function KPICard({ label, value, change, trend, color, onClick }: any) {
     const colorClasses: Record<string, string> = {
-        blue: 'text-blue-600 bg-blue-500/[0.03] border-blue-500/10',
-        green: 'text-green-600 bg-green-500/[0.03] border-green-500/10',
-        orange: 'text-orange-600 bg-orange-500/[0.03] border-orange-500/10',
-        red: 'text-red-600 bg-red-500/[0.03] border-red-500/10',
-        purple: 'text-purple-600 bg-purple-500/[0.03] border-purple-500/10',
+        blue: 'text-blue-600 border-blue-500/10 hover:border-blue-500/50',
+        green: 'text-green-600 border-green-500/10 hover:border-green-500/50',
+        orange: 'text-orange-600 border-orange-500/10 hover:border-orange-500/50',
+        red: 'text-red-600 border-red-500/10 hover:border-red-500/50',
+        purple: 'text-purple-600 border-purple-500/10 hover:border-purple-500/50',
     };
 
     const trendIcons = {
@@ -391,7 +385,7 @@ function KPICard({ label, value, change, trend, color, onClick }: any) {
     return (
         <Card
             className={cn(
-                "p-6 rounded-[2.5rem] border flex flex-col justify-between transition-all hover:shadow-2xl hover:shadow-black/5 hover:-translate-y-1 cursor-pointer",
+                "p-6 rounded-2xl border flex flex-col justify-between transition-all hover:shadow-2xl hover:shadow-black/5 hover:-translate-y-1 cursor-pointer bg-card",
                 colorClasses[color]
             )}
             onClick={onClick}
@@ -417,7 +411,7 @@ function KPIInsight({ title, value, percentage, icon: Icon, state }: any) {
     };
 
     return (
-        <Card className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-md hover:border-border/60 transition-all shadow-sm group">
+        <Card className="rounded-2xl border-border/40 bg-card hover:border-border/60 transition-all shadow-sm group">
             <CardContent className="p-6 flex items-center justify-between">
                 <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">{title}</p>
@@ -445,7 +439,7 @@ function QuickStatCard({ icon: Icon, label, value, color, suffix = "", onClick }
     };
 
     return (
-        <Card className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl hover:shadow-2xl transition-all hover:-translate-y-1 cursor-pointer" onClick={onClick}>
+        <Card className="rounded-2xl border-border/40 bg-card hover:shadow-2xl transition-all hover:-translate-y-1 cursor-pointer" onClick={onClick}>
             <CardContent className="pt-6 pb-6 text-center">
                 <Icon className={cn("w-6 h-6 mx-auto mb-3", colorClasses[color])} strokeWidth={2.5} />
                 <p className="text-xl font-black tracking-tight">{value}{suffix}</p>

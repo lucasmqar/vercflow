@@ -121,7 +121,7 @@ export function ObrasDashboardV2({ onTabChange }: { onTabChange: (tab: Dashboard
                         <button
                             key={idx}
                             onClick={item.action}
-                            className="group flex flex-col items-center justify-center p-4 rounded-3xl bg-background/40 border border-border/40 hover:border-primary/40 hover:bg-background/80 transition-all"
+                            className="group flex flex-col items-center justify-center p-4 rounded-xl bg-background/40 border border-border/40 hover:border-primary/40 hover:bg-background/80 transition-all"
                         >
                             <div className={cn('w-10 h-10 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-sm', item.color)}>
                                 <item.icon size={18} />
@@ -238,7 +238,7 @@ function EnhancedProjectCard({ project, progress, health, viewMode, onClick, onT
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
             <Card
                 onClick={onClick}
-                className="group cursor-pointer rounded-[2.5rem] overflow-hidden border-border/40 hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 bg-background/60 backdrop-blur-xl"
+                className="group cursor-pointer rounded-2xl overflow-hidden border-border/40 hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 bg-background/60 backdrop-blur-xl"
             >
                 <div className="p-8 space-y-6">
                     <div className="flex justify-between items-start">

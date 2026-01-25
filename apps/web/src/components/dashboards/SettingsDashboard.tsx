@@ -181,7 +181,7 @@ export function SettingsDashboard({ onTabChange }: { onTabChange: (tab: Dashboar
                                 {currentSection === 'account' && (
                                     <div className="space-y-6">
                                         <div className="flex items-center gap-4 mb-8">
-                                            <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                                            <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                                                 <User size={32} />
                                             </div>
                                             <div>
@@ -191,7 +191,7 @@ export function SettingsDashboard({ onTabChange }: { onTabChange: (tab: Dashboar
                                             </div>
                                         </div>
 
-                                        <Card className="rounded-[2.5rem] border-white/5 bg-background/60 p-8">
+                                        <Card className="rounded-2xl border-white/5 bg-background/60 p-8">
                                             <h3 className="text-lg font-black uppercase tracking-tight mb-6">Informações de Segurança</h3>
                                             <div className="space-y-4">
                                                 <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-white/5">
@@ -211,7 +211,7 @@ export function SettingsDashboard({ onTabChange }: { onTabChange: (tab: Dashboar
 
                                 {currentSection === 'system' && (
                                     <div className="space-y-6">
-                                        <Card className="rounded-[2.5rem] border-white/5 bg-background/60 p-8">
+                                        <Card className="rounded-2xl border-white/5 bg-background/60 p-8">
                                             <h3 className="text-lg font-black uppercase tracking-tight mb-6">Preferências Globais</h3>
                                             <div className="space-y-6">
                                                 <div className="flex items-center justify-between">
@@ -274,7 +274,7 @@ export function SettingsDashboard({ onTabChange }: { onTabChange: (tab: Dashboar
 
             {/* User Management Modal */}
             <Dialog open={isUserModalOpen} onOpenChange={setIsUserModalOpen}>
-                <DialogContent className="rounded-[2.5rem] max-w-lg p-0 overflow-hidden border-none shadow-2xl">
+                <DialogContent className="rounded-2xl max-w-lg p-0 overflow-hidden border-none shadow-2xl">
                     <div className="bg-primary/5 p-8 border-b border-border/40">
                         <DialogHeader>
                             <DialogTitle className="text-xl font-black tracking-tighter flex items-center gap-2">

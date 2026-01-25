@@ -71,7 +71,7 @@ export function DesignActionWizard({ isOpen, onClose }: { isOpen: boolean; onClo
                 <button
                     key={option.id}
                     onClick={() => setStep(option.id as any)}
-                    className="flex flex-col items-start p-6 rounded-3xl border border-border/40 hover:border-primary/40 hover:bg-muted/30 transition-all text-left group"
+                    className="flex flex-col items-start p-6 rounded-xl border border-border/40 hover:border-primary/40 hover:bg-muted/30 transition-all text-left group"
                 >
                     <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110", option.bg, option.color)}>
                         <option.icon size={24} />
@@ -185,7 +185,7 @@ export function DesignActionWizard({ isOpen, onClose }: { isOpen: boolean; onClo
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl bg-background/95 backdrop-blur-xl border-white/10 rounded-[2.5rem] p-8 shadow-2xl">
+            <DialogContent className="max-w-2xl bg-background/95 backdrop-blur-xl border-white/10 rounded-2xl p-8 shadow-2xl">
                 <DialogHeader className="mb-4">
                     <DialogTitle className="text-2xl font-black tracking-tight flex items-center gap-2">
                         <Zap className="text-primary fill-current" size={24} />

@@ -137,7 +137,7 @@ export function ClientProfilePage({ client, onBack }: ClientProfilePageProps) {
 
                                     {/* Right: Quick Info Cards */}
                                     <div className="space-y-6">
-                                        <Card className="rounded-[2.5rem] p-8 bg-gradient-to-br from-background to-secondary/5 border-border/40 shadow-sm">
+                                        <Card className="rounded-2xl p-8 bg-gradient-to-br from-background to-secondary/5 border-border/40 shadow-sm">
                                             <h3 className="font-black text-xs uppercase tracking-widest text-muted-foreground mb-6 opacity-60">Status do Cliente</h3>
                                             <div className="space-y-6">
                                                 <div className="flex justify-between items-center pb-4 border-b border-border/20 last:border-0 last:pb-0">
@@ -155,7 +155,7 @@ export function ClientProfilePage({ client, onBack }: ClientProfilePageProps) {
                                             </div>
                                         </Card>
 
-                                        <Card className="rounded-[2.5rem] p-8 border-dashed border-2 border-border/40 bg-muted/5 flex flex-col items-center justify-center text-center gap-4">
+                                        <Card className="rounded-2xl p-8 border-dashed border-2 border-border/40 bg-muted/5 flex flex-col items-center justify-center text-center gap-4">
                                             <div className="w-14 h-14 rounded-full bg-background border border-border/40 flex items-center justify-center text-muted-foreground">
                                                 <FileText size={24} />
                                             </div>
@@ -237,7 +237,7 @@ function TabItem({ value, label, count }: any) {
 
 function ProjectCard({ name, status, progress, address, manager }: any) {
     return (
-        <Card className="rounded-[2.5rem] border-white/5 bg-background p-8 hover:shadow-xl transition-all cursor-pointer group hover:border-primary/20">
+        <Card className="rounded-2xl border-white/5 bg-background p-8 hover:shadow-xl transition-all cursor-pointer group hover:border-primary/20">
             <div className="flex justify-between items-start mb-6">
                 <Badge variant={status === 'CONCLUIDA' ? 'secondary' : 'default'} className="text-[10px] font-black uppercase tracking-widest px-3 py-1">
                     {status.replace('_', ' ')}

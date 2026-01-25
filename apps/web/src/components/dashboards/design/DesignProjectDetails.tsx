@@ -232,7 +232,7 @@ export function DesignProjectDetails({ project, onBack }: { project: any, onBack
                             exit={{ opacity: 0, y: -10 }}
                             className="max-w-3xl mx-auto"
                         >
-                            <Card className="rounded-[2.5rem] p-8 border-border/40 bg-background/60 backdrop-blur-md">
+                            <Card className="rounded-2xl p-8 border-border/40 bg-background/60 backdrop-blur-md">
                                 <h3 className="text-lg font-black tracking-tight mb-6 flex items-center gap-3">
                                     <CheckSquare className="text-primary" /> Checklist de Etapa
                                 </h3>

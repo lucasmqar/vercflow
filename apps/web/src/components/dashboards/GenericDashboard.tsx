@@ -49,14 +49,14 @@ export function GenericDashboard({
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.5 }}
-                        className="glass-card rounded-[2.5rem] p-12 lg:p-20 border-border/40 text-center max-w-2xl relative overflow-hidden"
+                        className="glass-card rounded-2xl p-12 lg:p-20 border-border/40 text-center max-w-2xl relative overflow-hidden"
                     >
                         {/* Background Decoration */}
                         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
                         <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse" />
 
                         <div className="relative z-10 flex flex-col items-center">
-                            <div className="w-24 h-24 rounded-3xl bg-primary/5 flex items-center justify-center mb-8 shadow-inner border border-primary/10">
+                            <div className="w-24 h-24 rounded-xl bg-primary/5 flex items-center justify-center mb-8 shadow-inner border border-primary/10">
                                 {Icon ? <Icon size={48} className="text-primary opacity-80" strokeWidth={1.5} /> : <Construction size={48} className="text-primary opacity-80" strokeWidth={1.5} />}
                             </div>
 

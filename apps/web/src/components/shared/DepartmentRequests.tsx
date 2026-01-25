@@ -8,9 +8,10 @@ import {
     CheckCircle2, XCircle, Clock, FileText, Zap,
     ArrowRight, ChevronRight, Edit3, Trash2,
     PlayCircle, CheckCircle, Info, Maximize2,
-    Layout, DollarSign
+    Layout, DollarSign, Paperclip, Plus, X, UploadCloud
 } from 'lucide-react';
-import { useAppFlow, DepartmentRequest } from '@/store/useAppFlow';
+import { useAppFlow } from '@/store/useAppFlow';
+import { DepartmentRequest } from '@/types';
 import { useRegistros } from '@/hooks/useRegistros';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -50,6 +51,12 @@ export function DepartmentRequests({ department }: DepartmentRequestsProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [tempData, setTempData] = useState({ title: '', description: '' });
+    const [feedback, setFeedback] = useState<any>({
+        observations: '',
+        adjustedValue: 0,
+        adjustedDeadline: 0,
+        attachments: [] as { id: string, name: string, url: string }[]
+    });
 
     // Filter requests for this department that are active (not concluded or rejected)
     const activeRequests = requests.filter(r =>
@@ -92,9 +99,28 @@ export function DepartmentRequests({ department }: DepartmentRequestsProps) {
 
     const handleComplete = () => {
         if (!selectedReq) return;
-        updateRequestStatus(selectedReq.id, 'CONCLUIDO');
+
+        const isValidation = selectedReq.type === 'BUDGET_VALIDATION' || selectedReq.type === 'FINANCIAL_VALIDATION';
+        const finalStatus = isValidation ? 'APROVADO' : 'CONCLUIDO';
+
+        updateRequestStatus(selectedReq.id, finalStatus, feedback);
         setIsModalOpen(false);
-        toast.success("Solicitação finalizada com sucesso.");
+        toast.success(`Solicitação ${isValidation ? 'aprovada' : 'finalizada'} com sucesso.`);
+    };
+
+    const handleFileUpload = () => {
+        // Simulação de upload
+        const newFile = {
+            id: Math.random().toString(36).substr(2, 9),
+            name: `documento_${Date.now()}.pdf`,
+            url: '#'
+        };
+        setFeedback({ ...feedback, attachments: [...feedback.attachments, newFile] });
+        toast.success("Documento anexado.");
+    };
+
+    const removeAttachment = (id: string) => {
+        setFeedback({ ...feedback, attachments: feedback.attachments.filter((a: any) => a.id !== id) });
     };
 
     const relatedRecord = selectedReq?.recordId ? registros.find(r => r.id === selectedReq.recordId) : null;
@@ -124,7 +150,7 @@ export function DepartmentRequests({ department }: DepartmentRequestsProps) {
                 >
                     <Card
                         onClick={() => handleOpenRequest(req)}
-                        className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl hover:border-primary/40 hover:bg-background/80 transition-all group overflow-hidden shadow-sm cursor-pointer relative"
+                        className="rounded-2xl border-border/40 bg-background/60 backdrop-blur-xl hover:border-primary/40 hover:bg-background/80 transition-all group overflow-hidden shadow-sm cursor-pointer relative"
                     >
                         <CardContent className="p-8">
                             <div className="flex flex-col lg:flex-row gap-8 justify-between items-start lg:items-center">
@@ -252,7 +278,7 @@ export function DepartmentRequests({ department }: DepartmentRequestsProps) {
                                                     <Textarea
                                                         value={tempData.description}
                                                         onChange={(e) => setTempData({ ...tempData, description: e.target.value })}
-                                                        className="rounded-3xl border-border/40 min-h-[150px] font-medium leading-relaxed"
+                                                        className="rounded-xl border-border/40 min-h-[150px] font-medium leading-relaxed"
                                                     />
                                                 </div>
                                                 <div className="flex gap-2 justify-end">
@@ -270,6 +296,88 @@ export function DepartmentRequests({ department }: DepartmentRequestsProps) {
                                                         {selectedReq.description}
                                                     </p>
                                                 </div>
+
+                                                {/* Specialized Feedback Form for Validations */}
+                                                {(selectedReq.type === 'BUDGET_VALIDATION' || selectedReq.type === 'FINANCIAL_VALIDATION') && (
+                                                    <div className="space-y-6 pt-6 border-t border-border/20 animate-in fade-in slide-in-from-bottom-2">
+                                                        <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-primary">
+                                                            <CheckCircle size={16} /> Parecer Técnico/Financeiro
+                                                        </h3>
+
+                                                        <div className="grid grid-cols-2 gap-6">
+                                                            <div className="col-span-2">
+                                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Observações e Ressalvas</label>
+                                                                <Textarea
+                                                                    placeholder="Detalhe o motivo da aprovação ou ajustes necessários..."
+                                                                    className="rounded-2xl border-border/40 min-h-[100px]"
+                                                                    value={feedback.observations}
+                                                                    onChange={e => setFeedback({ ...feedback, observations: e.target.value })}
+                                                                />
+                                                            </div>
+                                                            {selectedReq.type === 'BUDGET_VALIDATION' && (
+                                                                <>
+                                                                    <div>
+                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Valor Sugerido (R$)</label>
+                                                                        <Input
+                                                                            type="number"
+                                                                            placeholder="Valor final ajustado"
+                                                                            className="rounded-xl border-border/40"
+                                                                            value={feedback.adjustedValue}
+                                                                            onChange={e => setFeedback({ ...feedback, adjustedValue: Number(e.target.value) })}
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Prazo Sugerido (Meses)</label>
+                                                                        <Input
+                                                                            type="number"
+                                                                            placeholder="Prazo final ajustado"
+                                                                            className="rounded-xl border-border/40"
+                                                                            value={feedback.adjustedDeadline}
+                                                                            onChange={e => setFeedback({ ...feedback, adjustedDeadline: Number(e.target.value) })}
+                                                                        />
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Attachment Management */}
+                                                        <div className="space-y-4">
+                                                            <div className="flex justify-between items-center">
+                                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Documentos e Anexos</label>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={handleFileUpload}
+                                                                    className="rounded-lg h-8 text-[9px] font-black uppercase tracking-widest gap-2 bg-primary/5 border-primary/20"
+                                                                >
+                                                                    <Plus size={12} /> Adicionar Arquivo
+                                                                </Button>
+                                                            </div>
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                {feedback.attachments.map((file: any) => (
+                                                                    <div key={file.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/10 group">
+                                                                        <div className="flex items-center gap-2 overflow-hidden">
+                                                                            <Paperclip size={14} className="text-muted-foreground shrink-0" />
+                                                                            <span className="text-[10px] font-bold truncate">{file.name}</span>
+                                                                        </div>
+                                                                        <button
+                                                                            onClick={() => removeAttachment(file.id)}
+                                                                            className="p-1 hover:bg-red-500/10 text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                        >
+                                                                            <X size={12} />
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
+                                                                {feedback.attachments.length === 0 && (
+                                                                    <div className="col-span-2 py-8 border-2 border-dashed border-border/20 rounded-2xl flex flex-col items-center justify-center text-muted-foreground/30">
+                                                                        <UploadCloud size={24} className="mb-2" />
+                                                                        <span className="text-[9px] font-black uppercase tracking-widest">Nenhum arquivo anexado</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 
@@ -363,6 +471,40 @@ export function DepartmentRequests({ department }: DepartmentRequestsProps) {
                                                     <div>
                                                         <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Vencimento</p>
                                                         <p className="text-sm font-bold text-foreground">{selectedReq.metadata.dueDate || 'Imediato'}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Budget Validation Details (For Engineering or Finance) */}
+                                        {(selectedReq.type === 'BUDGET_VALIDATION' || selectedReq.type === 'FINANCIAL_VALIDATION') && (
+                                            <div className="bg-indigo-500/5 rounded-[2rem] p-6 border border-indigo-500/10 space-y-4">
+                                                <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-indigo-600">
+                                                    <FileText size={14} /> Dados do Orçamento
+                                                </h3>
+                                                <div className="space-y-4">
+                                                    <div className="p-4 rounded-xl bg-background border border-border/20">
+                                                        <p className="text-[8px] font-black uppercase text-muted-foreground mb-1">Status Interno</p>
+                                                        <Badge variant="outline" className="text-[8px] border-indigo-500/20 text-indigo-500">AGUARDANDO VALIDAÇÃO</Badge>
+                                                    </div>
+                                                    <div className="p-4 rounded-xl bg-background border border-border/20">
+                                                        <p className="text-[8px] font-black uppercase text-muted-foreground mb-1">Fase do Fluxo</p>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <div className={cn("w-2 h-2 rounded-full", selectedReq.type === 'BUDGET_VALIDATION' ? "bg-amber-500 animate-pulse" : "bg-emerald-500")} title="Engenharia" />
+                                                            <div className="w-4 h-[1px] bg-muted-foreground/20" />
+                                                            <div className={cn("w-2 h-2 rounded-full", selectedReq.type === 'FINANCIAL_VALIDATION' ? "bg-amber-500 animate-pulse" : "bg-muted")} title="Financeiro" />
+                                                        </div>
+                                                        <p className="text-[8px] font-bold mt-1 uppercase text-muted-foreground">
+                                                            {selectedReq.type === 'BUDGET_VALIDATION' ? 'Ponto de Controle: Engenharia' : 'Ponto de Controle: Financeiro'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+                                                        <p className="text-[8px] font-black text-indigo-600 uppercase mb-1">Dica de Processo</p>
+                                                        <p className="text-[10px] italic leading-tight text-indigo-900/60 font-medium">
+                                                            {selectedReq.type === 'BUDGET_VALIDATION'
+                                                                ? 'Analise se o escopo macro condiz com a natureza da obra e o padrão solicitado pelo cliente.'
+                                                                : 'Verifique se as margens brutas estão acima de 12% antes de liberar para o comercial.'}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>

@@ -53,20 +53,20 @@ export function MobileDock({ activeTab, onTabChange, onOpenCommandPalette }: Mob
 
     const navItems = [
         { id: 'home', label: 'Início', icon: LayoutDashboard },
-        { id: 'captura', label: 'Captura', icon: Camera },
-        { id: 'triagem', label: 'Triagem', icon: Zap },
         { id: 'comercial', label: 'Comercial', icon: Target },
+        { id: 'captura', label: 'Captura', icon: Plus },
+        { id: 'triagem', label: 'Triagem', icon: Zap },
         { id: 'obras', label: 'Obras', icon: Building2 },
         { id: 'projetos', label: 'Projetos', icon: Layers },
         { id: 'design', label: 'Design', icon: Palette },
         { id: 'engenharia', label: 'Engenharia', icon: Hammer },
-        { id: 'rh-sst', label: 'RH & SST', icon: ShieldCheck },
-        { id: 'logistica', label: 'Logística', icon: Truck },
-        { id: 'compras', label: 'Compras', icon: ShoppingCart }, // Added logic
+        { id: 'compras', label: 'Compras', icon: ShoppingCart },
         { id: 'estoque', label: 'Estoque', icon: Box },
         { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
+        { id: 'rh-sst', label: 'RH & SST', icon: ShieldCheck },
         { id: 'notifications', label: 'Mensagens', icon: Bell },
         { id: 'config', label: 'Admin', icon: Settings },
+        { id: 'logistica', label: 'Logística', icon: Truck }, // Moved to end
     ];
 
     const activeItem = navItems.find(item => item.id === activeTab) || navItems[0]; // Changed index to 0 for 'home'

@@ -15,7 +15,7 @@ export function EngenhariaFinancial() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <Card className="col-span-1 lg:col-span-2 rounded-[2.5rem] border-white/5 bg-background border-border/40 p-8 h-96 flex flex-col justify-center items-center text-center">
+                <Card className="col-span-1 lg:col-span-2 rounded-2xl border-white/5 bg-background border-border/40 p-8 h-96 flex flex-col justify-center items-center text-center">
                     <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                         <LineChart className="text-muted-foreground" size={32} />
                     </div>
@@ -24,7 +24,7 @@ export function EngenhariaFinancial() {
                 </Card>
 
                 <div className="space-y-6">
-                    <Card className="rounded-[2.5rem] bg-emerald-500/5 border-emerald-500/10 p-6">
+                    <Card className="rounded-2xl bg-emerald-500/5 border-emerald-500/10 p-6">
                         <h3 className="font-black text-sm uppercase tracking-widest text-emerald-700 mb-4 flex items-center gap-2">
                             <DollarSign size={16} /> Medições a Aprovar
                         </h3>

@@ -1,417 +1,651 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    X, ChevronRight, ChevronLeft,
-    Building2, MapPin, User, FileText, Briefcase,
-    CheckCircle2, AlertCircle, Home, Factory, ShoppingBag, Cross
+    CheckCircle2, AlertTriangle, Building, Map,
+    FileText, ShieldCheck, ArrowRight, User, Briefcase,
+    Upload, Trash2, HardDrive, AlertCircle, Plus, Info, ChevronRight,
+    X, ChevronLeft
 } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { ShaderAnimation } from '@/components/ui/shader-animation';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { useAppFlow } from '@/store/useAppFlow';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    NATUREZAS_OBRA,
+    CONTEXTOS,
+    TIPOLOGIAS,
+    PADROES,
+    FINALIDADES,
+    REGULARIZACAO,
+    getRecommendedDisciplines
+} from '@/lib/project-taxonomy';
+import { WorkClassification, RegulatoryData, Attachment } from '@/types';
 
 interface LeadWizardProps {
     isOpen: boolean;
     onClose: () => void;
+    onRegisterClient?: () => void; // Callback to switch to ClientWizard
 }
 
-// ... imports
-import { UploadCloud } from 'lucide-react'; // Added icon
-
-// Updated Interface for Classification
-import { MapSelector } from './MapSelector';
-
-interface WorkClassification {
-    zona: 'URBANA' | 'RURAL' | 'MISTA_EXPANSAO';
-    subzona: string;
-    uso: string;
-}
-
-export function LeadWizard({ isOpen, onClose }: LeadWizardProps) {
+export function LeadWizard({ isOpen, onClose, onRegisterClient }: LeadWizardProps) {
     const [step, setStep] = useState(1);
-    const { addClient, addLead } = useAppFlow();
+    const { addLead, createBudget, clients } = useAppFlow();
 
-    // Form State
-    const [formData, setFormData] = useState({
-        // Cliente
-        clienteNome: '',
-        clienteTipo: 'PJ' as 'PJ' | 'PF',
-        clienteDoc: '',
-        clienteContato: '',
-        clienteEndereco: '',
+    // -- STATE --
+    // 1. Client Link
+    const [selectedClientId, setSelectedClientId] = useState('');
 
-        // Obra/Lead
-        nomeObra: '',
-        localizacao: '',
-        lat: undefined as number | undefined,
-        lng: undefined as number | undefined,
-        areaEstimada: '',
-        descricao: '',
+    // 2. Work Basic
+    const [workName, setWorkName] = useState('');
+    const [workCity, setWorkCity] = useState('');
 
-        // Detailed Classification
-        classificacao: {
-            zona: 'URBANA',
-            subzona: 'VIA_PUBLICA',
-            uso: 'HABITACAO_UNIFAMILIAR'
-        } as WorkClassification,
-
-        fonteLead: 'INDICACAO' as 'INDICACAO' | 'SOCIAL' | 'SITE' | 'ANTIGO_CLIENTE' | 'OUTROS',
-        urgencia: 'NORMAL' as 'BAIXA' | 'NORMAL' | 'ALTA' | 'URGENTE',
-
-        // Attachments
-        attachments: [] as any[] // Mock attachments
+    // 3. Classification
+    const [classification, setClassification] = useState<WorkClassification>({
+        natureza: 'RESIDENCIAL',
+        contexto: 'URBANA',
+        subcontexto: 'RUA_ABERTA',
+        tipologia: 'CASA_TERREA',
+        padrao: 'MEDIO',
+        finalidade: 'USO_PROPRIO',
+        objetos: [],
+        requerLegalizacao: false,
+        legalizacao: { orgaos: [], cenario: 'NAO_INICIADA' }
     });
 
-    // ... (classificationOptions and usageOptions same as before)
-    const classificationOptions = {
-        URBANA: [
-            { id: 'VIA_PUBLICA', label: 'Via Pública / Lote Tradicional' },
-            { id: 'CONDOMINIO_FECHADO', label: 'Condomínio Fechado' },
-            { id: 'LOTEAMENTO_ABERTO', label: 'Loteamento Aberto' },
-            { id: 'INSTITUCIONAL', label: 'Área Institucional' },
-            { id: 'INDUSTRIAL_PLANEJADA', label: 'Distrito Industrial' }
-        ],
-        RURAL: [
-            { id: 'FAZENDA', label: 'Fazenda' },
-            { id: 'SITIO', label: 'Sítio' },
-            { id: 'CHACARA', label: 'Chácara' },
-            { id: 'RURAL_PRODUTIVA', label: 'Rural Produtiva' },
-            { id: 'RURAL_INDUSTRIAL', label: 'Rural Industrial' },
-            { id: 'RURAL_EXPANSAO', label: 'Expansão Futura' }
-        ],
-        MISTA_EXPANSAO: [
-            { id: 'MISTA', label: 'Área Mista' }
-        ]
+    // 4. Documents
+    const [attachments, setAttachments] = useState<Attachment[]>([]);
+
+    // 4. Analysis
+    const [disciplines, setDisciplines] = useState<string[]>([]);
+
+    useEffect(() => {
+        setDisciplines(getRecommendedDisciplines(classification));
+    }, [classification]);
+
+    // -- HANDLERS --
+    const updateClass = (key: keyof WorkClassification, value: any) => {
+        setClassification(prev => ({ ...prev, [key]: value }));
     };
 
-    const usageOptions = [
-        { id: 'HABITACAO_UNIFAMILIAR', label: 'Habitação Unifamiliar' },
-        { id: 'HABITACAO_MULTIFAMILIAR', label: 'Habitação Multifamiliar' },
-        { id: 'COMERCIAL_VAREJISTA', label: 'Comercial Varejista' },
-        { id: 'SERVICOS', label: 'Serviços' },
-        { id: 'INDUSTRIAL_LEVE', label: 'Industrial Leve' },
-        { id: 'INDUSTRIAL_PESADO', label: 'Industrial Pesado' },
-        { id: 'SAUDE', label: 'Saúde' },
-        { id: 'INSTITUCIONAL', label: 'Institucional / Público' }
-    ];
+    const updateLegal = (key: keyof RegulatoryData, value: any) => {
+        setClassification(prev => ({
+            ...prev,
+            legalizacao: { ...(prev.legalizacao || { orgaos: [], cenario: 'NAO_INICIADA' }), [key]: value }
+        }));
+    };
 
-    const nextStep = () => setStep(prev => Math.min(prev + 1, 6));
-    const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
+    const handleToggleList = (listKey: 'objetos' | 'orgaos', item: string) => {
+        if (listKey === 'objetos') {
+            const list = classification.objetos || [];
+            const newList = list.includes(item) ? list.filter(i => i !== item) : [...list, item];
+            updateClass('objetos', newList);
+        } else {
+            const list = classification.legalizacao?.orgaos || [];
+            const newList = list.includes(item) ? list.filter(i => i !== item) : [...list, item];
+            updateLegal('orgaos', newList);
+        }
+    };
+
+    const handleFileUpload = (type: string) => {
+        const newDoc: Attachment = {
+            id: uuidv4(),
+            name: `${type}_${workName || 'Obra'}.pdf`,
+            url: '#',
+            type: 'PDF',
+            size: 1024 * 500, // 500KB
+            uploadedAt: new Date().toISOString()
+        };
+        setAttachments(prev => [...prev, newDoc]);
+        toast.success(`Documento ${type} anexado ao dossiê.`);
+    };
+
+    const removeAttachment = (id: string) => {
+        setAttachments(prev => prev.filter(a => a.id !== id));
+    };
 
     const handleComplete = () => {
-        const clientId = addClient({
-            nome: formData.clienteNome,
-            tipo: formData.clienteTipo,
-            documento: formData.clienteDoc,
-            contatos: formData.clienteContato,
-            enderecoCompleto: formData.clienteEndereco
-        });
+        if (!selectedClientId) { toast.error("Selecione um cliente vinculado."); return; }
+        if (!workName) { toast.error("Dê um nome à obra."); return; }
 
-        addLead({
-            clientId,
-            nomeObra: formData.nomeObra,
-            localizacao: formData.localizacao,
-            lat: formData.lat,
-            lng: formData.lng,
-            classificacao: formData.classificacao as any,
-            tipoObra: formData.classificacao.uso,
-            areaEstimada: parseFloat(formData.areaEstimada) || 0,
-            attachments: formData.attachments,
-            status: 'NOVO'
-        });
+        try {
+            const client = clients.find(c => c.id === selectedClientId);
 
-        toast.success(`Lead "${formData.nomeObra}" registrado com sucesso no mapa comercial!`);
-        onClose();
-        setStep(1);
+            // 1. Create Lead
+            const leadId = addLead({
+                clientId: selectedClientId,
+                nomeObra: workName,
+                localizacao: workCity || 'Não informada',
+                classificacao: classification,
+                tipoObra: classification.natureza,
+                nomeValidacao: client?.nome || 'Cliente Desconhecido',
+                status: 'NOVO',
+                attachments: attachments
+            });
+
+            // 2. Create Budget
+            createBudget({
+                leadId,
+                escopoMacro: `OBJETO DO CONTRATO:\n${classification.objetos.join(', ')}\n\nCLASSIFICAÇÃO:\n${classification.natureza} | ${classification.tipologia}\n\nREGULARIZAÇÃO:\n${classification.requerLegalizacao ? `Órgãos: ${classification.legalizacao?.orgaos.join(', ')}` : 'Não requer'}`,
+                valorEstimado: 0,
+                prazoEstimadoMeses: 0,
+                validacaoTecnica: 'PENDENTE',
+                validacaoFinanceira: 'PENDENTE',
+                status: 'EM_ELABORACAO'
+            });
+
+            toast.success("Nova Obra Registrada!");
+            onClose();
+            setStep(1);
+        } catch (error) {
+            console.error(error);
+            toast.error("Erro ao registrar obra.");
+        }
     };
 
     if (!isOpen) return null;
 
-    const stepLabel = ['Cliente', 'Obra', 'Geolocalização', 'Classificação', 'Anexos', 'Revisão'][step - 1];
+    const currentNaturezaLabel = NATUREZAS_OBRA.find(n => n.id === classification.natureza)?.label;
 
     return (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 lg:p-8 overflow-hidden">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 lg:p-6 overflow-hidden">
             <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/40 backdrop-blur-md"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
                 onClick={onClose}
             />
 
             <motion.div
-                layoutId="wizard-container"
-                className="relative w-full max-w-4xl max-h-[90vh] bg-background rounded-[2.5rem] shadow-2xl overflow-hidden border border-border/20 flex flex-col"
+                layoutId="work-wizard-container"
+                className="relative w-full max-w-7xl h-[90vh] bg-background rounded-xl shadow-2xl overflow-hidden border border-border/20 flex flex-col lg:flex-row"
             >
-                {/* Header */}
-                <div className="relative z-10 p-6 border-b border-border/10 flex justify-between items-center bg-background/80 backdrop-blur-md">
-                    <div>
-                        <Badge className="bg-primary text-primary-foreground border-none font-black text-[9px] tracking-widest uppercase mb-2">
-                            COMERCIAL • INTELIGÊNCIA GEOGRÁFICA
-                        </Badge>
-                        <h2 className="text-2xl font-black tracking-tight">Novo Lead Comercial</h2>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Etapa {step} de 6 • {stepLabel}
+                {/* LEFT: Context */}
+                <div className="w-full lg:w-1/4 bg-muted/10 border-r border-border/10 p-8 flex flex-col relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-transparent" />
+                    <Badge variant="outline" className="w-fit mb-6 border-blue-500/20 text-blue-500 font-black">OBJETIVO: NOVA OBRA</Badge>
+
+                    <div className="space-y-6 mt-4">
+                        {[
+                            { id: 1, label: 'Vínculo & Nome', icon: User },
+                            { id: 2, label: 'Zona & Natureza', icon: Building },
+                            { id: 3, label: 'Tipologia Física', icon: FileText },
+                            { id: 4, label: 'Objeto do Contrato', icon: Briefcase },
+                            { id: 5, label: 'Legalização', icon: ShieldCheck },
+                            { id: 6, label: 'Dossiê da Obra', icon: HardDrive },
+                            { id: 7, label: 'Revisão Final', icon: CheckCircle2 }
+                        ].map((s) => (
+                            <div key={s.id} className={cn("flex items-center gap-4 transition-all", step === s.id ? "opacity-100 translate-x-1" : "opacity-40")}>
+                                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border", step === s.id ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/20" : "border-border bg-background")}>
+                                    <s.icon size={16} />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-black uppercase text-muted-foreground">Etapa {s.id}</span>
+                                    <span className="font-bold text-xs tracking-tight">{s.label}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-auto p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10">
+                        <div className="flex items-center gap-2 mb-2">
+                            <AlertCircle size={14} className="text-blue-600" />
+                            <span className="text-[10px] font-black uppercase text-blue-600">DNA do Projeto</span>
+                        </div>
+                        <p className="text-[10px] text-blue-800/70 font-medium leading-relaxed">
+                            A correta classificação permite que o VERCFLOW sugira as disciplinas adequadas e preveja riscos normativos.
                         </p>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-muted/20">
-                        <X size={20} />
-                    </Button>
                 </div>
 
-                {/* Progress Bar */}
-                <div className="relative z-10 h-1 bg-muted/20">
-                    <motion.div
-                        className="h-full bg-primary"
-                        initial={{ width: '0%' }}
-                        animate={{ width: `${(step / 6) * 100}%` }}
-                        transition={{ duration: 0.3 }}
-                    />
-                </div>
+                {/* RIGHT: Form */}
+                <div className="flex-1 flex flex-col bg-background relative overflow-hidden">
+                    <div className="flex-1 overflow-y-auto p-8 lg:p-12 custom-scrollbar">
+                        <AnimatePresence mode="wait">
 
-                {/* Content */}
-                <div className="relative z-10 flex-1 overflow-y-auto p-8 custom-scrollbar">
-                    <AnimatePresence mode="wait">
-                        {/* STEP 1: CLIENTE (Same as before but lighter inputs) */}
-                        {step === 1 && (
-                            <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-2xl mx-auto space-y-6">
-                                {/* ... Client Form Fields (Simplified for brevity in replacement, assume same structure but with cleaner styling if needed) ... */}
-                                <div className="text-center mb-8">
-                                    <h3 className="text-xl font-black mb-2">Dados do Cliente</h3>
-                                    <p className="text-sm text-muted-foreground">Pessoa física ou jurídica responsável</p>
-                                </div>
-                                {/* Reusing previous inputs structure */}
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div className="col-span-2">
-                                        <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2 block">Nome / Razão Social</label>
-                                        <Input
-                                            placeholder="Ex: João Silva ou Construtora ABC Ltda"
-                                            className="h-12 rounded-xl bg-muted/5 border-border/20"
-                                            value={formData.clienteNome}
-                                            onChange={e => setFormData({ ...formData, clienteNome: e.target.value })}
+                            {/* STEP 1: CLIENTE */}
+                            {step === 1 && (
+                                <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-3xl mx-auto space-y-10">
+                                    <div className="mb-4">
+                                        <h2 className="text-4xl font-black tracking-tighter mb-2">Vínculo do Cliente</h2>
+                                        <p className="text-muted-foreground">Toda obra no VERCFLOW deve estar vinculada a um cliente já registrado.</p>
+                                    </div>
+
+                                    <div className="p-8 rounded-xl border border-border/20 bg-muted/5 space-y-6">
+                                        <div>
+                                            <Label className="uppercase text-[10px] font-black tracking-widest text-muted-foreground ml-1">Selecione o Cliente em Carteira</Label>
+                                            <select
+                                                className="w-full mt-2 h-14 rounded-2xl bg-background border-border/20 px-4 font-bold text-lg"
+                                                value={selectedClientId}
+                                                onChange={e => setSelectedClientId(e.target.value)}
+                                            >
+                                                <option value="">Buscar cliente...</option>
+                                                {clients.map(c => <option key={c.id} value={c.id}>{c.nome} ({c.documento})</option>)}
+                                            </select>
+                                        </div>
+
+                                        <div className="pt-4 border-t border-border/10 flex items-center justify-between">
+                                            <p className="text-sm text-muted-foreground italic">Não encontrou o cliente?</p>
+                                            <Button variant="outline" onClick={onRegisterClient} className="rounded-xl border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/5 font-bold">
+                                                Cadastrar Novo Cliente Agora
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-6 pt-6">
+                                        <div>
+                                            <Label className="uppercase text-[10px] font-black tracking-widest text-muted-foreground ml-1">Nome da Obra (Identificação)</Label>
+                                            <Input
+                                                value={workName}
+                                                onChange={e => setWorkName(e.target.value)}
+                                                placeholder="Ex: Reforma Clínica Central"
+                                                className="h-12 bg-muted/5 border-border/20 rounded-xl"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="uppercase text-[10px] font-black tracking-widest text-muted-foreground ml-1">Cidade / Localidade Principal</Label>
+                                            <Input
+                                                value={workCity}
+                                                onChange={e => setWorkCity(e.target.value)}
+                                                placeholder="Goiânia - GO"
+                                                className="h-12 bg-muted/5 border-border/20 rounded-xl"
+                                            />
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* STEP 2: CLASSIFICAÇÃO */}
+                            {step === 2 && (
+                                <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-4xl mx-auto space-y-8">
+                                    <div className="mb-6">
+                                        <h2 className="text-3xl font-black tracking-tight mb-2 italic">Classificação Fundamental</h2>
+                                        <p className="text-muted-foreground italic uppercase text-xs tracking-tighter">O tronco da árvore de decisão da engenharia.</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-4">
+                                            <Label className="uppercase text-[10px] font-black tracking-widest text-muted-foreground ml-1">Natureza Principal</Label>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {NATUREZAS_OBRA.map(n => (
+                                                    <div
+                                                        key={n.id}
+                                                        onClick={() => updateClass('natureza', n.id)}
+                                                        className={cn(
+                                                            "p-4 rounded-2xl border cursor-pointer transition-all hover:bg-muted/5",
+                                                            classification.natureza === n.id ? "border-blue-600 bg-blue-500/5 shadow-inner" : "border-border/20"
+                                                        )}
+                                                    >
+                                                        <h4 className={cn("font-bold text-sm", classification.natureza === n.id && "text-blue-600")}>{n.label}</h4>
+                                                        <p className="text-[10px] text-muted-foreground">{n.desc}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-8 bg-muted/5 p-6 rounded-xl border border-border/20">
+                                            <div>
+                                                <Label className="uppercase text-[10px] font-black tracking-widest text-muted-foreground mb-3 block">Zona Territorial</Label>
+                                                <div className="flex gap-2">
+                                                    {(['URBANA', 'RURAL', 'PERIURBANA'] as const).map(z => (
+                                                        <Button
+                                                            key={z}
+                                                            variant={classification.contexto === z ? 'default' : 'outline'}
+                                                            onClick={() => updateClass('contexto', z)}
+                                                            className="flex-1 text-xs font-bold"
+                                                        >
+                                                            {z}
+                                                        </Button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <Label className="uppercase text-[10px] font-black tracking-widest text-muted-foreground mb-3 block">Inserção / Logística</Label>
+                                                <div className="grid grid-cols-1 gap-1.5 h-[240px] overflow-y-auto pr-2 custom-scrollbar">
+                                                    {CONTEXTOS[classification.contexto].map((s: any) => (
+                                                        <Button
+                                                            key={s.id}
+                                                            variant={classification.subcontexto === s.id ? 'secondary' : 'ghost'}
+                                                            onClick={() => updateClass('subcontexto', s.id)}
+                                                            className={cn("justify-start font-normal h-11 text-xs px-4", classification.subcontexto === s.id && "bg-white dark:bg-muted font-bold border border-border/20 shadow-sm")}
+                                                        >
+                                                            {s.label}
+                                                        </Button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* STEP 3: TIPOLOGIA */}
+                            {step === 3 && (
+                                <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-4xl mx-auto space-y-8">
+                                    <div className="mb-6 text-center">
+                                        <h2 className="text-3xl font-black tracking-tight mb-2">Tipologia Física</h2>
+                                        <Badge variant="secondary" className="bg-blue-500/10 text-blue-600">{currentNaturezaLabel}</Badge>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                                        <div className="space-y-4">
+                                            <Label className="uppercase text-[10px] font-black tracking-widest text-muted-foreground ml-1">Tipologia Arquitetônica</Label>
+                                            <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {(TIPOLOGIAS as any)[classification.natureza]?.map((t: any) => (
+                                                    <div
+                                                        key={t.id}
+                                                        onClick={() => updateClass('tipologia', t.id)}
+                                                        className={cn(
+                                                            "p-4 rounded-2xl border cursor-pointer transition-all hover:border-blue-500/40",
+                                                            classification.tipologia === t.id ? "border-blue-600 bg-blue-500/5 shadow-inner translate-x-1" : "border-border/20"
+                                                        )}
+                                                    >
+                                                        <h4 className={cn("font-black text-xs uppercase tracking-tight", classification.tipologia === t.id && "text-blue-600")}>{t.label}</h4>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                            <Card className="p-8 border-border/20 bg-muted/5 space-y-8">
+                                                <div>
+                                                    <Label className="uppercase text-[10px] font-black tracking-widest text-muted-foreground mb-4 block">Padrão Construtivo</Label>
+                                                    <select
+                                                        className="w-full h-12 rounded-xl bg-background border px-4 text-sm font-bold shadow-sm"
+                                                        value={classification.padrao}
+                                                        onChange={e => updateClass('padrao', e.target.value)}
+                                                    >
+                                                        {PADROES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <Label className="uppercase text-[10px] font-black tracking-widest text-muted-foreground mb-4 block">Finalidade do Ativo</Label>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {FINALIDADES.map(f => (
+                                                            <Button
+                                                                key={f.id}
+                                                                size="sm"
+                                                                variant={classification.finalidade === f.id ? 'default' : 'outline'}
+                                                                onClick={() => updateClass('finalidade', f.id)}
+                                                                className="h-10 text-[10px] font-black tracking-tighter"
+                                                            >
+                                                                {f.label.toUpperCase().split('(')[0]}
+                                                            </Button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* STEP 4: OBJETO DO CONTRATO */}
+                            {step === 4 && (
+                                <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-4xl mx-auto space-y-8">
+                                    <div className="mb-6">
+                                        <h2 className="text-3xl font-black tracking-tight mb-2 italic">Objeto do Contrato</h2>
+                                        <p className="text-muted-foreground">O que foi acordado com o cliente? Marque todas as frentes técnicas.</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {REGULARIZACAO.OBJETOS.map(obj => (
+                                            <div
+                                                key={obj.id}
+                                                onClick={() => handleToggleList('objetos', obj.id)}
+                                                className={cn(
+                                                    "p-6 rounded-xl border cursor-pointer transition-all flex items-center gap-4",
+                                                    classification.objetos.includes(obj.id) ? "border-blue-600 bg-blue-500/5" : "border-border/20 bg-muted/5 hover:bg-muted/10"
+                                                )}
+                                            >
+                                                <Checkbox
+                                                    id={`obj-${obj.id}`}
+                                                    checked={classification.objetos.includes(obj.id)}
+                                                    className="border-blue-400"
+                                                />
+                                                <div>
+                                                    <h4 className={cn("font-bold text-sm", classification.objetos.includes(obj.id) && "text-blue-700")}>{obj.label}</h4>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="p-4 bg-muted/20 border border-dashed border-border/40 rounded-2xl flex gap-3 text-muted-foreground">
+                                        <AlertTriangle size={18} />
+                                        <p className="text-[10px] font-medium leading-relaxed italic uppercase">Estes objetos definem o escopo macro do contrato e as responsas técnicas que deverão ser emitidas pela equipe interna.</p>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* STEP 5: REGULARIZAÇÃO */}
+                            {step === 5 && (
+                                <motion.div key="step5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-4xl mx-auto space-y-8">
+                                    <div className="mb-6">
+                                        <h2 className="text-3xl font-black tracking-tight mb-2">Legalização & Aprovação</h2>
+                                        <p className="text-muted-foreground">Esta obra requer submissão a órgãos públicos?</p>
+                                    </div>
+
+                                    <div className="bg-muted/10 p-8 rounded-xl border border-border/20 flex items-center justify-between">
+                                        <div className="flex gap-6 items-center">
+                                            <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all", classification.requerLegalizacao ? "bg-blue-600 text-white" : "bg-muted text-muted-foreground")}>
+                                                <ShieldCheck size={28} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-black text-xl uppercase tracking-widest">Requer Aprovação Pública?</h4>
+                                                <p className="text-sm text-muted-foreground">Ative para configurar o fluxo de licenciamento necessário.</p>
+                                            </div>
+                                        </div>
+                                        <Switch
+                                            checked={classification.requerLegalizacao}
+                                            onCheckedChange={(c) => updateClass('requerLegalizacao', c)}
+                                            className="scale-150"
                                         />
                                     </div>
-                                    <div>
-                                        <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2 block">Tipo</label>
-                                        <div className="flex bg-muted/5 rounded-xl p-1 border border-border/20 h-12">
-                                            <Button variant="ghost" onClick={() => setFormData({ ...formData, clienteTipo: 'PJ' })} className={cn("flex-1 rounded-lg text-[10px] font-black h-full", formData.clienteTipo === 'PJ' ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>PJ</Button>
-                                            <Button variant="ghost" onClick={() => setFormData({ ...formData, clienteTipo: 'PF' })} className={cn("flex-1 rounded-lg text-[10px] font-black h-full", formData.clienteTipo === 'PF' ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>PF</Button>
-                                        </div>
+
+                                    {classification.requerLegalizacao && (
+                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-6">
+                                            <div className="space-y-6">
+                                                <Label className="uppercase text-[10px] font-black tracking-widest text-blue-600 mb-2 block">Órgãos Envolvidos</Label>
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {REGULARIZACAO.ORGAOS.map(org => (
+                                                        <div
+                                                            key={org.id}
+                                                            onClick={() => handleToggleList('orgaos', org.id)}
+                                                            className={cn("p-3 rounded-xl border flex items-center gap-3 cursor-pointer", classification.legalizacao?.orgaos.includes(org.id) ? "border-blue-500 bg-blue-500/5 font-bold" : "border-border/10")}
+                                                        >
+                                                            <Checkbox checked={classification.legalizacao?.orgaos.includes(org.id)} />
+                                                            <span className="text-xs">{org.label}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-6">
+                                                <Label className="uppercase text-[10px] font-black tracking-widest text-blue-600 mb-2 block">Cenário Fático de Regularização</Label>
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {REGULARIZACAO.CENARIOS.map(cen => (
+                                                        <div
+                                                            key={cen.id}
+                                                            onClick={() => updateLegal('cenario', cen.id)}
+                                                            className={cn("p-4 rounded-xl border cursor-pointer", classification.legalizacao?.cenario === cen.id ? "border-blue-500 bg-blue-600 text-white" : "border-border/10")}
+                                                        >
+                                                            <h4 className="font-bold text-xs">{cen.label}</h4>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </motion.div>
+                            )}
+
+                            {/* STEP 6: DOSSIÊ DE DOCUMENTOS */}
+                            {step === 6 && (
+                                <motion.div key="step6" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-4xl mx-auto space-y-8">
+                                    <div className="text-center">
+                                        <h2 className="text-4xl font-black tracking-tighter mb-2 italic">Dossiê da Obra</h2>
+                                        <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">Documentação base para o início do planejamento técnico.</p>
                                     </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2 block">{formData.clienteTipo === 'PJ' ? 'CNPJ' : 'CPF'}</label>
-                                        <Input placeholder={formData.clienteTipo === 'PJ' ? "00.000.000/0000-00" : "000.000.000-00"} className="h-12 rounded-xl bg-muted/5 border-border/20" value={formData.clienteDoc} onChange={e => setFormData({ ...formData, clienteDoc: e.target.value })} />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2 block">Contato</label>
-                                        <Input placeholder="(00) 00000-0000" className="h-12 rounded-xl bg-muted/5 border-border/20" value={formData.clienteContato} onChange={e => setFormData({ ...formData, clienteContato: e.target.value })} />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2 block">Endereço Completo</label>
-                                    <Input placeholder="Endereço do Cliente" className="h-12 rounded-xl bg-muted/5 border-border/20" value={formData.clienteEndereco} onChange={e => setFormData({ ...formData, clienteEndereco: e.target.value })} />
-                                </div>
-                            </motion.div>
-                        )}
 
-                        {/* STEP 2: OBRA BASICS */}
-                        {step === 2 && (
-                            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-2xl mx-auto space-y-6">
-                                <div className="text-center mb-8">
-                                    <h3 className="text-xl font-black mb-2">Dados da Obra</h3>
-                                    <p className="text-sm text-muted-foreground">Informações básicas do projeto</p>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2 block">Nome da Obra</label>
-                                    <Input placeholder="Ex: Edifício Residencial Sky Tower" className="h-14 rounded-xl bg-muted/5 border-border/20 text-lg font-semibold" value={formData.nomeObra} onChange={e => setFormData({ ...formData, nomeObra: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2 block">Localização (Cidade/UF)</label>
-                                    <Input placeholder="Cidade - UF" className="h-12 rounded-xl bg-muted/5 border-border/20" value={formData.localizacao} onChange={e => setFormData({ ...formData, localizacao: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2 block">Área Estimada (m²)</label>
-                                    <Input type="number" placeholder="0" className="h-12 rounded-xl bg-muted/5 border-border/20" value={formData.areaEstimada} onChange={e => setFormData({ ...formData, areaEstimada: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2 block">Descrição / Observações</label>
-                                    <Textarea className="min-h-[100px] rounded-xl bg-muted/5 border-border/20 resize-none" placeholder="Detalhes iniciais..." value={formData.descricao} onChange={e => setFormData({ ...formData, descricao: e.target.value })} />
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {/* STEP 3: GEOLOCATION (MAP) */}
-                        {step === 3 && (
-                            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-3xl mx-auto space-y-6">
-                                <div className="text-center mb-8">
-                                    <h3 className="text-xl font-black mb-2">Localização no Mapa</h3>
-                                    <p className="text-sm text-muted-foreground">Marque o ponto exato da futura obra</p>
-                                </div>
-                                <MapSelector
-                                    lat={formData.lat}
-                                    lng={formData.lng}
-                                    onChange={(lat, lng) => setFormData({ ...formData, lat, lng })}
-                                />
-                                <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex items-start gap-4 mt-4">
-                                    <AlertCircle className="text-primary shrink-0" size={20} />
-                                    <p className="text-xs text-muted-foreground leading-relaxed">
-                                        A geolocalização é crucial para estudos de viabilidade técnica, logística de canteiro e conformidade com órgãos municipais.
-                                    </p>
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {/* STEP 4: DETAILED CLASSIFICATION */}
-                        {step === 4 && (
-                            <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-3xl mx-auto space-y-8">
-                                <div className="text-center mb-8">
-                                    <h3 className="text-xl font-black mb-2">Classificação de Contexto</h3>
-                                    <p className="text-sm text-muted-foreground">Definição precisa do ambiente e uso</p>
-                                </div>
-
-                                <div className="space-y-6">
-                                    {/* ZONA */}
-                                    <div>
-                                        <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-4 block">Zona / Contexto</label>
-                                        <div className="grid grid-cols-3 gap-4">
-                                            {['URBANA', 'RURAL', 'MISTA_EXPANSAO'].map(z => (
-                                                <Button
-                                                    key={z}
-                                                    variant={formData.classificacao.zona === z ? 'default' : 'outline'}
-                                                    onClick={() => setFormData({ ...formData, classificacao: { ...formData.classificacao, zona: z as any, subzona: '' } })} // Reset subzone on zone change
-                                                    className="h-12 rounded-xl"
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {[
+                                            { id: 'MATRICULA', label: 'Matrícula do Imóvel / Escritura' },
+                                            { id: 'LEVANTAMENTO', label: 'Levantamento Topográfico / Planialtimétrico' },
+                                            { id: 'SOTAGEM', label: 'Laudo de Sondagem (SPT)' },
+                                            { id: 'IPTU', label: 'Espelho do IPTU / ITR' },
+                                            { id: 'CROQUI', label: 'Croquis ou Fotos do Local' },
+                                            { id: 'VIABILIDADE', label: 'Consulta de Viabilidade / Uso do Solo' }
+                                        ].map((doc) => {
+                                            const isUploaded = attachments.some(a => a.name.startsWith(doc.id));
+                                            return (
+                                                <div
+                                                    key={doc.id}
+                                                    className={cn("p-6 rounded-xl border flex items-center justify-between transition-all", isUploaded ? "bg-blue-500/5 border-blue-500/40" : "bg-muted/5 border-border/10")}
                                                 >
-                                                    {z.replace('_', ' ')}
-                                                </Button>
-                                            ))}
-                                        </div>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", isUploaded ? "bg-blue-600 text-white" : "bg-muted text-muted-foreground")}>
+                                                            {isUploaded ? <CheckCircle2 size={24} /> : <Upload size={24} />}
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-bold text-sm tracking-tight">{doc.label}</h4>
+                                                            <p className="text-[10px] text-muted-foreground italic uppercase">{isUploaded ? 'Arquivo Vinculado' : 'Aguardando Documento'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        size="sm"
+                                                        variant={isUploaded ? "ghost" : "secondary"}
+                                                        onClick={() => handleFileUpload(doc.id)}
+                                                        className="font-black text-[10px] uppercase tracking-widest px-4"
+                                                    >
+                                                        {isUploaded ? 'Alterar' : 'Anexar'}
+                                                    </Button>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
 
-                                    {/* SUBZONA */}
-                                    {formData.classificacao.zona && (
-                                        <div className="animate-in fade-in slide-in-from-top-2">
-                                            <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-4 block">Especificação do Local</label>
-                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                                {(classificationOptions[formData.classificacao.zona as keyof typeof classificationOptions] || []).map((opt: any) => (
-                                                    <Button
-                                                        key={opt.id}
-                                                        variant={formData.classificacao.subzona === opt.id ? 'default' : 'outline'}
-                                                        onClick={() => setFormData({ ...formData, classificacao: { ...formData.classificacao, subzona: opt.id } })}
-                                                        className="h-10 text-xs rounded-lg justify-start px-4"
-                                                    >
-                                                        {opt.label}
-                                                    </Button>
+                                    {attachments.length > 0 && (
+                                        <div className="mt-8 space-y-3">
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Arquivos Selecionados ({attachments.length})</h4>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {attachments.map(file => (
+                                                    <div key={file.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/10 group">
+                                                        <div className="flex items-center gap-2 overflow-hidden">
+                                                            <FileText size={14} className="text-blue-500 shrink-0" />
+                                                            <span className="text-[10px] font-bold truncate">{file.name}</span>
+                                                        </div>
+                                                        <button onClick={() => removeAttachment(file.id)} className="p-1 hover:bg-red-500/10 text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <X size={12} />
+                                                        </button>
+                                                    </div>
                                                 ))}
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* USO */}
-                                    <div>
-                                        <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-4 block">Uso e Ocupação Principal</label>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                            {usageOptions.map(opt => (
-                                                <Button
-                                                    key={opt.id}
-                                                    variant={formData.classificacao.uso === opt.id ? 'default' : 'outline'}
-                                                    onClick={() => setFormData({ ...formData, classificacao: { ...formData.classificacao, uso: opt.id } })}
-                                                    className="h-auto py-3 text-xs rounded-lg flex-col gap-1 items-center justify-center text-center whitespace-normal"
-                                                >
-                                                    <span className="font-bold">{opt.label}</span>
-                                                </Button>
-                                            ))}
+                                    <div className="p-4 bg-blue-500/5 border border-dashed border-blue-500/20 rounded-2xl flex gap-3 text-blue-800/60">
+                                        <Info size={18} />
+                                        <p className="text-[10px] font-medium leading-relaxed italic uppercase">Documentos anexados agora facilitam a validação técnica pela engenharia e aceleram o orçamento comercial.</p>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* STEP 7: REVISÃO FINAL */}
+                            {step === 7 && (
+                                <motion.div key="step7" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-4xl mx-auto space-y-10">
+                                    <div className="text-center">
+                                        <h2 className="text-4xl font-black tracking-tighter mb-2">Resumo da Obra</h2>
+                                        <p className="text-muted-foreground italic mb-8 uppercase tracking-widest text-xs font-bold">Confirmação de DNA e Dossiê</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-6">
+                                        <Card className="col-span-2 p-8 border-border/20 bg-muted/5 space-y-6">
+                                            <div className="flex justify-between items-start border-b pb-6">
+                                                <div>
+                                                    <p className="text-[10px] uppercase font-black text-muted-foreground mb-1">Cliente Vinculado</p>
+                                                    <h3 className="text-2xl font-black">{clients.find(c => c.id === selectedClientId)?.nome}</h3>
+                                                </div>
+                                                <Badge variant="outline" className="border-blue-500 text-blue-600 font-bold px-3 py-1">{currentNaturezaLabel}</Badge>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-8">
+                                                <div>
+                                                    <p className="text-[10px] uppercase font-black text-muted-foreground mb-1">Obra: {workName}</p>
+                                                    <p className="font-bold text-lg">{classification.tipologia.replace(/_/g, ' ')}</p>
+                                                    <p className="text-xs text-muted-foreground mt-1">{classification.contexto} / {classification.subcontexto.replace(/_/g, ' ')}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] uppercase font-black text-muted-foreground mb-1">Dossiê Documental</p>
+                                                    <p className="font-black text-lg text-blue-600">{attachments.length} Arquivos Anexados</p>
+                                                    <div className="flex flex-wrap gap-1 mt-2">
+                                                        {attachments.map(a => <Badge key={a.id} className="text-[8px] bg-blue-500/10 text-blue-600 border-none">{a.name.split('_')[0]}</Badge>)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </Card>
+
+                                        <Card className="p-8 border-blue-500/20 bg-blue-500/5 space-y-6">
+                                            <h4 className="font-black text-xs uppercase tracking-widest text-blue-600 border-b border-blue-200 pb-2">Sugestão Técnica</h4>
+                                            <div className="flex flex-col gap-2 h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {disciplines.map(d => (
+                                                    <div key={d} className="flex items-center gap-2 p-2 bg-white dark:bg-muted rounded-lg border border-blue-100 shadow-sm text-[10px] font-bold uppercase tracking-tight">
+                                                        <CheckCircle2 size={12} className="text-blue-500 shrink-0" />
+                                                        {d}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </Card>
+                                    </div>
+
+                                    <div className="bg-emerald-500/5 border border-emerald-500/20 p-6 rounded-xl flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                                                <ShieldCheck size={24} />
+                                            </div>
+                                            <div>
+                                                <p className="font-black uppercase tracking-wider text-emerald-800">Pronto para Validação</p>
+                                                <p className="text-xs text-emerald-600 font-medium">Os dados serão enviados para a fila de Triagem da Engenharia.</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </motion.div>
-                        )}
+                                </motion.div>
+                            )}
 
-                        {/* STEP 4: ANEXOS (NEW) */}
-                        {step === 4 && (
-                            <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-2xl mx-auto space-y-6">
-                                <div className="text-center mb-8">
-                                    <h3 className="text-xl font-black mb-2">Anexos e Referências</h3>
-                                    <p className="text-sm text-muted-foreground">Fotos do local, documentos ou referências (Opcional)</p>
-                                </div>
+                        </AnimatePresence>
+                    </div>
 
-                                <div className="border-2 border-dashed border-border/40 rounded-3xl p-12 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/5 transition-colors group">
-                                    <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
-                                        <UploadCloud size={32} className="text-muted-foreground group-hover:text-primary" />
-                                    </div>
-                                    <h4 className="font-bold text-lg mb-2">Clique para fazer upload</h4>
-                                    <p className="text-sm text-muted-foreground max-w-xs">Arraste arquivos ou clique para selecionar fotos e documentos (PDF, JPG, PNG)</p>
-                                    <Button variant="outline" className="mt-6 rounded-xl" onClick={() => toast("Funcionalidade de upload simulada")}>
-                                        Selecionar Arquivos
-                                    </Button>
-                                </div>
+                    {/* Footer Actions */}
+                    <div className="p-8 border-t border-border/10 bg-background/80 backdrop-blur-md flex justify-between items-center z-20">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setStep(prev => Math.max(1, prev - 1))}
+                            disabled={step === 1}
+                            className="text-muted-foreground hover:text-foreground font-black uppercase tracking-widest text-xs gap-2"
+                        >
+                            <ChevronLeft size={16} /> Retroceder
+                        </Button>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    {/* Mock of attached files if any were 'uploaded' */}
-                                    {formData.attachments.length > 0 && formData.attachments.map((file, i) => (
-                                        <div key={i} className="p-3 bg-muted/10 border rounded-xl flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-[10px] font-black">{file.type}</div>
-                                            <p className="text-xs font-medium truncate">{file.name}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </motion.div>
-                        )}
-
-
-                        {/* STEP 5: REVISÃO (Adjusted for 5 steps) */}
-                        {step === 5 && (
-                            <motion.div key="step5" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="max-w-2xl mx-auto space-y-6">
-                                <div className="text-center mb-8">
-                                    <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
-                                        <CheckCircle2 size={32} className="text-emerald-500" />
-                                    </div>
-                                    <h3 className="text-2xl font-black mb-2">Confirmar Registro</h3>
-                                </div>
-
-                                <Card className="p-6 rounded-2xl border-border/20 bg-muted/5 space-y-4">
-                                    {/* Summary content */}
-                                    <div className="flex justify-between border-b border-border/10 pb-3">
-                                        <span className="text-xs font-black uppercase text-muted-foreground">Cliente</span>
-                                        <span className="text-xs font-bold">{formData.clienteNome}</span>
-                                    </div>
-                                    <div className="flex justify-between border-b border-border/10 pb-3">
-                                        <span className="text-xs font-black uppercase text-muted-foreground">Obra</span>
-                                        <span className="text-xs font-bold">{formData.nomeObra}</span>
-                                    </div>
-                                    <div className="flex justify-between border-b border-border/10 pb-3">
-                                        <span className="text-xs font-black uppercase text-muted-foreground">Classificação</span>
-                                        <span className="text-xs font-bold text-right">
-                                            {formData.classificacao.zona} • {formData.classificacao.subzona}<br />
-                                            <span className="opacity-60">{formData.classificacao.uso}</span>
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-xs font-black uppercase text-muted-foreground">Próximo Passo</span>
-                                        <span className="text-xs font-bold text-primary">Qualificação no Comercial</span>
-                                    </div>
-                                </Card>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-
-                {/* Footer */}
-                <div className="relative z-10 p-6 border-t border-border/10 bg-background/80 backdrop-blur-md flex justify-between items-center">
-                    <Button variant="ghost" onClick={prevStep} disabled={step === 1} className="rounded-xl h-11 font-black uppercase text-[10px] tracking-widest gap-2">
-                        <ChevronLeft size={16} /> Voltar
-                    </Button>
-                    <Button onClick={step === 5 ? handleComplete : nextStep} className="rounded-xl h-11 font-black uppercase text-[10px] tracking-widest px-8 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground">
-                        {step === 5 ? 'Registrar Lead' : 'Continuar'} <ChevronRight size={16} />
-                    </Button>
+                        <Button
+                            onClick={() => step === 7 ? handleComplete() : setStep(prev => Math.min(7, prev + 1))}
+                            className={cn(
+                                "rounded-2xl px-12 font-black tracking-[0.2em] gap-3 transition-all h-14 uppercase shadow-2xl",
+                                step === 7 ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20 scale-105" : "bg-blue-600 text-white shadow-blue-600/20"
+                            )}
+                        >
+                            {step === 7 ? 'Efetivar Registro' : 'Avançar Etapa'}
+                            {step !== 7 && <ArrowRight size={18} />}
+                        </Button>
+                    </div>
                 </div>
             </motion.div>
         </div>

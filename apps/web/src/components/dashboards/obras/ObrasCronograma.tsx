@@ -77,7 +77,7 @@ export function ObrasCronograma() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.1 }}
                     >
-                        <Card className="p-8 rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-sm overflow-hidden relative group">
+                        <Card className="p-8 rounded-2xl border-white/5 bg-background/40 backdrop-blur-sm overflow-hidden relative group">
                             {/* Priority Indicator */}
                             <div className={cn(
                                 "absolute top-0 left-0 bottom-0 w-2",

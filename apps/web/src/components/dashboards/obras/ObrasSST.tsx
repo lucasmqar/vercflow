@@ -100,7 +100,7 @@ export function ObrasSST() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.1 }}
                     >
-                        <Card className="group p-6 rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-sm hover:border-red-500/20 hover:shadow-xl transition-all cursor-pointer relative overflow-hidden">
+                        <Card className="group p-6 rounded-2xl border-white/5 bg-background/40 backdrop-blur-sm hover:border-red-500/20 hover:shadow-xl transition-all cursor-pointer relative overflow-hidden">
                             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                                 <div className="flex items-center gap-6">
                                     <div className={cn(

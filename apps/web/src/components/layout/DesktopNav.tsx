@@ -17,33 +17,35 @@ export function DesktopNav({ activeTab, onTabChange }: DesktopNavProps) {
 
     const navItems = [
         { id: 'home', icon: LayoutDashboard, label: 'Início' },
-        { id: 'captura', icon: Camera, label: 'Captura' },
-        { id: 'triagem', icon: ShieldCheck, label: 'Triagem' },
         { id: 'comercial', icon: Target, label: 'Comercial' },
+        { id: 'captura', icon: Plus, label: 'Captura' },
+        { id: 'triagem', icon: ShieldCheck, label: 'Triagem' },
         { id: 'obras', icon: Building2, label: 'Gestão de Obras' },
         { id: 'engenharia', icon: Hammer, label: 'Engenharia' },
         { id: 'projetos', icon: Layers, label: 'Projetos' },
         { id: 'design', icon: Palette, label: 'Design' },
         { id: 'compras', icon: ShoppingCart, label: 'Compras' },
         { id: 'estoque', icon: Box, label: 'Estoque' },
-        { id: 'logistica', icon: Truck, label: 'Logística' },
         { id: 'financeiro', icon: DollarSign, label: 'Financeiro' },
         { id: 'rh-sst', icon: Shield, label: 'RH / SST' },
+        { id: 'logistica', icon: Truck, label: 'Logística' },
     ];
 
     return (
-        <div className="hidden lg:flex fixed bottom-8 left-1/2 -translate-x-1/2 z-[100]">
-            <div className="glass-hub p-2 rounded-[24px] flex items-center gap-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 bg-background/25 backdrop-blur-2xl transition-all">
-                {/* Logo section */}
-                <div className="pl-3 pr-2 border-r border-white/10 mr-1 flex items-center">
-                    <div
-                        onClick={() => onTabChange('home')}
-                        className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-primary/20 cursor-pointer hover:scale-110 transition-transform"
-                    >
-                        <span className="text-white font-black text-xs">V</span>
-                    </div>
-                </div>
+        <div className="hidden lg:flex fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] items-center gap-4">
+            {/* Logo isolated */}
+            <motion.div
+                onClick={() => onTabChange('home')}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                whileHover={{ scale: 1.25 }}
+                whileTap={{ scale: 0.8 }}
+                transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                className="w-7 h-7 rounded-full bg-primary shadow-lg shadow-primary/20 cursor-pointer"
+            />
 
+            {/* Nav Menu */}
+            <div className="glass-hub p-2 rounded-[24px] flex items-center gap-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 bg-background/25 backdrop-blur-2xl transition-all">
                 <div className="flex items-center gap-1">
                     {navItems.map((item) => {
                         const isActive = activeTab === item.id;

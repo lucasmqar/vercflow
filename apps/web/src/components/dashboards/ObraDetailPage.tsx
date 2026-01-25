@@ -181,7 +181,7 @@ function OverviewTab({ obra }: { obra: Project }) {
             <StatCard label="Orçamento Consumido" value="R$ 0" icon={DollarSign} color="text-emerald-500" />
             <StatCard label="Segurança (EPI/NR)" value="OK" icon={ShieldCheck} color="text-blue-500" />
 
-            <Card className="lg:col-span-3 rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl p-8 min-h-[400px]">
+            <Card className="lg:col-span-3 rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl p-8 min-h-[400px]">
                 <h3 className="text-xl font-black uppercase tracking-widest mb-8 border-b border-white/5 pb-4">Linha do Tempo</h3>
                 <div className="relative pl-12 space-y-12 before:absolute before:left-5 before:top-2 before:bottom-2 before:w-px before:bg-white/10">
                     <TimelineItem label="Lead Criado" date="Jan 20, 2026" status="complete" />
@@ -204,11 +204,11 @@ function EngineeringTab({ obra }: { obra: Project }) {
     return (
         <div className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2 rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl p-8">
+                <Card className="lg:col-span-2 rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl p-8">
                     <h3 className="text-xl font-black uppercase mb-6">Fases da Obra</h3>
                     <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
                         {['Pré-Obra', 'Mobilização', 'Estrutura', 'Alvenaria', 'Instalações', 'Acabamento'].map((fase, i) => (
-                            <div key={fase} className="flex-1 min-w-[150px] p-6 rounded-3xl bg-white/5 border border-white/5 flex flex-col items-center gap-3 text-center">
+                            <div key={fase} className="flex-1 min-w-[150px] p-6 rounded-xl bg-white/5 border border-white/5 flex flex-col items-center gap-3 text-center">
                                 <Badge className="bg-muted text-muted-foreground border-none text-[8px] font-black uppercase">{i + 1}</Badge>
                                 <span className="font-black text-xs uppercase tracking-widest">{fase}</span>
                                 <div className="h-1 w-full bg-white/10 rounded-full mt-2" />
@@ -216,7 +216,7 @@ function EngineeringTab({ obra }: { obra: Project }) {
                         ))}
                     </div>
                 </Card>
-                <Card className="rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl p-8">
+                <Card className="rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl p-8">
                     <h3 className="text-xl font-black uppercase mb-6 text-primary">Solicitações abertas</h3>
                     <div className="space-y-4">
                         <SmallRequestCard to=" RH / SST" title="Alocar Mestre de Obra" priority="ALTA" />
@@ -231,7 +231,7 @@ function EngineeringTab({ obra }: { obra: Project }) {
 function ProjectsTab({ obra }: { obra: Project }) {
     return (
         <div className="space-y-8">
-            <Card className="rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl p-8">
+            <Card className="rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl p-8">
                 <div className="flex justify-between items-center mb-8 pb-4 border-b border-white/5">
                     <h3 className="text-xl font-black uppercase">Board de Disciplinas</h3>
                     <Button variant="outline" className="h-10 rounded-xl font-black uppercase tracking-widest text-[9px]">
@@ -253,7 +253,7 @@ function ProjectsTab({ obra }: { obra: Project }) {
 function PeopleTab({ obra }: { obra: Project }) {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <Card className="lg:col-span-8 rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl p-8">
+            <Card className="lg:col-span-8 rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl p-8">
                 <h3 className="text-xl font-black uppercase mb-8">Pessoas na Obra</h3>
                 <div className="space-y-6">
                     {/* Empty State */}
@@ -264,7 +264,7 @@ function PeopleTab({ obra }: { obra: Project }) {
                     </div>
                 </div>
             </Card>
-            <Card className="lg:col-span-4 rounded-[2.5rem] border-white/10 bg-primary/5 p-8 border-dashed border-2">
+            <Card className="lg:col-span-4 rounded-2xl border-white/10 bg-primary/5 p-8 border-dashed border-2">
                 <h3 className="text-xl font-black uppercase mb-6 text-primary flex items-center gap-2">
                     <ShieldCheck size={24} /> Status SST
                 </h3>
@@ -344,7 +344,7 @@ function SettingsTab({ obra }: { obra: Project }) {
 // UI Helpers
 function StatCard({ label, value, icon: Icon, color }: any) {
     return (
-        <Card className="rounded-3xl border-white/5 bg-background/60 backdrop-blur-xl p-8 flex flex-col gap-4">
+        <Card className="rounded-xl border-white/5 bg-background/60 backdrop-blur-xl p-8 flex flex-col gap-4">
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60 flex items-center gap-2">
                 <Icon size={14} className={color} /> {label}
             </span>
@@ -407,7 +407,7 @@ function KanbanColumn({ title, count, color }: any) {
                 </div>
                 <span className="text-[10px] font-bold text-muted-foreground">{count}</span>
             </div>
-            <div className="min-h-[200px] rounded-3xl bg-white/5 border border-dashed border-white/5 flex items-center justify-center p-6 text-center">
+            <div className="min-h-[200px] rounded-xl bg-white/5 border border-dashed border-white/5 flex items-center justify-center p-6 text-center">
                 <p className="text-[10px] text-muted-foreground uppercase opacity-20 font-black tracking-widest">Sem disciplinas</p>
             </div>
         </div>

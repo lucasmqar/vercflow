@@ -1,24 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Lead, Budget, Proposal, Project, Client, BudgetRevision, DiarioObra } from '@/types';
+import { Lead, Budget, Proposal, Project, Client, BudgetRevision, DiarioObra, DepartmentRequest, AuditLogEntry, Attachment } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
-
-// New Types for Interdepartmental Communication
-export interface DepartmentRequest {
-    id: string;
-    fromDepartment: 'COMERCIAL' | 'ENGENHARIA' | 'PROJETOS' | 'FINANCEIRO' | 'COMPRAS' | 'RH' | 'LOGISTICA';
-    toDepartment: 'COMERCIAL' | 'ENGENHARIA' | 'PROJETOS' | 'FINANCEIRO' | 'COMPRAS' | 'RH' | 'LOGISTICA';
-    type: string; // 'MATERIAL_PURCHASE' | 'TEAM_ALLOCATION' | 'DOCUMENT_REQUEST' etc
-    projectId?: string;
-    recordId?: string;
-    title: string;
-    description: string;
-    priority: 'BAIXA' | 'MEDIA' | 'ALTA' | 'CRITICA';
-    status: 'PENDENTE' | 'EM_ANALISE' | 'APROVADO' | 'REJEITADO' | 'CONCLUIDO';
-    createdAt: string;
-    resolvedAt?: string;
-    metadata?: any; // Flexible field for process specifics (e.g., quotes, values, sub-ids)
-}
 
 interface AppFlowState {
     // Core Data
@@ -31,6 +14,9 @@ interface AppFlowState {
     // Interdepartmental Communication
     requests: DepartmentRequest[];
 
+    // Internal Helpers
+    addAuditLog: (entityType: 'BUDGET' | 'PROPOSAL' | 'PROJECT', entityId: string, action: string, description: string, metadata?: any) => void;
+
     // Client Management
     addClient: (client: Omit<Client, 'id' | 'criadoEm'>) => string;
     updateClient: (id: string, data: Partial<Client>) => void;
@@ -40,42 +26,43 @@ interface AppFlowState {
     selectedProjectId: string | null;
     setSelectedProject: (id: string | null) => void;
 
-    // Lead Management (ALWAYS the starting point)
+    // Lead Management
     addLead: (lead: Omit<Lead, 'id' | 'criadoEm'>) => string;
     updateLeadStatus: (id: string, status: Lead['status']) => void;
 
     // Budget Management
     createBudget: (budget: Omit<Budget, 'id' | 'criadoEm'>) => string;
     updateBudgetStatus: (id: string, status: Budget['status']) => void;
-    createBudgetRevision: (budgetId: string, revisionData: Omit<BudgetRevision, 'id' | 'budgetId' | 'version' | 'createdAt'>) => string;
+    updateBudget: (id: string, data: Partial<Budget>) => void;
+    createBudgetRevision: (budgetId: string, revisionData: Omit<BudgetRevision, 'id' | 'budgetId' | 'version' | 'createdAt'>, reason: string) => string;
 
     // Proposal Management
     createProposal: (proposal: Omit<Proposal, 'id' | 'criadoEm'>) => string;
     updateProposalStatus: (id: string, status: Proposal['status']) => void;
 
-    // Project Management (Only created from APPROVED Proposal)
+    // Project Management
     activateProject: (proposalId: string) => string | null;
     addProject: (project: Omit<Project, 'id' | 'criadoEm' | 'updatedAt'>) => string;
     updateProjectStatus: (id: string, status: Project['status']) => void;
 
     // Interdepartmental Requests
     createRequest: (request: Omit<DepartmentRequest, 'id' | 'createdAt'>) => string;
-    updateRequestStatus: (id: string, status: DepartmentRequest['status']) => void;
+    updateRequestStatus: (id: string, status: DepartmentRequest['status'], feedback?: any) => void;
     updateRequest: (id: string, data: Partial<DepartmentRequest>) => void;
     getRequestsForDepartment: (department: DepartmentRequest['toDepartment']) => DepartmentRequest[];
 
     // Discipline Management
-    disciplines: any[]; // Using any for flexibility or Discipline[] if imported
+    disciplines: any[];
     addDiscipline: (data: any) => string;
     getDisciplinesByProject: (projectId: string) => any[];
 
-    // Diario de Obra (RDO) Management
+    // Diario de Obra (RDO)
     diariosObra: DiarioObra[];
     createDiarioObra: (data: Omit<DiarioObra, 'id' | 'criadoEm'>) => string;
     updateDiarioObra: (id: string, data: Partial<DiarioObra>) => void;
     updateDiarioObraStatus: (id: string, status: DiarioObra['status']) => void;
     getDiariosByProject: (projectId: string) => DiarioObra[];
-    getDiariosByDateRange: (startDate: string, endDate: string) => DiarioObra[];
+    resetAndSeed: () => void;
 }
 
 export const useAppFlow = create<AppFlowState>()(
@@ -90,24 +77,51 @@ export const useAppFlow = create<AppFlowState>()(
             disciplines: [],
             diariosObra: [],
 
-            // CLIENT MANAGEMENT (Party Implementation)
+            // AUDIT LOG HELPER
+            addAuditLog: (type, id, action, description, metadata) => {
+                const entry: AuditLogEntry = {
+                    id: uuidv4(),
+                    userId: 'current-user-id', // Mock
+                    userName: 'Usuário Sistema', // Mock
+                    action,
+                    description,
+                    timestamp: new Date().toISOString(),
+                    metadata
+                };
+
+                if (type === 'BUDGET') {
+                    set(state => ({
+                        budgets: state.budgets.map(b => b.id === id ? {
+                            ...b,
+                            auditLog: [...(b.auditLog || []), entry]
+                        } : b)
+                    }));
+                } else if (type === 'PROPOSAL') {
+                    set(state => ({
+                        proposals: state.proposals.map(p => p.id === id ? {
+                            ...p,
+                            auditLog: [...(p.auditLog || []), entry]
+                        } : p)
+                    }));
+                } else if (type === 'PROJECT') {
+                    // Logic for project audit if needed
+                }
+            },
+
+            // CLIENT MANAGEMENT
             addClient: (clientData) => {
                 const id = uuidv4();
-                // Party Contract Enforcement
                 const nomeUnificado = clientData.nome || clientData.razaoSocial || clientData.nomeFantasia || 'Cliente Sem Nome';
-
                 set((state) => ({
                     clients: [...state.clients, {
                         ...clientData,
                         id,
-                        // Party Defaults
                         nome: nomeUnificado,
                         ativo: true,
                         contatos: clientData.contatos || '[]',
-                        // Legacy/Specifics
                         razaoSocial: clientData.razaoSocial || nomeUnificado,
                         criadoEm: new Date().toISOString()
-                    }]
+                    } as any]
                 }));
                 return id;
             },
@@ -130,7 +144,7 @@ export const useAppFlow = create<AppFlowState>()(
                         ...leadData,
                         id,
                         criadoEm: new Date().toISOString()
-                    }]
+                    } as any]
                 }));
                 return id;
             },
@@ -139,12 +153,9 @@ export const useAppFlow = create<AppFlowState>()(
                 set((state) => ({
                     leads: state.leads.map(l => l.id === id ? { ...l, status } : l)
                 }));
-
-                // Auto-trigger: If Lead becomes QUALIFICADO, it's ready for Budget
                 if (status === 'QUALIFICADO') {
                     const lead = get().leads.find(l => l.id === id);
                     if (lead) {
-                        // Notify Commercial to create budget
                         get().createRequest({
                             fromDepartment: 'COMERCIAL',
                             toDepartment: 'COMERCIAL',
@@ -161,25 +172,53 @@ export const useAppFlow = create<AppFlowState>()(
             // BUDGET MANAGEMENT
             createBudget: (budgetData) => {
                 const id = uuidv4();
+                const newBudget: Budget = {
+                    ...budgetData,
+                    id,
+                    validacaoTecnica: 'PENDENTE',
+                    validacaoFinanceira: 'PENDENTE',
+                    status: 'EM_ELABORACAO',
+                    attachments: [],
+                    auditLog: [],
+                    criadoEm: new Date().toISOString()
+                } as any;
+
                 set((state) => ({
-                    budgets: [...state.budgets, {
-                        ...budgetData,
-                        id,
-                        criadoEm: new Date().toISOString()
-                    }]
+                    budgets: [...state.budgets, newBudget]
                 }));
+
+                get().addAuditLog('BUDGET', id, 'CREATE', 'Orçamento inicial criado pelo comercial.');
+
+                // Auto-trigger Engineer
+                const lead = get().leads.find(l => l.id === budgetData.leadId);
+                get().createRequest({
+                    fromDepartment: 'COMERCIAL',
+                    toDepartment: 'ENGENHARIA',
+                    type: 'BUDGET_VALIDATION',
+                    title: `Validação Técnica: ${lead?.nomeObra || 'Obra'}`,
+                    description: `Validar escopo macro e viabilidade técnica.`,
+                    priority: 'ALTA',
+                    status: 'PENDENTE',
+                    recordId: id
+                });
+
                 return id;
             },
 
-            updateBudgetStatus: (id, status) => set((state) => ({
-                budgets: state.budgets.map(b => b.id === id ? { ...b, status } : b)
+            updateBudgetStatus: (id, status) => {
+                set((state) => ({
+                    budgets: state.budgets.map(b => b.id === id ? { ...b, status } : b)
+                }));
+                get().addAuditLog('BUDGET', id, 'STATUS_CHANGE', `Status alterado para ${status}`);
+            },
+
+            updateBudget: (id, data) => set((state) => ({
+                budgets: state.budgets.map(b => b.id === id ? { ...b, ...data } : b)
             })),
 
-            createBudgetRevision: (budgetId, revisionData) => {
+            createBudgetRevision: (budgetId, revisionData, reason) => {
                 const id = uuidv4();
-                const budgets = get().budgets;
-                const budget = budgets.find(b => b.id === budgetId);
-
+                const budget = get().budgets.find(b => b.id === budgetId);
                 if (!budget) return '';
 
                 const version = (budget.revisions?.length || 0) + 1;
@@ -188,18 +227,22 @@ export const useAppFlow = create<AppFlowState>()(
                     id,
                     budgetId,
                     version,
+                    resumoAlteracoes: reason,
                     createdAt: new Date().toISOString()
-                };
+                } as any;
 
                 set((state) => ({
                     budgets: state.budgets.map(b => b.id === budgetId ? {
                         ...b,
-                        escopoMacro: revisionData.escopoMacro,
-                        valorEstimado: revisionData.valorEstimado,
-                        prazoEstimadoMeses: revisionData.prazoEstimadoMeses,
+                        ...revisionData,
+                        validacaoTecnica: 'PENDENTE',
+                        validacaoFinanceira: 'PENDENTE',
+                        status: 'EM_ELABORACAO',
                         revisions: [...(b.revisions || []), newRevision]
                     } : b)
                 }));
+
+                get().addAuditLog('BUDGET', budgetId, 'REVISION', `Nova revisão v${version} gerada. Motivo: ${reason}`, { revisionId: id });
 
                 return id;
             },
@@ -211,9 +254,11 @@ export const useAppFlow = create<AppFlowState>()(
                     proposals: [...state.proposals, {
                         ...propData,
                         id,
+                        auditLog: [],
                         criadoEm: new Date().toISOString()
-                    }]
+                    } as any]
                 }));
+                get().addAuditLog('PROPOSAL', id, 'CREATE', 'Proposta comercial gerada a partir do orçamento aprovado.');
                 return id;
             },
 
@@ -221,21 +266,20 @@ export const useAppFlow = create<AppFlowState>()(
                 set((state) => ({
                     proposals: state.proposals.map(p => p.id === id ? { ...p, status } : p)
                 }));
+                get().addAuditLog('PROPOSAL', id, 'STATUS_CHANGE', `Proposta alterada para ${status}`);
 
-                // Auto-trigger: Proposal APROVADA → Activate Project
                 if (status === 'APROVADA') {
                     const proposal = get().proposals.find(p => p.id === id);
                     if (proposal) {
                         const projectId = get().activateProject(proposal.id);
                         if (projectId) {
-                            // Notify all departments
                             get().createRequest({
                                 fromDepartment: 'COMERCIAL',
                                 toDepartment: 'ENGENHARIA',
                                 type: 'NEW_PROJECT_ACTIVATION',
                                 projectId,
-                                title: 'Nova Obra Ativada',
-                                description: 'Obra pronta para planejamento técnico',
+                                title: 'Obra Ativada',
+                                description: 'Proposta assinada e obra pronta para planejamento.',
                                 priority: 'ALTA',
                                 status: 'PENDENTE'
                             });
@@ -244,141 +288,240 @@ export const useAppFlow = create<AppFlowState>()(
                 }
             },
 
-            // PROJECT ACTIVATION (Core Flow)
+            // PROJECT
             activateProject: (proposalId) => {
                 const proposal = get().proposals.find(p => p.id === proposalId);
-                if (!proposal || proposal.status !== 'APROVADA') return null;
+                const budget = get().budgets.find(b => b.id === proposal?.budgetId);
+                const lead = get().leads.find(l => l.id === budget?.leadId);
 
-                const budget = get().budgets.find(b => b.id === proposal.budgetId);
-                if (!budget) return null;
-
-                const lead = get().leads.find(l => l.id === budget.leadId);
+                if (!proposal || !budget) return null;
 
                 const projectId = uuidv4();
                 const newProject: Project = {
                     id: projectId,
-                    nome: lead?.nomeObra || 'Obra sem nome',
+                    nome: lead?.nomeObra || 'Obra Nova',
                     clientId: lead?.clientId || 'unknown',
-                    status: 'PLANEJAMENTO', // Starts in PLANEJAMENTO, not ATIVA
+                    status: 'PLANEJAMENTO',
                     orcamentoId: budget.id,
                     propostaId: proposalId,
-                    // categoria removed - using classificacao
                     endereco: lead?.localizacao,
-                    classificacao: lead?.classificacao, // Carry over classification
-                    attachments: lead?.attachments, // Carry over attachments
+                    classificacao: lead?.classificacao || ({} as any),
+                    attachments: [...(budget.attachments || []), ...(proposal.attachments || [])],
                     criadoEm: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
 
-                set(state => ({
-                    projects: [...state.projects, newProject]
-                }));
-
+                set(state => ({ projects: [...state.projects, newProject] }));
                 return projectId;
             },
 
-            addProject: (projectData) => {
+            addProject: (p) => {
                 const id = uuidv4();
-                set((state) => ({
-                    projects: [...state.projects, {
-                        ...projectData,
-                        id,
-                        criadoEm: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    }]
-                }));
+                set(s => ({ projects: [...s.projects, { ...p, id, criadoEm: new Date().toISOString(), updatedAt: new Date().toISOString() } as any] }));
                 return id;
             },
 
-            updateProjectStatus: (id, status) => set((state) => ({
-                projects: state.projects.map(p => p.id === id ? { ...p, status, updatedAt: new Date().toISOString() } : p)
+            updateProjectStatus: (id, status) => set(s => ({
+                projects: s.projects.map(p => p.id === id ? { ...p, status, updatedAt: new Date().toISOString() } : p)
             })),
 
             // INTERDEPARTMENTAL REQUESTS
-            createRequest: (requestData) => {
+            createRequest: (r) => {
                 const id = uuidv4();
-                set((state) => ({
-                    requests: [...state.requests, {
-                        ...requestData,
-                        id,
-                        createdAt: new Date().toISOString()
-                    }]
-                }));
+                set(s => ({ requests: [...s.requests, { ...r, id, createdAt: new Date().toISOString() } as any] }));
                 return id;
             },
 
-            updateRequestStatus: (id, status) => set((state) => ({
-                requests: state.requests.map(r => r.id === id ? {
-                    ...r,
-                    status,
-                    resolvedAt: (status === 'CONCLUIDO' || status === 'REJEITADO') ? new Date().toISOString() : r.resolvedAt
-                } : r)
-            })),
+            updateRequestStatus: (id, status, feedback) => {
+                const request = get().requests.find(r => r.id === id);
+                if (!request) return;
 
-            updateRequest: (id, data) => set((state) => ({
-                requests: state.requests.map(r => r.id === id ? { ...r, ...data } : r)
-            })),
+                set(s => ({
+                    requests: s.requests.map(r => r.id === id ? {
+                        ...r,
+                        status,
+                        resolvedAt: (status === 'APROVADO' || status === 'REJEITADO' || status === 'CONCLUIDO') ? new Date().toISOString() : r.resolvedAt,
+                        metadata: feedback ? { ...r.metadata, ...feedback } : r.metadata
+                    } : r)
+                }));
 
-            getRequestsForDepartment: (department) => {
-                return get().requests.filter(r => r.toDepartment === department);
+                // Logic Cascading
+                if (status === 'APROVADO') {
+                    if (request.type === 'BUDGET_VALIDATION') {
+                        const budgetId = request.recordId;
+                        if (budgetId) {
+                            set(s => ({
+                                budgets: s.budgets.map(b => b.id === budgetId ? {
+                                    ...b,
+                                    validacaoTecnica: 'APROVADO',
+                                    validacaoTecnicaObs: feedback?.observations,
+                                    status: 'AGUARDANDO_FINANCEIRO',
+                                    // Update values if engineer provided them
+                                    valorEstimado: feedback?.adjustedValue || b.valorEstimado,
+                                    prazoEstimadoMeses: feedback?.adjustedDeadline || b.prazoEstimadoMeses,
+                                    attachments: [...(b.attachments || []), ...(feedback?.attachments || [])]
+                                } : b)
+                            }));
+
+                            get().addAuditLog('BUDGET', budgetId, 'TECH_APPROVAL', 'Engenharia validou o escopo técnico.', feedback);
+
+                            get().createRequest({
+                                fromDepartment: 'ENGENHARIA',
+                                toDepartment: 'FINANCEIRO',
+                                type: 'FINANCIAL_VALIDATION',
+                                title: `Validação Financeira: ${request.title.replace('Validação Técnica: ', '')}`,
+                                description: 'Validar margens do orçamento técnico aprovado.',
+                                priority: 'ALTA',
+                                status: 'PENDENTE',
+                                recordId: budgetId,
+                                metadata: { engineeringFeedback: feedback }
+                            });
+                        }
+                    }
+
+                    if (request.type === 'FINANCIAL_VALIDATION') {
+                        const budgetId = request.recordId;
+                        if (budgetId) {
+                            set(s => ({
+                                budgets: s.budgets.map(b => b.id === budgetId ? {
+                                    ...b,
+                                    validacaoFinanceira: 'APROVADO',
+                                    validacaoFinanceiraObs: feedback?.observations,
+                                    status: 'APROVADO'
+                                } : b)
+                            }));
+                            get().addAuditLog('BUDGET', budgetId, 'FINANCE_APPROVAL', 'Financeiro validou a viabilidade e margens.', feedback);
+                        }
+                    }
+                }
             },
 
-            // DISCIPLINE MANAGEMENT
-            addDiscipline: (data) => {
+            updateRequest: (id, data) => set(s => ({
+                requests: s.requests.map(r => r.id === id ? { ...r, ...data } : r)
+            })),
+
+            getRequestsForDepartment: (d) => get().requests.filter(r => r.toDepartment === d),
+
+            // DISCIPLINE
+            addDiscipline: (d) => {
                 const id = uuidv4();
-                set((state) => ({
-                    disciplines: [...(state.disciplines || []), {
-                        ...data,
-                        id,
-                        status: data.status || 'NAO_INICIADO',
-                        progress: data.progress || 0
-                    }]
-                }));
+                set(s => ({ disciplines: [...(s.disciplines || []), { ...d, id, status: d.status || 'NAO_INICIADO', progress: d.progress || 0 }] }));
                 return id;
             },
-            getDisciplinesByProject: (projectId) => {
-                const list = get().disciplines || [];
-                return list.filter(d => d.projectId === projectId);
-            },
+            getDisciplinesByProject: (pid) => (get().disciplines || []).filter(d => d.projectId === pid),
 
-            // DIARIO DE OBRA (RDO) MANAGEMENT
-            createDiarioObra: (data) => {
+            // DIARIO
+            createDiarioObra: (d) => {
                 const id = uuidv4();
-                set((state) => ({
-                    diariosObra: [...state.diariosObra, {
-                        ...data,
-                        id,
-                        criadoEm: new Date().toISOString()
-                    }]
-                }));
+                set(s => ({ diariosObra: [...s.diariosObra, { ...d, id, criadoEm: new Date().toISOString() }] }));
                 return id;
             },
-
-            updateDiarioObra: (id, data) => set((state) => ({
-                diariosObra: state.diariosObra.map(d => d.id === id ? { ...d, ...data } : d)
+            updateDiarioObra: (id, d) => set(s => ({ diariosObra: s.diariosObra.map(x => x.id === id ? { ...x, ...d } : x) })),
+            updateDiarioObraStatus: (id, status) => set(s => ({
+                diariosObra: s.diariosObra.map(d => d.id === id ? { ...d, status, aprovadoEm: status === 'APROVADO' ? new Date().toISOString() : d.aprovadoEm } : d)
             })),
+            getDiariosByProject: (p) => get().diariosObra.filter(d => d.projectId === p),
 
-            updateDiarioObraStatus: (id, status) => set((state) => ({
-                diariosObra: state.diariosObra.map(d => d.id === id ? {
-                    ...d,
-                    status,
-                    aprovadoEm: status === 'APROVADO' ? new Date().toISOString() : d.aprovadoEm
-                } : d)
-            })),
+            resetAndSeed: () => {
+                const clientId = uuidv4();
+                const leadId = uuidv4();
+                const budgetId = uuidv4();
+                const proposalId = uuidv4();
+                const createdAt = new Date().toISOString();
 
-            getDiariosByProject: (projectId) => {
-                return get().diariosObra.filter(d => d.projectId === projectId);
-            },
+                const seedData: Partial<AppFlowState> = {
+                    clients: [{
+                        id: clientId,
+                        nome: "Indústrias Metalúrgicas Delta S.A.",
+                        tipo: "PJ" as const,
+                        documento: "45.882.331/0001-08",
+                        razaoSocial: "Indústrias Metalúrgicas Delta S.A.",
+                        email: "diretoria@delta.com.br",
+                        contatos: "João Silva - Diretor Técnico (+55 11 99882-1122)",
+                        enderecos: [{
+                            id: uuidv4(),
+                            tipo: 'PRINCIPAL' as const,
+                            logradouro: "Av. das Nações Unidas",
+                            numero: "12551",
+                            bairro: "Brooklin",
+                            cidade: "São Paulo",
+                            estado: "SP",
+                            cep: "04578-000"
+                        }],
+                        documentosAnexos: [],
+                        docStatus: 'COMPLETO' as const,
+                        ativo: true,
+                        criadoEm: createdAt
+                    }],
+                    leads: [{
+                        id: leadId,
+                        clientId: clientId,
+                        nomeValidacao: "Indústrias Metalúrgicas Delta S.A.",
+                        nomeObra: "Nova Unidade Fabril - Plant 04",
+                        localizacao: "Distrito Industrial, Sorocaba/SP",
+                        classificacao: {
+                            natureza: 'INDUSTRIAL' as const,
+                            contexto: 'URBANA' as const,
+                            subcontexto: 'DISTRITO_INDUSTRIAL',
+                            tipologia: 'GALPAO_LOGISTICO_CROSSDOCKING',
+                            padrao: 'PREMIUM_INDUSTRIAL',
+                            finalidade: 'USO_PROPRIO',
+                            objetos: ['PROJETO_OBRA_NOVA', 'GERENCIAMENTO_COMPLETO', 'FUNDACOES_ESPECIAIS'],
+                            requerLegalizacao: true,
+                            legalizacao: {
+                                orgaos: ['PREFEITURA', 'CORPO_DE_BOMBEIROS', 'CETESB'],
+                                cenario: 'OBRA_NOVA'
+                            }
+                        },
+                        tipoObra: 'GALPÃO INDUSTRIAL',
+                        status: 'CONVERTIDO' as const,
+                        attachments: [],
+                        criadoEm: createdAt
+                    }],
+                    budgets: [{
+                        id: budgetId,
+                        leadId: leadId,
+                        lead: {
+                            id: leadId,
+                            nomeObra: "Nova Unidade Fabril - Plant 04",
+                            nomeValidacao: "Indústrias Metalúrgicas Delta S.A.",
+                            localizacao: "Distrito Industrial, Sorocaba/SP",
+                            tipoObra: 'GALPÃO INDUSTRIAL',
+                            status: 'CONVERTIDO' as const,
+                            criadoEm: createdAt
+                        },
+                        escopoMacro: "Gerenciamento de obra e execução de supraestrutura para galpão industrial de 12.000m². Incluindo terraplenagem, fundações em estacas hélice, piso industrial de alta resistência e fechamento em painéis alveolares.",
+                        valorEstimado: 12450000.00,
+                        prazoEstimadoMeses: 10,
+                        validacaoTecnica: 'APROVADO' as const,
+                        validacaoFinanceira: 'APROVADO' as const,
+                        status: 'APROVADO' as const,
+                        revisions: [],
+                        attachments: [],
+                        auditLog: [],
+                        criadoEm: createdAt
+                    }],
+                    proposals: [{
+                        id: proposalId,
+                        budgetId: budgetId,
+                        versao: 1,
+                        valorFinal: 11980000.00,
+                        condicoesEspeciais: "Pagamento estruturado em medições mensais de 10%. Retenção de 5% de garantia técnica. Desconto comercial de 3.75% aplicado sobre o orçamento base da engenharia.",
+                        status: 'APROVADA' as const,
+                        attachments: [],
+                        auditLog: [],
+                        criadoEm: createdAt
+                    }],
+                    projects: [],
+                    requests: [],
+                    disciplines: [],
+                    diariosObra: []
+                };
 
-            getDiariosByDateRange: (startDate, endDate) => {
-                return get().diariosObra.filter(d => {
-                    const dataRDO = new Date(d.data);
-                    return dataRDO >= new Date(startDate) && dataRDO <= new Date(endDate);
-                });
+                set(seedData);
+                console.log("Database reset and seeded with high-fidelity production data.");
             }
         }),
-        {
-            name: 'vercflow-storage',
-        }
+        { name: 'vercflow-storage' }
     )
 );

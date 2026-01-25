@@ -83,7 +83,7 @@ export function ComercialOverview({ stats, onNavigate }: any) {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Pipeline Summary */}
                 <div className="lg:col-span-2 space-y-6">
-                    <Card className="rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-sm p-8">
+                    <Card className="rounded-2xl border-white/5 bg-background/40 backdrop-blur-sm p-8">
                         <h3 className="font-black text-lg flex items-center gap-3 mb-8">
                             <Target className="text-primary" />
                             Pipeline por Estágio
@@ -107,7 +107,7 @@ export function ComercialOverview({ stats, onNavigate }: any) {
                         </div>
                     </Card>
 
-                    <Card className="rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-sm p-8">
+                    <Card className="rounded-2xl border-white/5 bg-background/40 backdrop-blur-sm p-8">
                         <div className="flex justify-between items-center mb-8">
                             <h3 className="font-black text-lg flex items-center gap-3">
                                 <Clock className="text-primary" />
@@ -237,12 +237,12 @@ export function ComercialOverview({ stats, onNavigate }: any) {
 
                 {/* Quick Actions / Alerts */}
                 <div className="space-y-6">
-                    <Card className="rounded-[2.5rem] bg-indigo-500/5 border-indigo-500/10 p-6">
+                    <Card className="rounded-2xl bg-indigo-500/5 border-indigo-500/10 p-6">
                         <h3 className="font-black text-sm uppercase tracking-widest flex items-center gap-2 text-indigo-700 mb-4">
                             <Zap size={16} /> Ações Recomendadas
                         </h3>
                         <div className="space-y-3">
-                            <div className="p-4 bg-background rounded-2xl border border-indigo-500/20 shadow-sm flex items-start gap-3">
+                            <div className="p-4 bg-background rounded-2xl border border-indigo-500/20 shadow-sm flex items-start gap-3 group hover:border-indigo-500/40 transition-all">
                                 <DollarSign size={18} className="text-indigo-500 shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-bold text-foreground">Follow-up Proposta</p>
@@ -255,7 +255,34 @@ export function ComercialOverview({ stats, onNavigate }: any) {
                         </div>
                     </Card>
 
-                    <Card className="rounded-[2.5rem] bg-background border-border/40 p-6 h-full flex flex-col justify-center items-center text-center">
+                    <Card className="rounded-2xl bg-rose-500/5 border-rose-500/10 p-6">
+                        <h3 className="font-black text-sm uppercase tracking-widest flex items-center gap-2 text-rose-700 mb-4">
+                            <AlertCircle size={16} /> Gestão do Sistema
+                        </h3>
+                        <div className="space-y-3">
+                            <div className="p-4 bg-background rounded-2xl border border-rose-500/10 shadow-sm">
+                                <p className="text-[10px] font-black uppercase text-rose-500 mb-1">Ambiente de Testes</p>
+                                <p className="text-xs text-muted-foreground mb-4 font-medium leading-relaxed">
+                                    Reseta todas as tabelas comerciais e injeta dados de alta fidelidade para homologação de PDFs.
+                                </p>
+                                <Button
+                                    onClick={() => {
+                                        const confirm = window.confirm("Isso apagará todos os dados atuais e reiniciará o sistema com dados de teste. Continuar?");
+                                        if (confirm) {
+                                            useAppFlow.getState().resetAndSeed();
+                                            window.location.reload();
+                                        }
+                                    }}
+                                    variant="destructive"
+                                    className="w-full rounded-xl font-black uppercase tracking-widest text-[10px] h-10 shadow-lg shadow-rose-500/20"
+                                >
+                                    Reinicializar Database
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card className="rounded-2xl bg-background border-border/40 p-6 h-full flex flex-col justify-center items-center text-center">
                         <CheckCircle2 size={40} className="text-emerald-500 mb-3 opacity-20" />
                         <p className="text-sm font-medium text-muted-foreground">Metas do Mês</p>
                         <p className="text-[10px] font-bold text-emerald-500 uppercase mt-1">85% Atingido</p>

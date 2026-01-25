@@ -35,7 +35,7 @@ export function DesignTeam() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {team.map((member, i) => (
-                    <Card key={i} className="group rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-md p-8 hover:border-primary/20 hover:shadow-xl transition-all cursor-pointer relative overflow-hidden">
+                    <Card key={i} className="group rounded-2xl border-white/5 bg-background/40 backdrop-blur-md p-8 hover:border-primary/20 hover:shadow-xl transition-all cursor-pointer relative overflow-hidden">
 
                         <div className="flex justify-between items-start mb-6">
                             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center text-neutral-500 font-black text-xl shadow-inner">

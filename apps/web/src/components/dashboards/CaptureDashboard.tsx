@@ -149,7 +149,7 @@ export function CaptureDashboard({ onTabChange, onOpenWizard }: { onTabChange: (
                             bg="bg-rose-500/10"
                             gradient="from-background to-rose-500/5"
                         />
-                        <Card className="rounded-[2.5rem] bg-primary p-8 border-none flex flex-col justify-between shadow-xl shadow-primary/20 group cursor-pointer overflow-hidden relative">
+                        <Card className="rounded-2xl bg-primary p-8 border-none flex flex-col justify-between shadow-xl shadow-primary/20 group cursor-pointer overflow-hidden relative">
                             <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700" />
                             <div className="relative z-10 text-primary-foreground">
                                 <p className="text-[10px] font-black opacity-60 uppercase tracking-widest mb-1">Capacidade</p>
@@ -166,7 +166,7 @@ export function CaptureDashboard({ onTabChange, onOpenWizard }: { onTabChange: (
 
             {/* Filter & Search Bar */}
             <div className="max-w-7xl mx-auto w-full px-4 lg:px-8 mb-8 relative z-10">
-                <div className="flex flex-col lg:flex-row gap-6 p-6 rounded-[2.5rem] bg-background border border-border/40 shadow-xl shadow-black/5">
+                <div className="flex flex-col lg:flex-row gap-6 p-6 rounded-2xl bg-background border border-border/40 shadow-xl shadow-black/5">
                     <div className="relative flex-1">
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
                         <Input
@@ -260,7 +260,7 @@ export function CaptureDashboard({ onTabChange, onOpenWizard }: { onTabChange: (
 function StatCard({ icon: Icon, label, value, desc, color, bg, gradient }: any) {
     return (
         <Card className={cn(
-            "rounded-[2.5rem] border border-border/40 p-8 transition-all hover:shadow-xl group bg-gradient-to-br",
+            "rounded-2xl border border-border/40 p-8 transition-all hover:shadow-xl group bg-gradient-to-br",
             gradient
         )}>
             <div className="flex justify-between items-start mb-6">
@@ -283,7 +283,7 @@ function RecordListCard({ reg, index, onClick }: any) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.05 }}
             onClick={onClick}
-            className="group relative flex items-center gap-6 p-6 rounded-[2.5rem] bg-background border border-border/40 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer overflow-hidden"
+            className="group relative flex items-center gap-6 p-6 rounded-2xl bg-background border border-border/40 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer overflow-hidden"
         >
             <div className="absolute left-0 top-0 bottom-0 w-1 opacity-0 group-hover:opacity-100 bg-primary transition-opacity" />
 

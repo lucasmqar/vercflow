@@ -67,7 +67,7 @@ export function StockControl({ obraName = "Gestão de Inventário" }: { obraName
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Search & Tree (Left Column) */}
                 <div className="space-y-6">
-                    <Card className="rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
+                    <Card className="rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
                         <CardContent className="p-6">
                             <div className="relative mb-6">
                                 <Search className="absolute left-3 top-2.5 text-muted-foreground/40" size={14} />
@@ -82,7 +82,7 @@ export function StockControl({ obraName = "Gestão de Inventário" }: { obraName
                         </CardContent>
                     </Card>
 
-                    <Card className="rounded-[2.5rem] border-white/5 bg-primary/5 shadow-2xl overflow-hidden border border-primary/10">
+                    <Card className="rounded-2xl border-white/5 bg-primary/5 shadow-2xl overflow-hidden border border-primary/10">
                         <CardContent className="p-8 text-center space-y-4">
                             <BarChart3 className="mx-auto text-primary/40" size={32} />
                             <h4 className="text-sm font-black uppercase tracking-widest">Giro de Estoque</h4>
@@ -95,7 +95,7 @@ export function StockControl({ obraName = "Gestão de Inventário" }: { obraName
                 </div>
 
                 {/* Main Inventory Table */}
-                <Card className="lg:col-span-3 rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
+                <Card className="lg:col-span-3 rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
                     <CardContent className="p-8">
                         <div className="flex items-center justify-between mb-8">
                             <div>
@@ -174,7 +174,7 @@ export function StockControl({ obraName = "Gestão de Inventário" }: { obraName
 
             {/* Quick Actions (Floating bar or bottom section) */}
             <div className="flex justify-center pt-8">
-                <div className="flex gap-4 p-4 rounded-[2.5rem] bg-background/80 backdrop-blur-xl border border-white/10 shadow-3xl">
+                <div className="flex gap-4 p-4 rounded-2xl bg-background/80 backdrop-blur-xl border border-white/10 shadow-3xl">
                     <ActionButton icon={ArrowDownLeft} label="Entrada (NF)" />
                     <ActionButton icon={ArrowUpRight} label="Saída (Obra)" />
                     <ActionButton icon={MoveRight} label="Transferência" />

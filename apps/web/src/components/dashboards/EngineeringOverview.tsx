@@ -57,7 +57,7 @@ export function EngineeringOverview({ obraName = "Edifício Infinity Coast" }: {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Gestão de Atribuições */}
-                <Card className="lg:col-span-2 rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
+                <Card className="lg:col-span-2 rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
                     <CardContent className="p-8">
                         <div className="flex items-center justify-between mb-8">
                             <div>
@@ -103,7 +103,7 @@ export function EngineeringOverview({ obraName = "Edifício Infinity Coast" }: {
                 </Card>
 
                 {/* Gestão de Locação */}
-                <Card className="rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
+                <Card className="rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
                     <CardContent className="p-8">
                         <div className="flex items-center justify-between mb-8">
                             <h3 className="text-xl font-black tracking-tight">Locação de Ativos</h3>
@@ -131,7 +131,7 @@ export function EngineeringOverview({ obraName = "Edifício Infinity Coast" }: {
                             />
                         </div>
 
-                        <div className="mt-8 p-6 rounded-3xl bg-primary/5 border border-primary/10">
+                        <div className="mt-8 p-6 rounded-xl bg-primary/5 border border-primary/10">
                             <div className="flex justify-between items-center mb-2">
                                 <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Custo Mensal Locação</span>
                                 <Badge className="bg-primary/20 text-primary border-none text-[8px] font-black tracking-widest">ESTIMATED</Badge>
@@ -147,7 +147,7 @@ export function EngineeringOverview({ obraName = "Edifício Infinity Coast" }: {
 
             {/* Solicitações Inter-departamentais */}
             <div className="grid grid-cols-1 gap-6">
-                <Card className="rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
+                <Card className="rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
                     <CardContent className="p-8">
                         <div className="flex items-center justify-between mb-8">
                             <div>
@@ -182,7 +182,7 @@ export function EngineeringOverview({ obraName = "Edifício Infinity Coast" }: {
 // Helpers
 function StatCard({ label, value, trend, icon: Icon, color }: any) {
     return (
-        <Card className="rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl hover:border-primary/20 transition-all group overflow-hidden shadow-xl">
+        <Card className="rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl hover:border-primary/20 transition-all group overflow-hidden shadow-xl">
             <CardContent className="p-8">
                 <div className="flex justify-between items-start mb-4">
                     <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">

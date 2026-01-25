@@ -101,7 +101,7 @@ export function DesignOverview({ onNavigate }: { onNavigate: (section: string) =
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Content Area - e.g. Recent Priority Items */}
-                <Card className="lg:col-span-2 rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-md p-8 min-h-[400px]">
+                <Card className="lg:col-span-2 rounded-2xl border-white/5 bg-background/40 backdrop-blur-md p-8 min-h-[400px]">
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="font-black text-xl tracking-tight">Atividades Recentes</h3>
@@ -141,7 +141,7 @@ export function DesignOverview({ onNavigate }: { onNavigate: (section: string) =
 
                 {/* Side Stats */}
                 <div className="space-y-6">
-                    <Card className="rounded-[2.5rem] p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/10">
+                    <Card className="rounded-2xl p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/10">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="p-3 bg-background rounded-xl shadow-lg shadow-primary/10 text-primary">
                                 <Palette size={20} />
@@ -164,7 +164,7 @@ export function DesignOverview({ onNavigate }: { onNavigate: (section: string) =
                         </Button>
                     </Card>
 
-                    <Card className="rounded-[2.5rem] p-6 border-white/5 bg-background/40">
+                    <Card className="rounded-2xl p-6 border-white/5 bg-background/40">
                         <h4 className="font-black text-sm uppercase tracking-wide mb-4">Equipe Design</h4>
                         <div className="flex -space-x-3 overflow-hidden py-2">
                             {[1, 2, 3, 4].map(i => (

@@ -52,7 +52,7 @@ export function ComercialClients({ onOpenProfile }: any) {
 
             <div className="grid gap-6">
                 {filteredClients.map(c => (
-                    <Card key={c.id} className="rounded-[2.5rem] border-border/40 bg-background/60 backdrop-blur-xl hover:border-primary/20 hover:shadow-2xl transition-all group overflow-hidden">
+                    <Card key={c.id} className="rounded-2xl border-border/40 bg-background/60 backdrop-blur-xl hover:border-primary/20 hover:shadow-2xl transition-all group overflow-hidden">
                         <CardContent className="p-8">
                             <div className="flex flex-col lg:flex-row items-start justify-between gap-8">
                                 {/* Company Info */}

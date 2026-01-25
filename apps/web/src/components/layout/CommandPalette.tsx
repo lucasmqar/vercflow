@@ -11,25 +11,18 @@ import {
   Inbox,
   PenTool,
   PlusCircle,
-  Gavel
+  Gavel,
+  Loader2
 } from 'lucide-react';
-import { obras, registros, profissionais, tasks, clients } from '@/data/mockData';
+// import { obras, registros, profissionais, tasks, clients } from '@/data/mockData'; // REMOVED MOCK DATA
 import { cn } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
+import { useUnifiedSearch, SearchResult } from '@/hooks/useUnifiedSearch';
 
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect?: (item: SearchResult) => void;
 }
-
-type SearchResult = {
-  id: string;
-  type: 'obra' | 'registro' | 'profissional' | 'task' | 'client' | 'action';
-  title: string;
-  subtitle: string;
-  icon: React.ElementType;
-};
 
 const quickActions: SearchResult[] = [
   { id: 'new-registro', type: 'action', title: 'Novo Registro', subtitle: 'Capturar ocorrência ou inspeção', icon: PlusCircle },
@@ -41,66 +34,23 @@ const quickActions: SearchResult[] = [
 export function CommandPalette({ isOpen, onClose, onSelect }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
-  // const navigate = useNavigate(); // Hook if we had routing set up for all items
+
+  const { results: searchResults, loading, error } = useUnifiedSearch(query);
 
   const results = useMemo(() => {
     if (!query.trim()) return quickActions;
 
-    const q = query.toLowerCase();
-    const searchResults: SearchResult[] = [];
-
-    // Search clients
-    clients?.filter((c: any) => (c.nome || '').toLowerCase().includes(q))
-      .forEach((c: any) => searchResults.push({
-        id: c.id,
-        type: 'client',
-        title: c.nome,
-        subtitle: 'Cliente / Contratante',
-        icon: Briefcase,
-      }));
-
-    // Search obras
-    obras.filter((o) => o.name.toLowerCase().includes(q) || o.address.toLowerCase().includes(q))
-      .forEach((o) => searchResults.push({
-        id: o.id,
-        type: 'obra',
-        title: o.name,
-        subtitle: o.address,
-        icon: Building,
-      }));
-
-    // Search registros
-    registros.filter((r) => r.title.toLowerCase().includes(q))
-      .forEach((r) => searchResults.push({
-        id: r.id,
-        type: 'registro',
-        title: r.title,
-        subtitle: `${r.obraName} • ${r.status}`,
-        icon: FileText,
-      }));
-
-    // Search profissionais
-    profissionais.filter((p) => p.name.toLowerCase().includes(q) || p.specialty.toLowerCase().includes(q))
-      .forEach((p) => searchResults.push({
-        id: p.id,
-        type: 'profissional',
-        title: p.name,
-        subtitle: p.specialty,
-        icon: Users,
-      }));
-
-    // Search tasks
-    tasks.filter((t) => t.title.toLowerCase().includes(q))
-      .forEach((t) => searchResults.push({
-        id: t.id,
-        type: 'task',
-        title: t.title,
-        subtitle: `Tarefa • ${t.status}`,
-        icon: CheckSquare,
-      }));
-
-    return searchResults.slice(0, 10);
-  }, [query]);
+    // Map icons to results
+    return searchResults.map(r => ({
+      ...r,
+      icon: r.type === 'obra' ? Building :
+        r.type === 'registro' ? FileText :
+          r.type === 'profissional' ? Users :
+            r.type === 'task' ? CheckSquare :
+              r.type === 'client' ? Briefcase :
+                r.type === 'action' ? PlusCircle : Search
+    }));
+  }, [query, searchResults]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -157,6 +107,7 @@ export function CommandPalette({ isOpen, onClose, onSelect }: CommandPaletteProp
                     autoFocus
                   />
                   <div className="flex gap-1">
+                    {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                     <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
                       <span className="text-xs">ESC</span>
                     </kbd>
@@ -214,9 +165,15 @@ export function CommandPalette({ isOpen, onClose, onSelect }: CommandPaletteProp
                     );
                   })}
 
-                  {query && results.length === 0 && (
+                  {query && !loading && results.length === 0 && (
                     <div className="px-4 py-12 text-center text-muted-foreground">
                       <p className="text-sm">Sem resultados para "{query}"</p>
+                    </div>
+                  )}
+
+                  {query && loading && results.length === 0 && (
+                    <div className="px-4 py-12 text-center text-muted-foreground">
+                      <p className="text-sm">Buscando...</p>
                     </div>
                   )}
                 </div>

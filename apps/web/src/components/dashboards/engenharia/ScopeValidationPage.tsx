@@ -89,7 +89,7 @@ export function ScopeValidationPage({ data, onBack, onApprove, onReject }: Scope
                                     <Plus size={12} className="mr-1" /> Adicionar Item
                                 </Button>
                             </div>
-                            <Card className="rounded-[2.5rem] border-white/5 bg-muted/5 p-8 space-y-6">
+                            <Card className="rounded-2xl border-white/5 bg-muted/5 p-8 space-y-6">
                                 {[
                                     { text: "Execução de Fundações (Sapatas Isoladas)", cat: "INFRA" },
                                     { text: "Estrutura em Concreto Armado (3 Pavimentos)", cat: "SUPRA" },
@@ -163,7 +163,7 @@ export function ScopeValidationPage({ data, onBack, onApprove, onReject }: Scope
 
                     {/* RIGHT: Validation Actions (4 cols) */}
                     <div className="lg:col-span-4 space-y-6">
-                        <Card className="rounded-[2.5rem] bg-gradient-to-br from-background to-secondary/10 border-border/40 p-8 shadow-xl sticky top-0">
+                        <Card className="rounded-2xl bg-gradient-to-br from-background to-secondary/10 border-border/40 p-8 shadow-xl sticky top-0">
                             <h3 className="font-black text-xs uppercase tracking-widest text-muted-foreground mb-8 text-center flex items-center justify-center gap-2">
                                 <DollarSign size={14} /> Resumo Financeiro
                             </h3>

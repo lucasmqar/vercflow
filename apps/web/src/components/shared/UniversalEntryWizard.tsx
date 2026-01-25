@@ -86,7 +86,7 @@ export function UniversalEntryWizard({ isOpen, onClose }: UniversalEntryWizardPr
 
             <motion.div
                 layoutId="wizard-container"
-                className="relative w-full max-w-5xl h-[85vh] bg-background rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/10 flex flex-col"
+                className="relative w-full max-w-5xl h-[85vh] bg-background rounded-2xl shadow-2xl overflow-hidden border border-white/10 flex flex-col"
             >
                 {/* Background Shader */}
                 <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">

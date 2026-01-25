@@ -59,7 +59,7 @@ export function SketchModal({ isOpen, onClose }: SketchModalProps) {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-[100vw] w-full lg:max-w-[95vw] lg:w-[1200px] h-[100dvh] lg:h-[90vh] flex flex-col p-0 overflow-hidden bg-background border-none lg:border lg:rounded-[2.5rem] shadow-2xl">
+            <DialogContent className="max-w-[100vw] w-full lg:max-w-[95vw] lg:w-[1200px] h-[100dvh] lg:h-[90vh] flex flex-col p-0 overflow-hidden bg-background border-none lg:border lg:rounded-2xl shadow-2xl">
                 <DialogHeader className="px-4 lg:px-8 py-4 border-b flex flex-col sm:flex-row items-center justify-between gap-4 space-y-0 bg-secondary/5">
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                         <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">

@@ -47,7 +47,7 @@ export function MapSelector({ lat, lng, onChange, height = "400px" }: MapSelecto
     const center: [number, number] = (lat && lng) ? [lat, lng] : defaultCenter;
 
     return (
-        <Card className="relative overflow-hidden border border-border/20 rounded-3xl shadow-2xl">
+        <Card className="relative overflow-hidden border border-border/20 rounded-xl shadow-2xl">
             <div style={{ height }}>
                 <MapContainer
                     center={center}

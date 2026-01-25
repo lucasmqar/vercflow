@@ -45,7 +45,7 @@ const PlaceholderSection = ({ title, icon: Icon }: any) => (
 // Helpers from deleted PurchasesDashboard.tsx merged in
 function PurchaseStat({ label, value, sub, icon: Icon, color }: any) {
     return (
-        <Card className="rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-xl hover:border-primary/20 transition-all group overflow-hidden">
+        <Card className="rounded-2xl border-white/5 bg-background/40 backdrop-blur-xl hover:border-primary/20 transition-all group overflow-hidden">
             <div className="p-8">
                 <div className="flex justify-between items-start mb-4">
                     <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
@@ -64,7 +64,7 @@ function PurchaseStat({ label, value, sub, icon: Icon, color }: any) {
 
 function RequisitionItem({ id, obra, item, status, date }: any) {
     return (
-        <div className="p-5 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-between group hover:bg-white/10 transition-all">
+        <div className="p-5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between group hover:bg-white/10 transition-all">
             <div className="flex items-center gap-6">
                 <div className="text-center w-12">
                     <p className="text-[10px] font-black text-primary">{id}</p>
@@ -190,7 +190,7 @@ export function ComprasDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
                                     </div>
                                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                         {/* Active Requisitions */}
-                                        <Card className="lg:col-span-2 rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
+                                        <Card className="lg:col-span-2 rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
                                             <div className="p-8">
                                                 <div className="flex items-center justify-between mb-8">
                                                     <div>
@@ -223,7 +223,7 @@ export function ComprasDashboard({ onTabChange }: { onTabChange: (tab: Dashboard
                                         </Card>
 
                                         {/* Logistics Feed */}
-                                        <Card className="rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
+                                        <Card className="rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
                                             <div className="p-8">
                                                 <h3 className="text-xl font-black tracking-tight mb-8">Fluxo de Entregas</h3>
                                                 <div className="space-y-6">

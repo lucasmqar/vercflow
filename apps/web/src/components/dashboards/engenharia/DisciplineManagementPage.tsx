@@ -207,7 +207,7 @@ function DetailTabTrigger({ value, icon: Icon, label }: any) {
 
 function DetailCard({ title, children }: any) {
     return (
-        <Card className="rounded-[2.5rem] border-border/40 bg-background/50 backdrop-blur-sm shadow-sm overflow-hidden h-full">
+        <Card className="rounded-2xl border-border/40 bg-background/50 backdrop-blur-sm shadow-sm overflow-hidden h-full">
             <CardContent className="p-8">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-primary mb-6 flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary" />

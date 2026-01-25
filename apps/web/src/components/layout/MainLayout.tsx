@@ -69,7 +69,7 @@ export function MainLayout({ children, activeTab, onTabChange }: MainLayoutProps
         </AnimatePresence>
 
         {/* Main Content Area - Expands automatically */}
-        <main className="flex-1 overflow-hidden w-full relative bg-muted/5 flex flex-col">
+        <main className="flex-1 overflow-hidden w-full relative bg-background flex flex-col">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}

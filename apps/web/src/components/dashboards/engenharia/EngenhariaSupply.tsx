@@ -44,7 +44,7 @@ export function EngenhariaSupply() {
                 </Card>
             </div>
 
-            <Card className="rounded-[2.5rem] border-border/40 bg-background overflow-hidden">
+            <Card className="rounded-2xl border-border/40 bg-background overflow-hidden">
                 <div className="p-6 border-b border-border/40 flex items-center justify-between">
                     <h3 className="font-bold text-lg">Minhas Requisições</h3>
                     <div className="w-64 relative">

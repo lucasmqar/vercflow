@@ -157,7 +157,7 @@ export function RegistroModal({ isOpen, onClose, onSuccess, parentRecord }: Regi
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-[1200px] h-[90vh] p-0 overflow-hidden bg-background border-none shadow-2xl flex flex-col rounded-[2.5rem]">
+            <DialogContent className="max-w-[1200px] h-[90vh] p-0 overflow-hidden bg-background border-none shadow-2xl flex flex-col rounded-2xl">
                 <DialogTitle className="sr-only">Verc OS Capture Wizard</DialogTitle>
                 <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
                     <ShaderAnimation />
@@ -340,7 +340,7 @@ export function RegistroModal({ isOpen, onClose, onSuccess, parentRecord }: Regi
                                                         layout
                                                         initial={{ opacity: 0, y: 20 }}
                                                         animate={{ opacity: 1, y: 0 }}
-                                                        className="group relative bg-muted/5 rounded-[2.5rem] border border-white/5 p-8 transition-all hover:border-primary/20"
+                                                        className="group relative bg-muted/5 rounded-2xl border border-white/5 p-8 transition-all hover:border-primary/20"
                                                     >
                                                         <div className="absolute -right-3 -top-3 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <Button
@@ -371,7 +371,7 @@ export function RegistroModal({ isOpen, onClose, onSuccess, parentRecord }: Regi
 
                                                         {item.type === 'FOTO' && (
                                                             <div className="space-y-4">
-                                                                <div className="aspect-video rounded-3xl bg-muted/20 border border-dashed border-white/10 flex flex-col items-center justify-center gap-4 overflow-hidden group/photo relative cursor-pointer">
+                                                                <div className="aspect-video rounded-xl bg-muted/20 border border-dashed border-white/10 flex flex-col items-center justify-center gap-4 overflow-hidden group/photo relative cursor-pointer">
                                                                     {item.content ? (
                                                                         <img src={item.content} className="w-full h-full object-cover" />
                                                                     ) : (
@@ -391,7 +391,7 @@ export function RegistroModal({ isOpen, onClose, onSuccess, parentRecord }: Regi
                                                         )}
 
                                                         {item.type === 'ESBOCO' && (
-                                                            <div className="space-y-4 bg-background rounded-3xl overflow-hidden border border-white/5">
+                                                            <div className="space-y-4 bg-background rounded-xl overflow-hidden border border-white/5">
                                                                 <div className="p-4 bg-muted/20 flex justify-between items-center border-b border-white/5">
                                                                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Technical Canvas</span>
                                                                     <Button
@@ -561,7 +561,7 @@ export function RegistroModal({ isOpen, onClose, onSuccess, parentRecord }: Regi
                                             </div>
 
                                             <div className="p-8 rounded-[3.5rem] bg-muted/10 border border-white/10 flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-                                                <div className="w-16 h-16 rounded-3xl bg-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
+                                                <div className="w-16 h-16 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
                                                     <Sparkles size={32} />
                                                 </div>
                                                 <div className="flex-1">
@@ -607,7 +607,7 @@ export function RegistroModal({ isOpen, onClose, onSuccess, parentRecord }: Regi
                                     <Button
                                         onClick={handleSubmit}
                                         disabled={isSubmitting}
-                                        className="h-14 rounded-3xl px-16 font-black uppercase text-[11px] tracking-[0.2em] gap-3 bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/20 hover:scale-[1.02] transition-all"
+                                        className="h-14 rounded-xl px-16 font-black uppercase text-[11px] tracking-[0.2em] gap-3 bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/20 hover:scale-[1.02] transition-all"
                                     >
                                         <Upload size={20} /> Transmitir Protocolo
                                     </Button>
@@ -626,7 +626,7 @@ function BlockAction({ icon: Icon, label, onClick, color }: any) {
         <Button
             onClick={onClick}
             variant="ghost"
-            className="flex-1 min-w-[120px] h-24 rounded-3xl flex flex-col items-center justify-center gap-2 hover:bg-white/5 transition-all group"
+            className="flex-1 min-w-[120px] h-24 rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-white/5 transition-all group"
         >
             <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110", color)}>
                 <Icon size={20} className="text-white" />
@@ -638,7 +638,7 @@ function BlockAction({ icon: Icon, label, onClick, color }: any) {
 
 function ReviewInfo({ label, value, icon: Icon, className }: any) {
     return (
-        <div className={cn("bg-muted/10 p-6 rounded-3xl border border-white/5 flex items-start gap-4 hover:bg-muted/20 transition-colors", className)}>
+        <div className={cn("bg-muted/10 p-6 rounded-xl border border-white/5 flex items-start gap-4 hover:bg-muted/20 transition-colors", className)}>
             <div className="w-10 h-10 rounded-xl bg-background flex items-center justify-center text-primary shrink-0">
                 <Icon size={18} />
             </div>

@@ -52,7 +52,7 @@ export function FinancialProposals({ obraName = "Edifício Infinity Coast" }: { 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Proposal Metadata */}
                 <div className="space-y-6">
-                    <Card className="rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
+                    <Card className="rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
                         <CardContent className="p-8 space-y-6">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-primary">Dados da Proposta Atual</h3>
 
@@ -80,7 +80,7 @@ export function FinancialProposals({ obraName = "Edifício Infinity Coast" }: { 
                         </CardContent>
                     </Card>
 
-                    <Card className="rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
+                    <Card className="rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl">
                         <CardContent className="p-8">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-primary mb-6">Templates Disponíveis</h3>
                             <div className="space-y-2">
@@ -93,7 +93,7 @@ export function FinancialProposals({ obraName = "Edifício Infinity Coast" }: { 
                 </div>
 
                 {/* Editor Surface */}
-                <Card className="lg:col-span-2 rounded-[2.5rem] border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl min-h-[800px] flex flex-col">
+                <Card className="lg:col-span-2 rounded-2xl border-white/5 bg-background/60 backdrop-blur-xl overflow-hidden shadow-2xl min-h-[800px] flex flex-col">
                     <div className="p-4 border-b border-white/5 bg-white/5 flex items-center gap-4">
                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/5"><FileEdit size={14} /></Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/5"><Copy size={14} /></Button>

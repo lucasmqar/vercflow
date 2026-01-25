@@ -44,7 +44,7 @@ export function ObrasMetas() {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header with KPI Overview */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2 p-8 rounded-[2.5rem] bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-2xl relative overflow-hidden">
+                <Card className="lg:col-span-2 p-8 rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-8 opacity-20 rotate-12">
                         <Trophy size={160} />
                     </div>
@@ -99,7 +99,7 @@ export function ObrasMetas() {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.1 }}
                     >
-                        <Card className="rounded-[2.5rem] border-white/5 bg-background/40 backdrop-blur-sm p-8 h-full flex flex-col">
+                        <Card className="rounded-2xl border-white/5 bg-background/40 backdrop-blur-sm p-8 h-full flex flex-col">
                             <div className="flex justify-between items-start mb-6">
                                 <div>
                                     <Badge variant="outline" className="text-[9px] font-black tracking-widest uppercase mb-2 text-primary border-primary/20">{meta.setor}</Badge>
@@ -136,7 +136,7 @@ export function ObrasMetas() {
                     </motion.div>
                 ))}
 
-                <Card className="rounded-[2.5rem] border-dashed border-2 border-border/40 bg-muted/5 flex flex-col items-center justify-center p-12 text-center group cursor-pointer hover:bg-muted/10 transition-all">
+                <Card className="rounded-2xl border-dashed border-2 border-border/40 bg-muted/5 flex flex-col items-center justify-center p-12 text-center group cursor-pointer hover:bg-muted/10 transition-all">
                     <div className="w-16 h-16 rounded-full bg-background border border-border/40 flex items-center justify-center text-muted-foreground group-hover:scale-110 transition-transform mb-4">
                         <Plus size={32} />
                     </div>
